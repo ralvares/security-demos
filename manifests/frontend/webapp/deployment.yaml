@@ -31,15 +31,9 @@ spec:
             ]
           imagePullPolicy: Always
           name: webapp
-          env:
-            - name: GATEWAY_SERVICE_ADDR
-              value: "gateway-service.payments-v2.svc.cluster.local"
-            - name: GATEWAY_SERVICE_PORT
-              value: "8080"
-            - name: REPORT_GENERATOR_SERVICE_ADDR
-              value: "report-generator-service.backend.svc.cluster.local"
-            - name: REPORT_GENERATOR_SERVICE_PORT
-              value: "8080"
+          envFrom:
+            - configMapRef:
+                name: endpoint-config
           ports:
             - containerPort: 8080
               protocol: TCP
