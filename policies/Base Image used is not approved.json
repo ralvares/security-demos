@@ -1,0 +1,85 @@
+{
+    "policies": [
+        {
+            "id": "f1021acd-ecd5-4209-8aa4-38c0872bf641",
+            "name": "Base Image used is not approved.",
+            "description": "A base image is the image that is used to create all of your container images.",
+            "rationale": "",
+            "remediation": "Please use the UBI images approved and pulled from trusted sources. \n\nregistry.access.redhat.com/ubi8/ubi-minimal\nregistry.access.redhat.com/ubi8/ubi",
+            "disabled": false,
+            "categories": [
+                "DevOps Best Practices",
+                "Security Best Practices"
+            ],
+            "lifecycleStages": [
+                "BUILD",
+                "DEPLOY"
+            ],
+            "eventSource": "NOT_APPLICABLE",
+            "exclusions": [
+                {
+                    "name": "",
+                    "deployment": {
+                        "name": "nfs-client-provisioner",
+                        "scope": null
+                    },
+                    "image": null,
+                    "expiration": null
+                },
+                {
+                    "name": "",
+                    "deployment": {
+                        "name": "workspaceb8f7901d16eb4ad1",
+                        "scope": null
+                    },
+                    "image": null,
+                    "expiration": null
+                },
+                {
+                    "name": "",
+                    "deployment": {
+                        "name": "workspace56e3efbf43a94ee8",
+                        "scope": null
+                    },
+                    "image": null,
+                    "expiration": null
+                }
+            ],
+            "scope": [],
+            "severity": "HIGH_SEVERITY",
+            "enforcementActions": [
+                "FAIL_BUILD_ENFORCEMENT"
+            ],
+            "notifiers": [],
+            "lastUpdated": "2023-02-22T14:38:41.398093259Z",
+            "SORTName": "",
+            "SORTLifecycleStage": "",
+            "SORTEnforcement": false,
+            "policyVersion": "1.1",
+            "policySections": [
+                {
+                    "sectionName": "Policy Section 1",
+                    "policyGroups": [
+                        {
+                            "fieldName": "Image OS",
+                            "booleanOperator": "OR",
+                            "negate": true,
+                            "values": [
+                                {
+                                    "value": "rhel:8"
+                                },
+                                {
+                                    "value": "rhel:9"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "mitreAttackVectors": [],
+            "criteriaLocked": false,
+            "mitreVectorsLocked": false,
+            "isDefault": false
+        }
+    ]
+}

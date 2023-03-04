@@ -1,0 +1,7 @@
+UBI8 - nginx + mod-perl 
+
+https://medium.com/create-code/docker-environment-variables-and-nginx-93d7173f19ec
+
+/visa -> VISA_SERVICE_ADDR:PORT
+/master -> MASTER_SERVICE_ADDR:PORT
+

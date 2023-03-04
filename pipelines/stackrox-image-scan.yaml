@@ -1,0 +1,69 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  annotations:
+    tekton.dev/categories: Security
+    tekton.dev/displayName: Scan an image with StackRox/RHACS
+    tekton.dev/pipelines.minVersion: 0.18.0
+    tekton.dev/platforms: linux/amd64
+    tekton.dev/tags: security
+  labels:
+    app.kubernetes.io/version: "0.1"
+  name: stackrox-image-scan
+  namespace: pipeline-demo
+spec:
+  description: Scan an image with StackRox/RHACS This tasks allows you to return full
+    vulnerability scan results for an image in JSON, CSV, or Pretty format. It's a
+    companion to the stackrox-image-check task, which checks an image against build-time
+    policies.
+  params:
+  - description: |
+      Secret containing the address:port tuple for StackRox Central
+      (example - rox.stackrox.io:443)
+    name: rox_central_endpoint
+    type: string
+  - description: Secret containing the StackRox API token with CI permissions
+    name: rox_api_token
+    type: string
+  - description: |
+      Full name of image to scan (example -- gcr.io/rox/sample:5.0-rc1)
+    name: image
+    type: string
+  - default: json
+    description: Output format (json | csv | pretty)
+    name: output_format
+    type: string
+  - default: "false"
+    description: |
+      When set to `"true"`, skip verifying the TLS certs of the Central
+      endpoint.  Defaults to `"false"`.
+    name: insecure-skip-tls-verify
+    type: string
+  steps:
+  - env:
+    - name: ROX_API_TOKEN
+      valueFrom:
+        secretKeyRef:
+          key: rox_api_token
+          name: $(params.rox_api_token)
+    - name: ROX_CENTRAL_ENDPOINT
+      valueFrom:
+        secretKeyRef:
+          key: rox_central_endpoint
+          name: $(params.rox_central_endpoint)
+    image: registry.access.redhat.com/ubi9/ubi-minimal
+    name: rox-image-scan
+    resources: {}
+    script: |
+      #!/usr/bin/env bash
+      set +x
+      export NO_COLOR="True"
+      curl -s -k -L -H "Authorization: Bearer $ROX_API_TOKEN" \
+        "https://$ROX_CENTRAL_ENDPOINT/api/cli/download/roxctl-linux" \
+        --output ./roxctl  > /dev/null; echo "Getting roxctl"
+      chmod +x ./roxctl > /dev/null
+      ./roxctl image scan \
+        $( [ "$(params.insecure-skip-tls-verify)" = "true" ] && \
+        echo -n "--insecure-skip-tls-verify") \
+        -e "$ROX_CENTRAL_ENDPOINT" --image "$(params.image)" \
+        --output "$(params.output_format)"

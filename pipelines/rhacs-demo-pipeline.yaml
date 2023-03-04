@@ -1,0 +1,56 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  creationTimestamp: "2023-02-28T09:10:07Z"
+  generation: 5
+  name: rhacs-demo-pipeline
+  namespace: pipeline-demo
+  resourceVersion: "79883"
+  uid: 6a3264cd-1ea6-409e-8a3b-d2b4473293a9
+spec:
+  tasks:
+  - name: stackrox-image-scan
+    params:
+    - name: rox_central_endpoint
+      value: roxsecrets
+    - name: rox_api_token
+      value: roxsecrets
+    - name: image
+      value: quay.io/vuln/backend-atlas
+    - name: output_format
+      value: table
+    - name: insecure-skip-tls-verify
+      value: "true"
+    taskRef:
+      kind: Task
+      name: stackrox-image-scan
+  - name: stackrox-image-check
+    params:
+    - name: rox_central_endpoint
+      value: roxsecrets
+    - name: rox_api_token
+      value: roxsecrets
+    - name: image
+      value: quay.io/vuln/backend-atlas
+    - name: insecure-skip-tls-verify
+      value: "true"
+    runAfter:
+    - stackrox-image-scan
+    taskRef:
+      kind: Task
+      name: stackrox-image-check
+  - name: stackrox-deployment-check
+    params:
+    - name: rox_central_endpoint
+      value: roxsecrets
+    - name: rox_api_token
+      value: roxsecrets
+    - name: deployment
+      value: YXBpVmVyc2lvbjogdjEKa2luZDogUG9kCm1ldGFkYXRhOgogIG5hbWU6IGJhZGRlcGxveW1lbnQgCiAgbmFtZXNwYWNlOiBiYWNrZW5kLXYyCnNwZWM6CiAgY29udGFpbmVyczoKICAtIGNvbW1hbmQ6CiAgICAtIC9iaW4vYmFzaAogICAgaW1hZ2U6IHF1YXkuaW8vdnVsbi9iYWNrZW5kLWF0bGFzIAogICAgbmFtZTogY29udGFpbmVyLTAwCiAgICByZXNvdXJjZXM6IHt9CiAgICBzZWN1cml0eUNvbnRleHQ6CiAgICAgIHByaXZpbGVnZWQ6IHRydWUKICAgICAgcnVuQXNVc2VyOiAwCiAgICBzdGRpbjogdHJ1ZQogICAgc3RkaW5PbmNlOiB0cnVlCiAgICB0dHk6IHRydWUKICAgIHZvbHVtZU1vdW50czoKICAgIC0gbW91bnRQYXRoOiAvaG9zdAogICAgICBuYW1lOiBob3N0CiAgaG9zdE5ldHdvcms6IHRydWUKICBob3N0UElEOiB0cnVlCiAgcmVzdGFydFBvbGljeTogTmV2ZXIKICB2b2x1bWVzOgogIC0gaG9zdFBhdGg6CiAgICAgIHBhdGg6IC8KICAgICAgdHlwZTogRGlyZWN0b3J5CiAgICBuYW1lOiBob3N0Cg===
+    - name: insecure-skip-tls-verify
+      value: "true"
+    runAfter:
+    - stackrox-image-scan
+    taskRef:
+      kind: Task
+      name: stackrox-deployment-check

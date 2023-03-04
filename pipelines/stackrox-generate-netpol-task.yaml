@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  annotations:
+    tekton.dev/categories: Security
+    tekton.dev/displayName: Generate Network Policies using StackRox/RHACS
+    tekton.dev/platforms: linux/amd64
+    tekton.dev/tags: security
+  creationTimestamp: "2023-03-03T13:53:12Z"
+  generation: 1
+  name: stackrox-generate-netpol
+  namespace: pipeline-demo
+  resourceVersion: "2919537"
+  uid: 5f176040-f58b-4370-be0b-602346df1d3b
+spec:
+  description: Generate Network Policies using roxctl.
+  params:
+  - description: |
+      The directory under 'source' workspace to write connectivity report file
+          into.
+    name: output-dir
+    type: string
+  - description: |
+      Enable DNS Rules for Openshift - Port 5353.
+    name: openshift
+    type: string
+  steps:
+  - env:
+    - name: PARAMS_OUTPUT_DIR
+      value: $(params.output-dir)
+    image: quay.io/ralvares/npguard
+    name: rox-generate-netpol
+    resources: {}
+    script: |
+      #!/usr/bin/env bash
+      /bin/roxctl generate netpol $(params.output-dir) > $(params.output-dir)/netpols.yaml && if [ "$(params.openshift)" = "true" ]; then sed -i 's/port: 53/port: 5353/' $(params.output-dir)/netpols.yaml; fi && cd $(params.output-dir); kustomize edit add resource netpols.yaml
+    workingDir: $(workspaces.source.path)
+  workspaces:
+  - name: source

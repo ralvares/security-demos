@@ -1,0 +1,69 @@
+{
+    "policies": [
+        {
+            "id": "92003121-3904-4f23-a8b3-eb9fa9638fa7",
+            "name": "Shell Spawned by Apache WebServer ",
+            "description": "Detects execution of shell (bash/csh/sh/zsh) as a subprocess ",
+            "rationale": "httpd launching a shell can be an indicator of remote code execution",
+            "remediation": "Determine whether this is intended behavior of the application or an indication of malicious activity",
+            "disabled": false,
+            "categories": [
+                "System Modification"
+            ],
+            "lifecycleStages": [
+                "RUNTIME"
+            ],
+            "eventSource": "DEPLOYMENT_EVENT",
+            "exclusions": [],
+            "scope": [],
+            "severity": "HIGH_SEVERITY",
+            "enforcementActions": [],
+            "notifiers": [
+                "111c9cc7-b8f5-47c0-a1f4-069ae9542a14"
+            ],
+            "lastUpdated": "2023-02-20T09:31:40.427949910Z",
+            "SORTName": "",
+            "SORTLifecycleStage": "",
+            "SORTEnforcement": false,
+            "policyVersion": "1.1",
+            "policySections": [
+                {
+                    "sectionName": "",
+                    "policyGroups": [
+                        {
+                            "fieldName": "Process Name",
+                            "booleanOperator": "OR",
+                            "negate": false,
+                            "values": [
+                                {
+                                    "value": "(/[s]*bin/){0,1}(ba|c|z){0,1}sh"
+                                }
+                            ]
+                        },
+                        {
+                            "fieldName": "Process Ancestor",
+                            "booleanOperator": "OR",
+                            "negate": false,
+                            "values": [
+                                {
+                                    "value": ".*httpd"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "mitreAttackVectors": [
+                {
+                    "tactic": "TA0002",
+                    "techniques": [
+                        "T1059.004"
+                    ]
+                }
+            ],
+            "criteriaLocked": false,
+            "mitreVectorsLocked": false,
+            "isDefault": false
+        }
+    ]
+}

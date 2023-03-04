@@ -1,0 +1,63 @@
+{
+    "policies": [
+        {
+            "id": "ee2376e0-e3a4-4053-ae47-4fd32dacc812",
+            "name": "Container Registry used is not approved",
+            "description": "A base image is the image that is used to create all of your container images.",
+            "rationale": "",
+            "remediation": "Please use the UBI images approved and pulled from approved trusted sources - private.registry.local",
+            "disabled": false,
+            "categories": [
+                "DevOps Best Practices",
+                "Security Best Practices"
+            ],
+            "lifecycleStages": [
+                "BUILD",
+                "DEPLOY"
+            ],
+            "eventSource": "NOT_APPLICABLE",
+            "exclusions": [],
+            "scope": [
+                {
+                    "cluster": "",
+                    "namespace": "backend",
+                    "label": {
+                        "key": "app",
+                        "value": "report-generator"
+                    }
+                }
+            ],
+            "severity": "CRITICAL_SEVERITY",
+            "enforcementActions": [
+                "FAIL_BUILD_ENFORCEMENT"
+            ],
+            "notifiers": [],
+            "lastUpdated": "2023-02-27T14:53:12.583222031Z",
+            "SORTName": "",
+            "SORTLifecycleStage": "",
+            "SORTEnforcement": false,
+            "policyVersion": "1.1",
+            "policySections": [
+                {
+                    "sectionName": "Policy Section 1",
+                    "policyGroups": [
+                        {
+                            "fieldName": "Image Registry",
+                            "booleanOperator": "OR",
+                            "negate": true,
+                            "values": [
+                                {
+                                    "value": "private.registry.local"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "mitreAttackVectors": [],
+            "criteriaLocked": false,
+            "mitreVectorsLocked": false,
+            "isDefault": false
+        }
+    ]
+}

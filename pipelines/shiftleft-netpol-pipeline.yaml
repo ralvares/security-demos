@@ -1,0 +1,103 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  creationTimestamp: "2023-03-03T11:48:33Z"
+  generation: 33
+  name: shiftleft-netpol
+  namespace: pipeline-demo
+  resourceVersion: "3090284"
+  uid: 15193a06-4a3d-4d2b-ac4d-c5639d4b3a71
+spec:
+  tasks:
+  - name: git-clone
+    params:
+    - name: url
+      value: git@github.com:ralvares/microservices-demo.git
+    - name: revision
+      value: netpol
+    - name: submodules
+      value: "true"
+    - name: depth
+      value: "1"
+    - name: sslVerify
+      value: "true"
+    - name: crtFileName
+      value: ca-bundle.crt
+    - name: deleteExisting
+      value: "true"
+    - name: verbose
+      value: "true"
+    - name: gitInitImage
+      value: registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:050ab978927fc721918c3284bdd8a81315ffb1ed660c6415f1196e79f2f6c80a
+    - name: userHome
+      value: /tekton/home
+    taskRef:
+      kind: ClusterTask
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: workdir
+  - name: k8s-netpol-report
+    params:
+    - name: deployment-path
+      value: kubernetes-manifests
+    - name: netpol-path
+      value: kubernetes-manifests
+    - name: output-format
+      value: txt
+    - name: output-dir
+      value: netpol-report
+    runAfter:
+    - stackrox-generate-netpol
+    taskRef:
+      kind: Task
+      name: k8s-netpol-report
+    workspaces:
+    - name: source
+      workspace: workdir
+  - name: stackrox-generate-netpol
+    params:
+    - name: output-dir
+      value: kubernetes-manifests
+    runAfter:
+    - git-clone
+    taskRef:
+      kind: Task
+      name: stackrox-generate-netpol
+    workspaces:
+    - name: source
+      workspace: workdir
+  - name: git-commit-push
+    params:
+    - name: BASE_IMAGE
+      value: alpine/git:v2.30.2
+    - name: GIT_SCRIPT
+      value: |+
+        eval $(ssh-agent)
+        ssh-add ~/.ssh/id_*
+        git add .
+        git commit --allow-empty -m "[Tekton] updating"
+        git push origin HEAD:netpol --force
+
+    - name: USER_HOME
+      value: /root
+    - name: VERBOSE
+      value: "true"
+    - name: GIT_USER_NAME
+      value: ralvares@redhat.com
+    - name: GIT_USER_EMAIL
+      value: ralvares@redhat.com
+    runAfter:
+    - k8s-netpol-report
+    taskRef:
+      kind: ClusterTask
+      name: git-cli
+    workspaces:
+    - name: source
+      workspace: workdir
+    - name: ssh-directory
+      workspace: workdir
+    - name: input
+      workspace: workdir
+  workspaces:
+  - name: workdir

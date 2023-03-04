@@ -1,0 +1,73 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  annotations:
+    tekton.dev/categories: Kubernetes, Networking, Security
+    tekton.dev/displayName: K8s NetworkPolicy Connectivity Report
+    tekton.dev/pipelines.minVersion: 0.17.0
+    tekton.dev/platforms: linux/amd64
+    tekton.dev/tags: Kubernetes, NetworkPolicy
+  creationTimestamp: "2023-03-03T10:48:47Z"
+  generation: 12
+  labels:
+    app.kubernetes.io/version: "0.1"
+  name: k8s-netpol-report
+  namespace: pipeline-demo
+  resourceVersion: "2906534"
+  uid: ab65888d-e0c4-43a3-a453-eb9690ebbae9
+spec:
+  description: A task to produce a network-connectivity report of your K8s application
+  params:
+  - default: .
+    description: The path in the 'source' workspace where deployment yamls are
+    name: deployment-path
+    type: string
+  - default: .
+    description: The path in the 'source' workspace where the NetworkPolicy yamls
+      are stored
+    name: netpol-path
+    type: string
+  - default: md
+    description: Connectivity report format (either "md", "yaml", "csv", "dot" or
+      "txt")
+    name: output-format
+    type: string
+  - default: netpol-report-output-dir
+    description: The directory under 'source' workspace to write connectivity report
+      file into.
+    name: output-dir
+    type: string
+  results:
+  - description: Path in 'sources' workspace of the connectivity report file
+    name: connectivity-report-file
+    type: string
+  steps:
+  - env:
+    - name: PARAMS_OUTPUT_DIR
+      value: $(params.output-dir)
+    image: ubuntu
+    name: make-result-dir
+    resources: {}
+    script: |
+      #!/bin/sh
+      mkdir -p "$PARAMS_OUTPUT_DIR"
+      chmod a+w "$PARAMS_OUTPUT_DIR"
+    workingDir: $(workspaces.source.path)
+  - env:
+    - name: PARAMS_OUTPUT_DIR
+      value: $(params.output-dir)
+    - name: PARAMS_OUTPUT_FORMAT
+      value: $(params.output-format)
+    - name: PARAMS_DEPLOYMENT_PATH
+      value: $(params.deployment-path)
+    - name: PARAMS_NETPOL_PATH
+      value: $(params.netpol-path)
+    image: quay.io/ralvares/npguard
+    name: produce-connectivity-report
+    resources: {}
+    script: "#!/bin/sh\nOUTFILE=\"$PARAMS_OUTPUT_DIR/connectivity_report.jpg\"\n/opt/app-root/bin/nca
+      \\\n  --connectivity -r \"$PARAMS_NETPOL_PATH\" && \n/opt/app-root/bin/nca \\\n
+      \ --connectivity -r \"$PARAMS_NETPOL_PATH\" \\\n  -o jpg -f \"$OUTFILE\"\n"
+    workingDir: $(workspaces.source.path)
+  workspaces:
+  - name: source
