@@ -33,7 +33,8 @@ spec:
     resources: {}
     script: |
       #!/usr/bin/env bash
-      /bin/roxctl generate netpol $(params.output-dir) > $(params.output-dir)/netpols.yaml && if [ "$(params.openshift)" = "true" ]; then sed -i 's/port: 53/port: 5353/' $(params.output-dir)/netpols.yaml; fi && cd $(params.output-dir); kustomize edit add resource netpols.yaml
+      kustomize build $(params.output-dir) > /tmp/all.yaml
+      /bin/roxctl generate netpol /tmp/all.yaml > $(params.output-dir)/netpols.yaml && if [ "$(params.openshift)" = "true" ]; then sed -i 's/port: 53/port: 5353/' $(params.output-dir)/netpols.yaml; fi && cd $(params.output-dir); kustomize edit add resource netpols.yaml
     workingDir: $(workspaces.source.path)
   workspaces:
   - name: source
