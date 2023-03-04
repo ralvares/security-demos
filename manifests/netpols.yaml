@@ -1,0 +1,434 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: api-server-netpol
+  namespace: backend
+spec:
+  egress:
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: backend-atlas
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: backend-atlas-v2
+  - ports:
+    - port: 5353
+      protocol: UDP
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: report-generator
+    ports:
+    - port: 8080
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: api-server
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: api-server-v2-netpol
+  namespace: backend
+spec:
+  egress:
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: backend-atlas
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: backend-atlas-v2
+  - ports:
+    - port: 5353
+      protocol: UDP
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: report-generator
+    ports:
+    - port: 8080
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: api-server-v2
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: asset-cache-netpol
+  namespace: frontend
+spec:
+  podSelector:
+    matchLabels:
+      app: asset-cache
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: backend-atlas-netpol
+  namespace: backend
+spec:
+  egress:
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: backend-cache
+  - ports:
+    - port: 5353
+      protocol: UDP
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-server-v2
+    ports:
+    - port: 8080
+      protocol: TCP
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-server
+    ports:
+    - port: 8080
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: backend-atlas
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: backend-atlas-v2-netpol
+  namespace: backend
+spec:
+  egress:
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: backend-cache
+  - ports:
+    - port: 5353
+      protocol: UDP
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-server-v2
+    ports:
+    - port: 8080
+      protocol: TCP
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-server
+    ports:
+    - port: 8080
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: backend-atlas-v2
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: backend-cache-netpol
+  namespace: backend
+spec:
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend-atlas
+    ports:
+    - port: 8080
+      protocol: TCP
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend-atlas-v2
+    ports:
+    - port: 8080
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: backend-cache
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: gateway-netpol
+  namespace: payments-v2
+spec:
+  egress:
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: mastercard-processor
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: visa-processor-v2
+  - ports:
+    - port: 5353
+      protocol: UDP
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: frontend
+      podSelector:
+        matchLabels:
+          app: webapp
+    ports:
+    - port: 8080
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: gateway
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: mastercard-processor-netpol
+  namespace: payments-v2
+spec:
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: gateway
+    ports:
+    - port: 8080
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: mastercard-processor
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: report-generator-netpol
+  namespace: backend
+spec:
+  egress:
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: api-server-v2
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - podSelector:
+        matchLabels:
+          app: api-server
+  - ports:
+    - port: 5353
+      protocol: UDP
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: frontend
+      podSelector:
+        matchLabels:
+          app: webapp
+    ports:
+    - port: 8080
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: report-generator
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: visa-processor-netpol
+  namespace: payments-v2
+spec:
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: gateway
+    ports:
+    - port: 8080
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: visa-processor-v2
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: webapp-netpol
+  namespace: frontend
+spec:
+  egress:
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: backend
+      podSelector:
+        matchLabels:
+          app: report-generator
+  - ports:
+    - port: 8080
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: payments-v2
+      podSelector:
+        matchLabels:
+          app: gateway
+  - ports:
+    - port: 5353
+      protocol: UDP
+  podSelector:
+    matchLabels:
+      app: webapp
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: default-deny-in-namespace-backend
+  namespace: backend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: default-deny-in-namespace-frontend
+  namespace: frontend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: default-deny-in-namespace-payments-v2
+  namespace: payments-v2
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+status: {}
+
