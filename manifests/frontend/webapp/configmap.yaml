@@ -7,3 +7,4 @@ data:
 kind: ConfigMap
 metadata:
   name: endpoint-config
+  namespace: frontend
