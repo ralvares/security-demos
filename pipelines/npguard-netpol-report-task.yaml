@@ -45,7 +45,7 @@ spec:
   - env:
     - name: PARAMS_OUTPUT_DIR
       value: $(params.output-dir)
-    image: ubuntu
+    image: quay.io/ralvares/npguard
     name: make-result-dir
     resources: {}
     script: |
@@ -65,9 +65,11 @@ spec:
     image: quay.io/ralvares/npguard
     name: produce-connectivity-report
     resources: {}
-    script: "#!/bin/sh\nOUTFILE=\"$PARAMS_OUTPUT_DIR/connectivity_report.jpg\"\n/opt/app-root/bin/nca
-      \\\n  --connectivity -r \"$PARAMS_NETPOL_PATH\" && \n/opt/app-root/bin/nca \\\n
-      \ --connectivity -r \"$PARAMS_NETPOL_PATH\" \\\n  -o jpg -f \"$OUTFILE\"\n"
+    script: | 
+      #!/bin/sh
+      OUTFILE="$PARAMS_OUTPUT_DIR/connectivity_report.jpg
+      /opt/app-root/bin/nca --connectivity -r "$PARAMS_NETPOL_PATH"
+      /opt/app-root/bin/nca --connectivity -r "$PARAMS_NETPOL_PATH" -o jpg -f "$OUTFILE"
     workingDir: $(workspaces.source.path)
   workspaces:
   - name: source

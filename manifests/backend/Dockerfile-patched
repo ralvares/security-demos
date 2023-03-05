@@ -2,9 +2,9 @@ FROM maven as builder
 
 COPY . /usr/src/poc
 WORKDIR /usr/src/poc
-RUN mvn clean && mvn package
+RUN sed -i 's/2.14.1/2.17.1/' pom.xml && mvn clean && mvn package
 
-FROM debian:8
+FROM registry.access.redhat.com/ubi8/ubi-minimal
 
 COPY src/entrypoint /bin/
 
