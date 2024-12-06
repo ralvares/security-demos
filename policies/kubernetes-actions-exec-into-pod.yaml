@@ -1,0 +1,77 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: kubernetes-actions-exec-into-pod
+spec:
+  categories:
+  - Kubernetes Events
+  criteriaLocked: true
+  description: Alerts when Kubernetes API receives request to execute command in container
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions:
+  - name: Don't alert on deployment thanos-querier in namespace openshift-monitoring
+    deployment:
+      name: thanos-querier
+      scope:
+        cluster: ''
+        namespace: openshift-monitoring
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on deployment prometheus-k8s in namespace openshift-monitoring
+    deployment:
+      name: prometheus-k8s
+      scope:
+        cluster: ''
+        namespace: openshift-monitoring
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on deployment ovnkube-node in namespace openshift-ovn-kubernetes
+    deployment:
+      name: ovnkube-node
+      scope:
+        cluster: ''
+        namespace: openshift-ovn-kubernetes
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on deployment etcd-ci-ln-*-master-\d+ in namespace openshift-etcd
+    deployment:
+      name: etcd-ci-ln-.*-master-\d+
+      scope:
+        cluster: ''
+        namespace: openshift-etcd
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0002
+    techniques:
+    - T1609
+  - tactic: TA0002
+    techniques:
+    - T1059.004
+  mitreVectorsLocked: true
+  policyName: 'GitOps - Kubernetes Actions: Exec into Pod'
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Kubernetes Resource
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: PODS_EXEC
+  rationale: '''pods/exec'' is non-standard approach for interacting with containers.
+    Attackers with permissions could execute malicious code and compromise resources
+    within a cluster'
+  remediation: Restrict RBAC access to the 'pods/exec' resource according to the Principle
+    of Least Privilege. Limit such usage only to development, testing or debugging
+    (non-production) activities
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: false

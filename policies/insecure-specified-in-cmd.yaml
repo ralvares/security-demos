@@ -1,0 +1,34 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: insecure-specified-in-cmd
+spec:
+  categories:
+  - Security Best Practices
+  criteriaLocked: true
+  description: Alert on deployments using 'insecure' in the command
+  enforcementActions: []
+  eventSource: NOT_APPLICABLE
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - BUILD
+  - DEPLOY
+  mitreAttackVectors: []
+  mitreVectorsLocked: true
+  policyName: GitOps - Insecure specified in CMD
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Dockerfile Line
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: CMD=.*insecure.*
+  rationale: Using insecure in a command implies accessing or providing data from
+    a server on an unencrypted connection.
+  remediation: Use a certificate manager and certificate rotation routinely to ensure
+    secure service-to-service communication.
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: false

@@ -1,0 +1,60 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: alpine-linux-package-manager-apk-in-image
+spec:
+  categories:
+  - Security Best Practices
+  criteriaLocked: true
+  description: Alert on deployments with the Alpine Linux package manager (apk) present
+  enforcementActions: []
+  eventSource: NOT_APPLICABLE
+  exclusions:
+  - name: Don't alert on the master-etcd deployment
+    deployment:
+      name: master-etcd-openshift-master-.*
+      scope:
+        cluster: ''
+        namespace: kube-system
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on the token-refresher deployment in namespace openshift-monitoring
+    deployment:
+      name: token-refresher
+      scope:
+        cluster: ''
+        namespace: openshift-monitoring
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on deployment csi-azuredisk-node-win in kube-system namespace
+    deployment:
+      name: csi-azuredisk-node-win
+      scope:
+        cluster: ''
+        namespace: kube-system
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - BUILD
+  - DEPLOY
+  mitreAttackVectors: []
+  mitreVectorsLocked: true
+  policyName: GitOps - Alpine Linux Package Manager (apk) in Image
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Image Component
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: apk-tools=
+  rationale: Package managers make it easier for attackers to use compromised containers,
+    since they can easily add software.
+  remediation: Run `apk --purge del apk-tools` in the image build for production containers.
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: false

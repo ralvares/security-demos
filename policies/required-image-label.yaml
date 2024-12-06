@@ -1,0 +1,52 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: required-image-label
+spec:
+  categories:
+  - DevOps Best Practices
+  - Security Best Practices
+  criteriaLocked: true
+  description: Alert on deployments with images missing the specified label.
+  enforcementActions: []
+  eventSource: NOT_APPLICABLE
+  exclusions:
+  - name: Don't alert on kube-system namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: kube-system
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on istio-system namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: istio-system
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - BUILD
+  - DEPLOY
+  mitreAttackVectors: []
+  mitreVectorsLocked: true
+  policyName: GitOps - Required Image Label
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Required Image Label
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: required-label.*=required-value.*
+  rationale: Only images with the specified label should be deployed to ensure all
+    deployments contain approved images.
+  remediation: Request that the maintainer add the required label to the image.
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: true

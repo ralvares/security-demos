@@ -1,0 +1,43 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: secure-shell-server-sshd-execution
+spec:
+  categories:
+  - Docker CIS
+  - Network Tools
+  criteriaLocked: true
+  description: Detects container running the SSH daemon
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0001
+    techniques:
+    - T1078
+  - tactic: TA0002
+    techniques:
+    - T1059.004
+  - tactic: TA0008
+    techniques:
+    - T1021.004
+  mitreVectorsLocked: true
+  policyName: GitOps - Secure Shell Server (sshd) Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: sshd
+  rationale: The secure shell server allows shell access to a container, which can
+    be dangerous.
+  remediation: If ssh is absolutely required, ensure that it is not using default
+    authentication. Otherwise, consider removing it from the container altogether.
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: false

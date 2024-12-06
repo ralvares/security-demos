@@ -1,0 +1,55 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: network-management-execution
+spec:
+  categories:
+  - Network Tools
+  criteriaLocked: true
+  description: Detects execution of binaries that can be used to manipulate network
+    configuration and management.
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions:
+  - name: Don't alert on kube-system namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: kube-system
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on openshift namespaces
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: openshift-.*
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0007
+    techniques:
+    - T1016
+  mitreVectorsLocked: true
+  policyName: GitOps - Network Management Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: ip|ifrename|ethtool|ifconfig|arp|ipmaddr|iptunnel|route|nameif|mii-tool
+  rationale: Network management tools can be used for a variety of tasks, including
+    mapping out your network, overwriting iptables rules, or ssh tunneling to name
+    a few.
+  remediation: Remove unncessary network managment tools from the container image.
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: false

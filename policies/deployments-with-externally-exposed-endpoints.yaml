@@ -1,0 +1,37 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: deployments-with-externally-exposed-endpoints
+spec:
+  categories:
+  - DevOps Best Practices
+  - Security Best Practices
+  criteriaLocked: true
+  description: Deployments with externally exposed endpoints represent a higher risk
+  enforcementActions: []
+  eventSource: NOT_APPLICABLE
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - DEPLOY
+  mitreAttackVectors: []
+  mitreVectorsLocked: true
+  policyName: GitOps - Deployments with externally exposed endpoints
+  policySections:
+  - sectionName: Policy Section 1
+    policyGroups:
+    - fieldName: Port Exposure Method
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: ROUTE
+      - value: EXTERNAL
+      - value: NODE
+      - value: HOST
+  rationale: Deployments with services exposed outside the cluster are at a higher
+    risk of attempted intrusions because they are reachable outside of the cluster.
+  remediation: Verify that service exposure outside of the cluster is required. If
+    the service is only needed for intra-cluster communication, use service type ClusterIP.
+  scope: []
+  severity: MEDIUM_SEVERITY
+  disabled: true

@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: pipeline-demo
+resources:
+- namespace.yaml
+- git-repo-auth-secret.yaml
+- serviceaccount-pipeline.yaml
+- stackrox-image-check.yaml
+- stackrox-image-scan.yaml
+- stackrox-simple-deployment-check.yaml
+- rhacs-simple-demo-pipeline.yaml
+- stackrox-generate-netpol-task.yaml
+- build-container-image-scan-and-check.yaml
+- shiftleft-netpol-pipeline.yaml

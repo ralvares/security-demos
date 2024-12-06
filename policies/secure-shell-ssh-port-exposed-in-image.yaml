@@ -1,0 +1,34 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: secure-shell-ssh-port-exposed-in-image
+spec:
+  categories:
+  - Security Best Practices
+  criteriaLocked: true
+  description: Alert on deployments exposing port 22, commonly reserved for SSH access.
+  enforcementActions: []
+  eventSource: NOT_APPLICABLE
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - BUILD
+  - DEPLOY
+  mitreAttackVectors: []
+  mitreVectorsLocked: true
+  policyName: GitOps - Secure Shell (ssh) Port Exposed in Image
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Dockerfile Line
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: EXPOSE=(22/tcp|\s+22/tcp)
+  rationale: Port 22 is reserved for SSH access. SSH should not typically be used
+    within containers.
+  remediation: Ensure that non-SSH services are not using port 22. Ensure that any
+    actual SSH servers have been vetted.
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: false

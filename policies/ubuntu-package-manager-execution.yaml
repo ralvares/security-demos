@@ -1,0 +1,37 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: ubuntu-package-manager-execution
+spec:
+  categories:
+  - Package Management
+  criteriaLocked: true
+  description: Alert when Debian/Ubuntu package manager programs are executed at runtime
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0011
+    techniques:
+    - T1105
+  mitreVectorsLocked: true
+  policyName: GitOps - Ubuntu Package Manager Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: apt-get|apt|dpkg
+  rationale: Use of package managers at runtime indicates that new software may be
+    being introduced into containers while they are running.
+  remediation: Run `dpkg -r --force-all apt && dpkg -r --force-all debconf dpkg` in
+    the image build for production containers. Change applications to no longer use
+    package managers at runtime, if applicable.
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: false

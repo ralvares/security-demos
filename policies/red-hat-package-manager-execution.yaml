@@ -1,0 +1,69 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: red-hat-package-manager-execution
+spec:
+  categories:
+  - Security Best Practices
+  criteriaLocked: true
+  description: Alert when Red Hat/Fedora/CentOS package manager programs are executed
+    at runtime.
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions:
+  - name: Don't alert on StackRox scanner
+    deployment:
+      name: scanner
+      scope:
+        cluster: ''
+        namespace: ''
+        label:
+          key: app.kubernetes.io/name
+          value: stackrox
+    image: null
+    expiration: null
+  - name: Don't alert on StackRox collector
+    deployment:
+      name: collector
+      scope:
+        cluster: ''
+        namespace: ''
+        label:
+          key: app.kubernetes.io/name
+          value: stackrox
+    image: null
+    expiration: null
+  - name: Don't alert on openshift-compliance namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: openshift-compliance
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0011
+    techniques:
+    - T1105
+  mitreVectorsLocked: true
+  policyName: GitOps - Red Hat Package Manager Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: rpm|microdnf|dnf|yum
+  rationale: Use of package managers at runtime indicates that new software may be
+    being introduced into containers while they are running.
+  remediation: Run `rpm -e --nodeps $(rpm -qa '*rpm*' '*dnf*' '*libsolv*' '*hawkey*'
+    'yum*')` in the image build for production containers. Change applications to
+    no longer use package managers at runtime, if applicable.
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: false

@@ -1,0 +1,44 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: remote-file-copy-binary-execution
+spec:
+  categories:
+  - Network Tools
+  criteriaLocked: true
+  description: Alert on deployments that execute a remote file copy tool
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions:
+  - name: Don't alert on the insights-operator deployment in namespace openshift-insights
+    deployment:
+      name: insights-operator
+      scope:
+        cluster: ''
+        namespace: openshift-insights
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0008
+    techniques:
+    - T1570
+  mitreVectorsLocked: true
+  policyName: GitOps - Remote File Copy Binary Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: scp|sshfs|ssh-copy-id|rsync
+  rationale: Remote copy tools can be used to exfiltrate data from a container
+  remediation: Remove tools like scp, sshfs, ssh-copy-id, etc. from your image and
+    redeploy it
+  scope: []
+  severity: MEDIUM_SEVERITY
+  disabled: false

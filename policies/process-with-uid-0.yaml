@@ -1,0 +1,80 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: process-with-uid-0
+spec:
+  categories:
+  - DevOps Best Practices
+  - Security Best Practices
+  criteriaLocked: true
+  description: Alert on deployments that contain processes running with UID 0
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions:
+  - name: Don't alert on kube-system namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: kube-system
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on istio-system namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: istio-system
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on StackRox Namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: stackrox
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on istio-system namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: istio-system
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on deployment aide-worker-fileintegrity in namespace openshift-file-integrity
+    deployment:
+      name: aide-worker-fileintegrity
+      scope:
+        cluster: ''
+        namespace: openshift-file-integrity
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors: []
+  mitreVectorsLocked: true
+  policyName: GitOps - Process with UID 0
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process UID
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: '0'
+  rationale: Processes that are running with UID 0 run as the root user. This can
+    allow for unintended privilege escalation if a container mounts host directories
+    that are owned by the host's root user
+  remediation: Specify the USER instruction in the Docker image or the runAsUser field
+    within the Pod Security Context
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: true

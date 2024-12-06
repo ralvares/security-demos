@@ -1,0 +1,37 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: cryptocurrency-mining-process-execution
+spec:
+  categories:
+  - Cryptocurrency Mining
+  criteriaLocked: true
+  description: Cryptocurrency mining process spawned
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0040
+    techniques:
+    - T1496
+  mitreVectorsLocked: true
+  policyName: GitOps - Cryptocurrency Mining Process Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: .*sgminer|.*cgminer|.*cpuminer|.*minerd|.*geth|.*ethminer|.*xmr-stak.*|.*xmrminer|.*cpuminer-multi|.*xmrig
+  rationale: Cryptocurrency mining binaries are often evidence of malicious activity
+    or a hijacked cluster.
+  remediation: Ensure that the base image used to create the Dockerfile doesn't have
+    cryptocurrency mining software packaged with it. Check for open ports that may
+    allow for remote code execution
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: false

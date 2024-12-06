@@ -1,0 +1,40 @@
+apiVersion: v1
+data:
+  app.ini: |
+    [database]
+    TYPE  = sqlite3
+    PATH  = /data/gogs.db
+    NAME  = sqlite3
+    HOST  = 127.0.0.1:3306
+    USER  = root
+    PASSWD  =
+    SSL_MODE  = disable
+    PATH  = /data/gogs.db
+
+    [server]
+    DOMAIN          = gogs.gogs.svc.cluster.local
+    HTTP_PORT       = 3000
+    ROOT_URL        = http://gogs.gogs.svc.cluster.local:3000/
+    DISABLE_SSH     = true
+    SSH_PORT        = 22
+    LFS_START_SERVER = true
+    LFS_CONTENT_PATH = /data/git/lfs
+
+    [repository]
+    ROOT            = /data/git/gogs-repositories
+
+    [mailer]
+    ENABLED         = false
+
+    [service]
+    REGISTER_EMAIL_CONFIRM        = false
+    ENABLE_NOTIFY_MAIL            = false
+    DISABLE_REGISTRATION          = true
+     
+    [security]
+    INSTALL_LOCK = true
+    SECRET_KEY   = QC5KjsCQuSkVWYE
+kind: ConfigMap
+metadata:
+  name: gogs-config
+  namespace: gogs

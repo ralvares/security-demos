@@ -1,0 +1,50 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: linux-user-add-execution
+spec:
+  categories:
+  - Privileges
+  - System Modification
+  criteriaLocked: true
+  description: Detects when the 'useradd', 'adduser' or 'usermod' binary is executed,
+    which can be used to add a new linux user.
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions:
+  - name: Don't alert on deployment machine-config-daemon in openshift-machine-config-operator
+      namespace
+    deployment:
+      name: machine-config-daemon
+      scope:
+        cluster: ''
+        namespace: openshift-machine-config-operator
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0003
+    techniques:
+    - T1098
+    - T1136
+  mitreVectorsLocked: true
+  policyName: GitOps - Linux User Add Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: useradd|adduser|usermod
+  rationale: Users or groups added in run time can be used to take ownership of files
+    and processes.
+  remediation: Consider using a base image that doesn't have a shell such as SCRATCH
+    or gcr.io/distroless. If not, modify your Dockerfile to use the exec form of CMD/ENTRYPOINT
+    (["using braces"]) instead of the shell form (no braces)
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: false

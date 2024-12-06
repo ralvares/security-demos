@@ -1,0 +1,42 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: shell-spawned-by-java-application
+spec:
+  categories:
+  - System Modification
+  criteriaLocked: true
+  description: Detects execution of shell (bash/csh/sh/zsh) as a subprocess of a java
+    application
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0002
+    techniques:
+    - T1059.004
+  mitreVectorsLocked: true
+  policyName: GitOps - Shell Spawned by Java Application
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: (/[s]*bin/){0,1}(ba|c|z){0,1}sh
+    - fieldName: Process Ancestor
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: .*java
+  rationale: Java application launching a shell can be an indicator of remote code
+    execution
+  remediation: Determine whether this is intended behavior of the application or an
+    indication of malicious activity
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: false

@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mirror-repo
+  namespace: gogs
+spec:
+  template:
+    spec:
+      containers:
+      - name: mirror-repo
+        image: registry.access.redhat.com/ubi9/ubi-minimal
+        command: [ "/bin/bash" ]
+        args: [ "-c", "/data/gogs/repo_sync.sh" ]
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: admin-secret
+          mountPath: /etc/admin-secret
+        - name: mirror
+          mountPath: /data/gogs/repo_sync.sh
+          subPath: repo_sync.sh
+      restartPolicy: Never
+      volumes:
+      - name: admin-secret
+        secret:
+          secretName: admin-secret
+      - name: data
+        persistentVolumeClaim:
+          claimName: gogs-pvc
+      - name: mirror
+        configMap:
+          name: gogs-repomirror
+          defaultMode: 0744

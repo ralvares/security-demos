@@ -1,0 +1,36 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: alpine-linux-package-manager-execution
+spec:
+  categories:
+  - Package Management
+  criteriaLocked: true
+  description: Alert when the Alpine Linux package manager (apk) is executed at runtime
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0011
+    techniques:
+    - T1105
+  mitreVectorsLocked: true
+  policyName: GitOps - Alpine Linux Package Manager Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: apk
+  rationale: Use of package managers at runtime indicates that new software may be
+    being introduced into containers while they are running.
+  remediation: Run `apk --purge del apk-tools` in the image build for production containers.
+    Change applications to no longer use package managers at runtime, if applicable.
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: false

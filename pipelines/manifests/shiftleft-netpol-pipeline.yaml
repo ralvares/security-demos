@@ -1,0 +1,99 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: shiftleft-netpol
+  namespace: pipeline-demo
+spec:
+  params:
+    - default: 'http://gogs.gogs.svc.cluster.local:3000/developer/rhacs-app-demo.git'
+      name: repo
+      type: string
+    - default: main
+      name: branch
+      type: string
+    - default: manifests
+      name: netpol-path
+      type: string
+    - default: developer
+      name: git_user_name
+      type: string
+    - default: developer@example.com
+      name: git_user_email
+      type: string
+  tasks:
+    - name: git-clone
+      params:
+        - name: url
+          value: $(params.repo)
+        - name: revision
+          value: $(params.branch)
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: crtFileName
+          value: ca-bundle.crt
+        - name: deleteExisting
+          value: 'true'
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: >-
+            registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:050ab978927fc721918c3284bdd8a81315ffb1ed660c6415f1196e79f2f6c80a
+        - name: userHome
+          value: /tekton/home
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: workdir
+    - name: stackrox-generate-netpol
+      params:
+        - name: output-dir
+          value: manifests
+        - name: openshift
+          value: 'true'
+        - name: netpol-path
+          value: $(params.netpol-path)
+      runAfter:
+        - git-clone
+      taskRef:
+        kind: Task
+        name: stackrox-generate-netpol
+      workspaces:
+        - name: source
+          workspace: workdir
+    - name: git-commit-push
+      params:
+        - name: BASE_IMAGE
+          value: 'docker.io/alpine/git:v2.26.2'
+        - name: GIT_SCRIPT
+          value: |+
+            git checkout -b netpol
+            git add .
+            git commit --allow-empty -m "[Tekton] Updating netpols"
+            git push origin HEAD:$(params.branch) --force
+
+        - name: USER_HOME
+          value: /root
+        - name: VERBOSE
+          value: 'true'
+        - name: GIT_USER_NAME
+          value: $(params.git_user_name)
+        - name: GIT_USER_EMAIL
+          value: $(params.git_user_email)
+      runAfter:
+        - stackrox-generate-netpol
+      taskRef:
+        kind: ClusterTask
+        name: git-cli
+      workspaces:
+        - name: source
+          workspace: workdir
+        - name: input
+          workspace: workdir
+  workspaces:
+    - name: workdir

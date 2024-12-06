@@ -1,0 +1,44 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: ubuntu-package-manager-in-image
+spec:
+  categories:
+  - Security Best Practices
+  criteriaLocked: true
+  description: Alert on deployments with components of the Debian/Ubuntu package management
+    system in the image.
+  enforcementActions: []
+  eventSource: NOT_APPLICABLE
+  exclusions:
+  - name: Don't alert on deployment csi-azurefile-node-win in kube-system namespace
+    deployment:
+      name: csi-azurefile-node-win
+      scope:
+        cluster: ''
+        namespace: kube-system
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - BUILD
+  - DEPLOY
+  mitreAttackVectors: []
+  mitreVectorsLocked: true
+  policyName: GitOps - Ubuntu Package Manager in Image
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Image Component
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: apt|dpkg=
+  rationale: Package managers make it easier for attackers to use compromised containers,
+    since they can easily add software.
+  remediation: Run `dpkg -r --force-all apt apt-get && dpkg -r --force-all debconf
+    dpkg` in the image build for production containers.
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: false

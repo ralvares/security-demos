@@ -1,0 +1,35 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: shell-management
+spec:
+  categories:
+  - System Modification
+  criteriaLocked: true
+  description: Commands that are used to add/remove a shell
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0002
+    techniques:
+    - T1059.004
+  mitreVectorsLocked: true
+  policyName: GitOps - Shell Management
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: add-shell|remove-shell
+  rationale: Shell management is not usually done at runtime
+  remediation: Ensure that the base image used to create the Dockerfile doesn't have
+    shell binaries packaged with it.
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: true

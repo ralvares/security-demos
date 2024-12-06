@@ -1,0 +1,40 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: compiler-tool-execution
+spec:
+  categories:
+  - Package Management
+  criteriaLocked: true
+  description: Alert when binaries used to compile software are executed at runtime
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0008
+    techniques:
+    - T1570
+  - tactic: TA0011
+    techniques:
+    - T1105
+  mitreVectorsLocked: true
+  policyName: GitOps - Compiler Tool Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: make|gcc|llc|llvm-.*
+  rationale: Use of compilation tools during runtime indicates that new software may
+    be being introduced into containers while they are running.
+  remediation: Compile all necessary application code during the image build process.
+    Avoid packaging software build tools in container images. Use your distribution's
+    package manager to remove compilers and other build tools from images.
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: false

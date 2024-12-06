@@ -1,0 +1,142 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: iptables-or-nftables-executed-in-privileged-container
+spec:
+  categories:
+  - Network Tools
+  - Security Best Practices
+  criteriaLocked: true
+  description: Alert on privileged pods that execute iptables or nftables
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions:
+  - name: Don't alert on deployment haproxy-control-plane-* in namespace openshift-kni-infra
+    deployment:
+      name: haproxy-control-plane-*
+      scope:
+        cluster: ''
+        namespace: openshift-kni-infra
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on deployment keepalived-control-plane-* in namespace openshift-kni-infra
+    deployment:
+      name: keepalived-control-plane-*
+      scope:
+        cluster: ''
+        namespace: openshift-kni-infra
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on deployment keepalived-worker-* in namespace openshift-kni-infra
+    deployment:
+      name: keepalived-worker-*
+      scope:
+        cluster: ''
+        namespace: openshift-kni-infra
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on haproxy-* deployment in openshift-vsphere-infra namespace
+    deployment:
+      name: haproxy-.*
+      scope:
+        cluster: ''
+        namespace: openshift-vsphere-infra
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on keepalived-* deployment in openshift-vsphere-infra namespace
+    deployment:
+      name: keepalived-.*
+      scope:
+        cluster: ''
+        namespace: openshift-vsphere-infra
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on coredns-* deployment in openshift-vsphere-infra namespace
+    deployment:
+      name: coredns-.*
+      scope:
+        cluster: ''
+        namespace: openshift-vsphere-infra
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on ovnkube-node deployment in openshift-ovn-kubernetes Namespace
+    deployment:
+      name: ovnkube-node
+      scope:
+        cluster: ''
+        namespace: openshift-ovn-kubernetes
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on Kube System Namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: kube-system
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on istio-system namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: istio-system
+        label: null
+    image: null
+    expiration: null
+  - name: Don't alert on openshift-sdn namespace
+    deployment:
+      name: ''
+      scope:
+        cluster: ''
+        namespace: openshift-sdn
+        label: null
+    image: null
+    expiration: null
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0004
+    techniques:
+    - T1611
+  - tactic: TA0005
+    techniques:
+    - T1562.004
+  mitreVectorsLocked: true
+  policyName: GitOps - Iptables or nftables Executed in Privileged Container
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Privileged Container
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: 'true'
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: iptables
+      - value: nft
+    - fieldName: Process UID
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: '0'
+  rationale: Processes that are running with UID 0 run as the root user. iptables
+    and nftables can be used in privileged containers to modify the node's network
+    routing.
+  remediation: Specify the USER instruction in the Docker image or the runAsUser field
+    within the Pod Security Context
+  scope: []
+  severity: CRITICAL_SEVERITY
+  disabled: false

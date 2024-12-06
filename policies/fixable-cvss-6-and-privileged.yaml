@@ -1,0 +1,47 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: fixable-cvss-6-and-privileged
+spec:
+  categories:
+  - Privileges
+  - Vulnerability Management
+  criteriaLocked: true
+  description: Alert on deployments running in privileged mode with fixable vulnerabilities
+    with a CVSS of at least 6
+  enforcementActions: []
+  eventSource: NOT_APPLICABLE
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - DEPLOY
+  mitreAttackVectors: []
+  mitreVectorsLocked: true
+  policyName: GitOps - Fixable CVSS >= 6 and Privileged
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Privileged Container
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: 'true'
+    - fieldName: Fixed By
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: .*
+    - fieldName: CVSS
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: '>= 6.000000'
+  rationale: Known vulnerabilities make it easier for adversaries to exploit your
+    application, and highly privileged containers pose greater risk. You can fix these
+    high-severity vulnerabilities by updating to a newer version of the affected component(s).
+  remediation: Use your package manager to update to a fixed version in future builds,
+    run your container with lower privileges, or speak with your security team to
+    mitigate the vulnerabilities.
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: true

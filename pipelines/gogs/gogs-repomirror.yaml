@@ -1,0 +1,40 @@
+apiVersion: v1
+data:
+  repo_sync.sh: |
+    #!/bin/bash
+
+    # Define variables
+    gogs_url="http://gogs.gogs.svc.cluster.local:3000"
+    admin_secret_file="/etc/admin-secret/password"
+    admin_username="administrator"
+    admin_password=$(cat $admin_secret_file)
+    developer_username="developer"
+    developer_password="developer"
+    external_repo_url="https://github.com/ralvares/security-demos.git"
+    mirror_repo_name="rhacs-app-demo"
+
+    # Generate admin token
+    admin_token=""
+    while [ -z "$admin_token" ]; do
+      admin_token=$(curl -s -X POST -u "$admin_username:$admin_password" -H "Content-Type: application/json" -d '{"name": "admin-token"}' "$gogs_url/api/v1/users/$admin_username/tokens" | awk -F '"' '/sha1/{print $4}')
+      sleep 1
+    done
+
+    # Create developer user
+    curl -s -H "Authorization: token $admin_token" -X POST -H "Content-Type: application/json" -d "{\"username\": \"$developer_username\", \"email\": \"$developer_username@example.com\", \"password\": \"$developer_password\"}" "$gogs_url/api/v1/admin/users" > /dev/null || { echo "Error creating developer user"; exit 1; }
+
+    # Generate developer token
+    developer_token=$(curl -s -X POST -u "$developer_username:$developer_password" -H "Content-Type: application/json" -d '{"name": "developer-token"}' "$gogs_url/api/v1/users/$developer_username/tokens" | awk -F '"' '/sha1/{print $4}')
+
+    # Get developer ID
+    developer_id=$(curl -s -H "Authorization: token $developer_token" "$gogs_url/api/v1/users/$developer_username" | sed -n 's/.*"id": \([0-9]\+\).*/\1/p')
+
+    # Mirror external repo
+    curl -s -H "Authorization: token $developer_token" -X POST -H "Content-Type: application/json" -d "{\"uid\": $developer_id, \"clone_addr\": \"$external_repo_url\", \"repo_name\": \"$mirror_repo_name\", \"mirror\": false}" "$gogs_url/api/v1/repos/migrate" > /dev/null || { echo "Error mirroring external repo"; exit 1; }
+
+    echo "Repo successfully mirrored"
+    exit 0
+kind: ConfigMap
+metadata:
+  name: gogs-repomirror
+  namespace: gogs

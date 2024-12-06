@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gogs-pvc
+  namespace: gogs
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gogs
+  namespace: gogs
+spec:
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+  selector:
+    app: gogs
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gogs
+  namespace: gogs
+spec:
+  selector:
+    matchLabels:
+      app: gogs
+  template:
+    metadata:
+      labels:
+        app: gogs
+    spec:
+      containers:
+      - name: gogs
+        image: gogs/gogs
+        lifecycle:
+          postStart:
+            exec:
+              command: ['/bin/sh', '-c', 'sleep 30 && su git -c "./gogs admin create-user --admin --name administrator --password $(cat /etc/admin-secret/password) --email admin@example.com | grep -i exists && echo OK"']
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: config
+          mountPath: /data/gogs/conf/app.ini
+          subPath: app.ini
+        - name: mirror
+          mountPath: /data/gogs/repo_sync.sh
+          subPath: repo_sync.sh
+        - name: admin-secret
+          mountPath: /etc/admin-secret
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: gogs-pvc
+      - name: config
+        configMap:
+          name: gogs-config
+      - name: mirror
+        configMap:
+          name: gogs-repomirror
+      - name: admin-secret
+        secret:
+          secretName: admin-secret
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: system:openshift:scc:anyuid
+  namespace: gogs
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: gogs

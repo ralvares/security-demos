@@ -1,0 +1,58 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  creationTimestamp: "2023-02-28T09:10:07Z"
+  generation: 5
+  name: rhacs-simple-demo-pipeline
+  namespace: pipeline-demo
+  resourceVersion: "79883"
+  uid: 6a3264cd-1ea6-409e-8a3b-d2b4473293a9
+spec:
+  tasks:
+  - name: stackrox-image-scan
+    retries: 0
+    timeout: "2m"
+    params:
+    - name: rox_central_endpoint
+      value: roxsecrets
+    - name: rox_api_token
+      value: roxsecrets
+    - name: image
+      value: quay.io/vuln/visa-processor:latest
+    - name: output_format
+      value: table
+    - name: insecure-skip-tls-verify
+      value: "true"
+    taskRef:
+      kind: Task
+      name: stackrox-image-scan
+  - name: stackrox-image-check
+    params:
+    - name: rox_central_endpoint
+      value: roxsecrets
+    - name: rox_api_token
+      value: roxsecrets
+    - name: image
+      value: quay.io/vuln/visa-processor:latest
+    - name: insecure-skip-tls-verify
+      value: "true"
+    runAfter:
+    - stackrox-image-scan
+    taskRef:
+      kind: Task
+      name: stackrox-image-check
+  - name: stackrox-simple-deployment-check
+    params:
+    - name: rox_central_endpoint
+      value: roxsecrets
+    - name: rox_api_token
+      value: roxsecrets
+    - name: deployment
+      value: YXBpVmVyc2lvbjogdjEKa2luZDogU2VydmljZUFjY291bnQKbWV0YWRhdGE6CiAgbmFtZTogdmlzYS1wcm9jZXNzb3IKICBuYW1lc3BhY2U6IHBheW1lbnRzCiAgbGFiZWxzOgogICAgYXBwOiB2aXNhLXByb2Nlc3NvcgoKLS0tCmFwaVZlcnNpb246IHJiYWMuYXV0aG9yaXphdGlvbi5rOHMuaW8vdjEKa2luZDogQ2x1c3RlclJvbGVCaW5kaW5nCm1ldGFkYXRhOgogIG5hbWU6IHZpc2EtcHJvY2Vzc29yCiAgbGFiZWxzOgogICAgYXBwOiB2aXNhLXByb2Nlc3Nvcgpyb2xlUmVmOgogIGFwaUdyb3VwOiByYmFjLmF1dGhvcml6YXRpb24uazhzLmlvCiAga2luZDogQ2x1c3RlclJvbGUKICBuYW1lOiBjbHVzdGVyLWFkbWluCnN1YmplY3RzOgogIC0ga2luZDogU2VydmljZUFjY291bnQKICAgIG5hbWU6IHZpc2EtcHJvY2Vzc29yCiAgICBuYW1lc3BhY2U6IHBheW1lbnRzCgotLS0KIyBEZXBsb3ltZW50IG5hbWVkICJ2aXNhLXByb2Nlc3NvciIKIyBMaXN0ZW5zIG9uIDo4MDgwCiMgVnVsbmVyYWJsZSB0byBzdHJ1dHMKIyBIYXMgU1NIIGtleXMgbW91bnRlZAphcGlWZXJzaW9uOiBhcHBzL3YxCmtpbmQ6IERlcGxveW1lbnQKbWV0YWRhdGE6CiAgbmFtZTogdmlzYS1wcm9jZXNzb3IKICBuYW1lc3BhY2U6IHBheW1lbnRzCiAgbGFiZWxzOgogICAgYXBwOiB2aXNhLXByb2Nlc3NvcgogICAgYXBwLmt1YmVybmV0ZXMuaW8vcGFydC1vZjogcGF5bWVudHMKICBhbm5vdGF0aW9uczoKICAgICJhZG1pc3Npb24uc3RhY2tyb3guaW8vYnJlYWstZ2xhc3MiOiAiamlyYS0zNDIzIgpzcGVjOgogIHJlcGxpY2FzOiAxCiAgc2VsZWN0b3I6CiAgICBtYXRjaExhYmVsczoKICAgICAgYXBwOiB2aXNhLXByb2Nlc3NvcgogIHRlbXBsYXRlOgogICAgbWV0YWRhdGE6CiAgICAgIGxhYmVsczoKICAgICAgICBhcHA6IHZpc2EtcHJvY2Vzc29yCiAgICBzcGVjOgogICAgICBzZXJ2aWNlQWNjb3VudE5hbWU6IHZpc2EtcHJvY2Vzc29yCiAgICAgIHZvbHVtZXM6CiAgICAgICAgLSBuYW1lOiBzc2gta2V5cwogICAgICAgICAgc2VjcmV0OgogICAgICAgICAgICBzZWNyZXROYW1lOiBzc2gta2V5cwogICAgICBjb250YWluZXJzOgogICAgICAgIC0gaW1hZ2U6IHF1YXkuaW8vdnVsbi92aXNhLXByb2Nlc3NvcjpsYXRlc3QKICAgICAgICAgIGltYWdlUHVsbFBvbGljeTogQWx3YXlzCiAgICAgICAgICBuYW1lOiB2aXNhLXByb2Nlc3NvcgogICAgICAgICAgcG9ydHM6CiAgICAgICAgICAgIC0gY29udGFpbmVyUG9ydDogMjIKICAgICAgICAgICAgICBwcm90b2NvbDogVENQCiAgICAgICAgICAgIC0gY29udGFpbmVyUG9ydDogODA4MAogICAgICAgICAgICAgIHByb3RvY29sOiBUQ1AKICAgICAgICAgIHZvbHVtZU1vdW50czoKICAgICAgICAgICAgLSBuYW1lOiBzc2gta2V5cwogICAgICAgICAgICAgIG1vdW50UGF0aDogIi9yb290Ly5zc2giCiAgICAgICAgICAgICAgcmVhZE9ubHk6IGZhbHNlCiAgICAgICAgICBzZWN1cml0eUNvbnRleHQ6CiAgICAgICAgICAgIGNhcGFiaWxpdGllczoKICAgICAgICAgICAgICBhZGQ6IFsiU1lTX0FETUlOIl0KICAgICAgICAgICAgcHJpdmlsZWdlZDogdHJ1ZQogICAgICAgICAgZW52OgogICAgICAgICAgICAtIG5hbWU6IERCX1NFUlZJQ0VfQUREUgogICAgICAgICAgICAgIHZhbHVlOiAiZXh0ZXJuYWwtZGIiCiAgICAgICAgICAgIC0gbmFtZTogSV9IQVZFX0FfU0VDUkVUCiAgICAgICAgICAgICAgdmFsdWU6ICJ0cnVlIgoKLS0tCiMgU2VydmljZSBuYW1lZCAidmlzYS1wcm9jZXNzb3Itc2VydmljZSIKIyBMaXN0ZW5zIG9uIDo4MDgwCmFwaVZlcnNpb246IHYxCmtpbmQ6IFNlcnZpY2UKbWV0YWRhdGE6CiAgbGFiZWxzOgogICAgYXBwOiB2aXNhLXByb2Nlc3NvcgogIG5hbWU6IHZpc2EtcHJvY2Vzc29yLXNlcnZpY2UKICBuYW1lc3BhY2U6IHBheW1lbnRzCnNwZWM6CiAgcG9ydHM6CiAgICAtIHBvcnQ6IDgwODAKICAgICAgcHJvdG9jb2w6IFRDUAogICAgICB0YXJnZXRQb3J0OiA4MDgwCiAgICAgIG5hbWU6IGh0dHAKICBzZWxlY3RvcjoKICAgIGFwcDogdmlzYS1wcm9jZXNzb3IKICB0eXBlOiBDbHVzdGVySVAK
+    - name: insecure-skip-tls-verify
+      value: "true"
+    runAfter:
+    - stackrox-image-scan
+    taskRef:
+      kind: Task
+      name: stackrox-simple-deployment-check

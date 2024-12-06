@@ -1,0 +1,35 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: unauthorized-network-flow
+spec:
+  categories:
+  - Anomalous Activity
+  - Zero Trust
+  criteriaLocked: true
+  description: This policy generates a violation for the network flows that fall outside
+    baselines for which 'alert on anomalous violations' is set.
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors: []
+  mitreVectorsLocked: true
+  policyName: GitOps - Unauthorized Network Flow
+  policySections:
+  - sectionName: Unauthorized Network Flow
+    policyGroups:
+    - fieldName: Unexpected Network Flow Detected
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: 'true'
+  rationale: The network baseline is a list of flows that are allowed, and once it
+    is frozen, any flow outside that is a concern.
+  remediation: Evaluate this network flow. If deemed to be okay, add it to the baseline.
+    If not, investigate further as required.
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: false

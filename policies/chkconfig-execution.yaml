@@ -1,0 +1,40 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: chkconfig-execution
+spec:
+  categories:
+  - System Modification
+  criteriaLocked: true
+  description: Detected usage of the chkconfig service manager; typically this is
+    not used within a container
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0003
+    techniques:
+    - T1543.002
+  - tactic: TA0004
+    techniques:
+    - T1543.002
+  mitreVectorsLocked: true
+  policyName: GitOps - chkconfig Execution
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: chkconfig
+  rationale: chkconfig can be used to activate and deactivate services, and should
+    generally not be run within a container
+  remediation: Consider removing the chkconfig utility, or using a base container
+    image that doesn't have this utility in it
+  scope: []
+  severity: LOW_SEVERITY
+  disabled: false

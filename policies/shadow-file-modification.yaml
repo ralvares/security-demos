@@ -1,0 +1,35 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: shadow-file-modification
+spec:
+  categories:
+  - System Modification
+  criteriaLocked: true
+  description: Processes that indicate attempts to modify shadow files
+  enforcementActions: []
+  eventSource: DEPLOYMENT_EVENT
+  exclusions: []
+  isDefault: false
+  lifecycleStages:
+  - RUNTIME
+  mitreAttackVectors:
+  - tactic: TA0003
+    techniques:
+    - T1098
+  mitreVectorsLocked: true
+  policyName: GitOps - Shadow File Modification
+  policySections:
+  - sectionName: ''
+    policyGroups:
+    - fieldName: Process Name
+      booleanOperator: OR
+      negate: false
+      values:
+      - value: chage|gpasswd|lastlog|newgrp|sg|adduser|deluser|chpasswd|groupadd|groupdel|addgroup|delgroup|groupmems|groupmod|grpck|grpconv|grpunconv|newusers|pwck|pwconv|pwunconv|useradd|userdel|usermod|vigr|vipw|unix_chkpwd
+  rationale: Attempts to change shadow file during runtime in containers is unusual
+  remediation: Ensure that the base image used to create the Dockerfile doesn't have
+    shadow utils packaged with it.
+  scope: []
+  severity: HIGH_SEVERITY
+  disabled: true

@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rhacs-policies-demo
+  namespace: openshift-gitops
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+  destination:
+    name: ''
+    namespace: ''
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: policies
+    repoURL: 'https://github.com/ralvares/security-demos'
+    targetRevision: main
+  project: default
