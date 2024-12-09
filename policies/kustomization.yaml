@@ -88,3 +88,4 @@ resources:
 - unauthorized-network-flow.yaml
 - unauthorized-process-execution.yaml
 - wget-in-image.yaml
+- log4shell-log4j-remote-code-execution-vulnerability-export.yaml
