@@ -4,4 +4,3 @@ resources:
 - frontend
 - payments
 - backend
-- enforce-demo.yaml

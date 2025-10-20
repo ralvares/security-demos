@@ -1,0 +1,31 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: httpd-server-version-2.4.50
+spec:
+  policyName: httpd server version < 2.4.50
+  description: This policy detects deployments running Apache HTTP Server (httpd) versions earlier than 2.4.51. Versions 2.4.49 and 2.4.50 contain critical, publicly exploited vulnerabilities that allow remote code execution (RCE) and path traversal attacks, enabling attackers to read or execute files outside the web root directory. These flaws are actively abused in the wild and pose a high risk to system confidentiality, integrity, and availability.
+  rationale: |-
+    Apache HTTP Server versions prior to 2.4.51 are vulnerable to multiple severe security issues (e.g., CVE-2021-41773, CVE-2021-42013). Attackers can exploit these flaws to gain unauthorized access, execute arbitrary commands, and compromise affected systems. Maintaining servers below this version undermines the platform’s security baseline and violates secure configuration management practices.
+    This policy enforces version hygiene to reduce exposure to known critical vulnerabilities and ensure compliance with corporate hardening baselines and CIS Benchmark recommendations.
+  remediation: Rebuild and redeploy workloads using the latest Red Hat UBI-based httpd image (ubi9/httpd-24 or newer). Avoid using custom or outdated images and ensure CI/CD pipelines always pull from trusted UBI sources to stay current with security patches.
+  categories:
+    - Vulnerability Management
+  lifecycleStages:
+    - BUILD
+    - DEPLOY
+  enforcementActions:
+    - FAIL_BUILD_ENFORCEMENT
+  eventSource: NOT_APPLICABLE
+  severity: CRITICAL_SEVERITY
+  policySections:
+    - sectionName: Rule 1
+      policyGroups:
+        - fieldName: Image Component
+          booleanOperator: OR
+          values:
+            - value: httpd=2\.4\.([0-9]|[1-4][0-9]|50)([-._][a-zA-Z0-9]+)*$
+  criteriaLocked: false
+  mitreVectorsLocked: false
+  isDefault: false
+
