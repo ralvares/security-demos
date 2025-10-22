@@ -29,7 +29,7 @@ spec:
       serviceAccountName: asset-cache
       automountServiceAccountToken: false
       containers:
-        - image: quay.io/vuln/asset-cache:v2
+        - image: quay.io/vuln/asset-cache:v1
           resources:
             requests:
               memory: "64Mi"
