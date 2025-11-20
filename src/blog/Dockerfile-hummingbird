@@ -1,0 +1,27 @@
+# ------------------------------------------------------------
+# Build stage
+# ------------------------------------------------------------
+FROM quay.io/hummingbird/go:latest-builder AS builder
+
+WORKDIR /app
+
+COPY entrypoint.go .
+
+RUN go build entrypoint.go
+
+# ------------------------------------------------------------
+# Runtime stage
+# ------------------------------------------------------------
+FROM quay.io/hummingbird/core-runtime:latest
+
+# Drop the compiled app into the slim runtime
+COPY --from=builder /app/entrypoint /bin
+
+# Preserve your env toggle
+ENV exploit=false
+
+# Non-root execution — ensure the UID exists in the runtime base
+USER 1001
+
+# Final entrypoint
+entrypoint ["/bin/entrypoint"]
