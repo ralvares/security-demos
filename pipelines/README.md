@@ -1,7 +1,19 @@
 
-# Pipeline Setup Instructions
 
-This guide explains how to set up and run the demo pipeline in this directory.
+# Pipeline Demo Overview
+
+This is a simple demo pipeline that showcases:
+- **Image scanning**
+- **Deployment manifest checks**
+- **Enforcement of security policies at deployment time**
+
+You can use this pipeline to demonstrate how ACS enforces security controls in CI/CD workflows. To safely test enforcement without risking cluster-wide impact, you can scope your policies to only the `frontend` namespace. This allows you to create or edit policies and observe enforcement actions (such as blocking risky deployments) in a controlled environment.
+
+---
+
+## Setup Instructions
+
+Follow these steps to set up and run the demo pipeline:
 
 ## Prerequisites
 
