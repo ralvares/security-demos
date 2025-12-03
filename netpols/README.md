@@ -3,7 +3,7 @@ Network policies can be very difficult to create correctly because even a small 
 ```
 git clone https://github.com/ralvares/security-demos
 cd security-demos/manifests
-roxctl generate netpol . | sed 's/port: 53/port: 5353/' | oc apply -f -
+roxctl netpol  --dnsport 5353 generate . | oc apply -f -
 ```
 
 # Generating network policies using the acs baseline from the pipeline

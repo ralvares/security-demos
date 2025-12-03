@@ -1,0 +1,109 @@
+apiVersion: platform.stackrox.io/v1alpha1
+kind: Central
+metadata:
+  name: stackrox-central-services
+  namespace: stackrox
+spec:
+  customize:
+    envVars:
+      - name: ROX_EXTERNAL_IPS
+        value: 'true'
+      - name: ROX_NETWORK_GRAPH_EXTERNAL_IPS
+        value: 'true'
+      - name: ROX_SCANNER_V4_RED_HAT_CVES
+        value: 'true'
+      - name: ROX_VIRTUAL_MACHINES
+        value: 'true'
+  central:
+    db:
+      connectionPoolSize:
+        maxConnections: 90
+        minConnections: 10
+      isEnabled: Default
+      persistence:
+        persistentVolumeClaim:
+          claimName: central-db
+          size: 5Gi
+      resources:
+        requests:
+          cpu: 100m
+          memory: 50Mi
+    exposure:
+      loadBalancer:
+        enabled: false
+        port: 443
+      nodePort:
+        enabled: false
+      route:
+        enabled: true
+    monitoring:
+      exposeEndpoint: Disabled
+    notifierSecretsEncryption:
+      enabled: false
+    persistence:
+      persistentVolumeClaim:
+        claimName: stackrox-db
+        size: 2Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 50Mi
+    telemetry:
+      enabled: true
+  configAsCode:
+    configAsCodeComponent: Enabled
+  egress:
+    connectivityPolicy: Online
+  monitoring:
+    openshift:
+      enabled: true
+  network:
+    policies: Enabled
+  scanner:
+    analyzer:
+      scaling:
+        autoScaling: Disabled
+        replicas: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 50Mi
+          ephemeral-storage: 50Mi
+    db:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 50Mi
+          ephemeral-storage: 50Mi
+    scannerComponent: Enabled
+  scannerV4:
+    db:
+      persistence:
+        persistentVolumeClaim:
+          claimName: scanner-v4-db
+          size: 2Gi
+      resources:
+        requests:
+          cpu: 100m
+          memory: 50Mi
+    indexer:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 50Mi
+      scaling:
+        autoScaling: Disabled
+        maxReplicas: 1
+        minReplicas: 1
+        replicas: 1
+    matcher:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 50Mi
+      scaling:
+        autoScaling: Enabled
+        maxReplicas: 2
+        minReplicas: 1
+        replicas: 1
+    scannerComponent: Enabled

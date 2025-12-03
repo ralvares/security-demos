@@ -20,7 +20,38 @@ TBD
 
 ## Demo Diagram
 
-![Diagram](demo-diagram.png?raw=true "Diagram")
+```mermaid
+flowchart TD
+	Ingress["Ingress/Route"]
+	subgraph Frontend
+		webapp["webapp"]
+		assetcache["asset-cache"]
+		blog["blog"]
+	end
+	subgraph Backend
+		reports["reports"]
+		recommendation["recommendation"]
+		checkout["checkout"]
+		shipping["shipping"]
+		catalog["catalog"]
+		notification["notification"]
+	end
+	subgraph Payments
+		gateway["gateway"]
+		visaprocessor["visa-processor"]
+		mastercard["mastercard-processor"]
+	end
+	Ingress-->|Access|assetcache
+	webapp-->reports
+	webapp-->checkout
+	webapp-->shipping
+	webapp-->recommendation
+	assetcache-->catalog
+	assetcache-->notification
+	checkout-->gateway
+	gateway-->visaprocessor
+	gateway-->mastercard
+```
 
 ## Attack Description
 
@@ -30,7 +61,16 @@ To do this, the attacker may use exploits or other techniques to move laterally 
 
 ## Attack Flow
 
-![Diagram](demo-diagram-attack-flow.png?raw=true "Diagram")
+```mermaid
+flowchart LR
+	Attacker([Attacker])
+	Ingress["Ingress/Route"]
+	AssetCache["asset-cache (Apache vuln)"]
+	VisaProcessor["visa-processor (cluster-admin)"]
+	Attacker-->|Exploit|Ingress
+	Ingress-->|Access|AssetCache
+	AssetCache-->|Lateral Move|VisaProcessor
+```
 
 ## Attack Environment
 
@@ -61,12 +101,12 @@ To mitigate the security risks outlined in the previous conversation, I would re
 
 - Apply network policies to enforce network segmentation within the Kubernetes cluster. This can help prevent lateral movement by attackers who gain access to one part of the system.
 
-### Generating Network Policies using roxctl (np-guard)
+### Generating Network Policies using roxctl
 Follow how simple is to create network policies using roxctl generate netpol 
 ```
 git clone https://github.com/ralvares/security-demos
 cd security-demos/manifests
-roxctl generate netpol . | oc apply -f -
+roxctl netpol generate --dnspor=5353 . | oc apply -f -
 ```
 
 By following these steps, organizations can reduce the likelihood of a successful attack against their Kubernetes cluster, and limit the damage that an attacker could cause if they were able to gain access to the system. It is important to keep in mind, however, that security is an ongoing process and requires regular attention and maintenance to stay effective.
@@ -75,11 +115,11 @@ By following these steps, organizations can reduce the likelihood of a successfu
 
 The scripts are designed to demo a few security use cases, meaning the target are hardcoded ( asset-cache and visa-processor ).
 
-- **attack_001.sh** will use asset-cache as a steping stone to access the visa-processe service account token.
+- **01_expoit_asset-cache_get_visa_token.sh** will use asset-cache as a steping stone to access the visa-processe service account token.
 
 ```
 Security Demo -> cd attack
-Security Demo -> ./attack_001.sh http://asset-cache-frontend.apps.cluster.local/                
+Security Demo -> ./01_expoit_asset-cache_get_visa_token.sh http://asset-cache-frontend.apps.<CLUSTER.DOMAIN>/                
 ☺ - Target asset-cache-84bc5779ff-lsq2n Exploited
 ☺ - Next Phase: Lateral Movement ...
 ☺ - Exploiting visa-processor workload ...
@@ -92,61 +132,4 @@ Security Demo -> ./attack_001.sh http://asset-cache-frontend.apps.cluster.local/
 
 Security Demo -> cat token
 eyJhbGciOiJSUzI1NiIsImtpZCI6ImNsbXFWcGppX1BQX1NHd....
-```
-
-- **attack_002.sh** will use the token extracted from the first attack and run kubectl exec to install netcat and run a reverse shell. Kube API needs to be accessible. 
-
-```
-Security Demo -> cd attack
-Security Demo -> ./attack_002.sh https://api.ocp.cluster.local:6443                                                                           
-☠ - Getting access to pod visa-processor-6d764fc488-qzjxl
-
-WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
-
-Ign:1 http://deb.debian.org/debian stretch InRelease
-Hit:2 http://security.debian.org/debian-security stretch/updates InRelease
-Hit:3 http://deb.debian.org/debian stretch-updates InRelease
-Hit:4 http://deb.debian.org/debian stretch Release
-Reading package lists...
-Building dependency tree...
-Reading state information...
-2 packages can be upgraded. Run 'apt list --upgradable' to see them.
-Reading package lists...
-Building dependency tree...
-Reading state information...
-netcat is already the newest version (1.10-41).
-0 upgraded, 0 newly installed, 0 to remove and 2 not upgraded.
-.
-.
-.
-```
-
-- **attack_003.sh** - will use asset-cache as a stepping stone to to install netcat and run a reverse shell without the need to kubectl exec or token :D
-
-```
-Security Demo -> cd attack
-Security Demo -> ./attack_003.sh http://asset-cache-frontend.apps.cluster.local/                                                              1
-PoC CVE-2021-42013 reverse shell Apache 2.4.50 with CGI
-Exploiting deployment...
-HTTP/1.1 200 OK
-Server: Apache-Coyote/1.1
-Transfer-Encoding: chunked
-Date: Tue, 07 Mar 2023 07:22:23 GMT
-
-
-WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
-
-Ign:1 http://deb.debian.org/debian stretch InRelease
-Hit:2 http://deb.debian.org/debian stretch-updates InRelease
-Hit:3 http://security.debian.org/debian-security stretch/updates InRelease
-Hit:4 http://deb.debian.org/debian stretch Release
-Reading package lists...
-Building dependency tree...
-Reading state information...
-2 packages can be upgraded. Run 'apt list --upgradable' to see them.
-Reading package lists...
-Building dependency tree...
-Reading state information...
-netcat is already the newest version (1.10-41).
-0 upgraded, 0 newly installed, 0 to remove and 2 not upgrade
 ```

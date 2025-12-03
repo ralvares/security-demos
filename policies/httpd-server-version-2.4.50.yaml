@@ -2,6 +2,7 @@ apiVersion: config.stackrox.io/v1alpha1
 kind: SecurityPolicy
 metadata:
   name: httpd-server-version-2.4.50
+  namespace: stackrox
 spec:
   policyName: httpd server version < 2.4.50
   description: This policy detects deployments running Apache HTTP Server (httpd) versions earlier than 2.4.51. Versions 2.4.49 and 2.4.50 contain critical, publicly exploited vulnerabilities that allow remote code execution (RCE) and path traversal attacks, enabling attackers to read or execute files outside the web root directory. These flaws are actively abused in the wild and pose a high risk to system confidentiality, integrity, and availability.
@@ -16,6 +17,8 @@ spec:
     - DEPLOY
   enforcementActions:
     - FAIL_BUILD_ENFORCEMENT
+    - SCALE_TO_ZERO_ENFORCEMENT
+    - UNSATISFIABLE_NODE_CONSTRAINT_ENFORCEMENT
   eventSource: NOT_APPLICABLE
   severity: CRITICAL_SEVERITY
   policySections:

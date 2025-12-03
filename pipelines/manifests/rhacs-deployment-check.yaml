@@ -28,7 +28,7 @@ spec:
       default: rox-api-token
     - name: rox_image
       description: Image providing the roxctl tool.
-      default: quay.io/stackrox-io/roxctl:3.71.0
+      default: quay.io/stackrox-io/roxctl:4.9.1
     - name: deployment
       type: string
       description: |
@@ -52,12 +52,19 @@ spec:
     - name: check_output
       description: Output of `roxctl deployment check`
   steps:
+    - name: decode-deployment
+      image: registry.access.redhat.com/ubi9/ubi-micro
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        echo "$(params.deployment)" | base64 -d > deployment.yaml
+        cat deployment.yaml
     - name: rox-deploy-check
       image: $(params.rox_image)
       workingDir: $(workspaces.source.path)
       env:
         - name: DEPLOYMENT
-          value: $(params.deployment)
+          value: deployment.yaml
         - name: HOME
           value: /tekton/home
         - name: INSECURE

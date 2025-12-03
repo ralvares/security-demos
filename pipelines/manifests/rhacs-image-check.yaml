@@ -30,7 +30,7 @@ spec:
       default: rox-api-token
     - name: rox_image
       description: Image providing the roxctl tool.
-      default: quay.io/stackrox-io/roxctl
+      default: quay.io/stackrox-io/roxctl:4.9.1
     - name: image
       type: string
       description: |

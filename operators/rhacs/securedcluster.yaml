@@ -1,0 +1,69 @@
+apiVersion: platform.stackrox.io/v1alpha1
+kind: SecuredCluster
+metadata:
+  name: stackrox-secured-cluster-services
+  namespace: stackrox
+spec:
+  customize:
+    envVars:
+      - name: ROX_SCANNER_V4_RED_HAT_CVES
+        value: 'true'
+      - name: ROX_VIRTUAL_MACHINES
+        value: 'true'
+  sensor:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 50Mi
+  admissionControl:
+    bypass: BreakGlassAnnotation
+    contactImageScanners: ScanIfMissing
+    listenOnCreates: true
+    listenOnEvents: true
+    listenOnUpdates: true
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 50Mi
+    timeoutSeconds: 10
+  auditLogs:
+    collection: Auto
+  clusterName: production
+  monitoring:
+    openshift:
+      enabled: true
+  network:
+    policies: Enabled
+  perNode:
+    collector:
+      collection: CORE_BPF
+      forceCollection: false
+      imageFlavor: Regular
+      resources:
+        requests:
+          cpu: 100m
+          memory: 50Mi
+    compliance:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 50Mi
+    taintToleration: TolerateTaints
+  scanner:
+    scannerComponent: Disabled
+  scannerV4:
+    scannerComponent: Disabled
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: collector-config
+  namespace: stackrox
+data:
+  runtime_config.yaml: | 
+    networking:
+      externalIps:
+        enable: true
+        enabled: ENABLED
+      maxConnectionsPerMinute: 2048
