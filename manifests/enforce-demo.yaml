@@ -1,7 +1,0 @@
-# Namespace for payments
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: enforce-demo
-  labels:
-    name: enforce-demo
