@@ -1,21 +1,28 @@
-FROM maven:3-jdk-8-alpine as builder
-
-RUN mkdir -p /usr/src/app && mkdir /app
-
-ADD ./pom.xml /usr/src/app/pom.xml
-ADD ./src /usr/src/app/src
-
-RUN cd /usr/src/app && \
-	mvn package && \
-	cp /usr/src/app/target/*.jar /app/cve-2017-538-example.jar && \
-	rm -Rf /usr/src/app
-
-FROM adoptopenjdk/openjdk9:latest
-
-COPY --from=builder /app /app
+# -----------------------------------------------------------------------------
+# Stage 1: The Builder
+# Standard Maven image. Podman will pull the specific architecture image 
+# (amd64 or arm64) for each build thread automatically.
+# -----------------------------------------------------------------------------
+FROM --platform=linux/amd64 docker.io/library/maven:3.8-openjdk-8 AS builder
 
 WORKDIR /app
 
-ENTRYPOINT java -jar /app/cve-2017-538-example.jar 
+# Cache dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline
 
-EXPOSE 8080
+# Compile
+COPY src ./src
+RUN mvn package -DskipTests
+
+# -----------------------------------------------------------------------------
+# Stage 2: The Runtime
+# -----------------------------------------------------------------------------
+FROM registry.access.redhat.com/ubi8/openjdk-8-runtime:latest
+
+WORKDIR /app
+
+# Copy the JAR from the builder stage
+COPY --from=builder /app/target/*.jar app.jar
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
