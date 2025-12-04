@@ -21,36 +21,51 @@ TBD
 ## Demo Diagram
 
 ```mermaid
-flowchart TD
-	Ingress["Ingress/Route"]
-	subgraph Frontend
-		webapp["webapp"]
-		assetcache["asset-cache"]
-		blog["blog"]
-	end
-	subgraph Backend
-		reports["reports"]
-		recommendation["recommendation"]
-		checkout["checkout"]
-		shipping["shipping"]
-		catalog["catalog"]
-		notification["notification"]
-	end
-	subgraph Payments
-		gateway["gateway"]
-		visaprocessor["visa-processor"]
-		mastercard["mastercard-processor"]
-	end
-	Ingress-->|Access|assetcache
-	webapp-->reports
-	webapp-->checkout
-	webapp-->shipping
-	webapp-->recommendation
-	assetcache-->catalog
-	assetcache-->notification
-	checkout-->gateway
-	gateway-->visaprocessor
-	gateway-->mastercard
+flowchart LR
+    %% Define Styles
+    classDef frontend fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef backend fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef payment fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    classDef ingress fill:#212121,stroke:#000,stroke-width:2px,color:#fff;
+
+    %% Nodes
+    Ingress((Ingress/Route)):::ingress
+
+    subgraph FE [Frontend Layer]
+        webapp[Web App]:::frontend
+        assetcache[Asset Cache]:::frontend
+        blog[Blog]:::frontend
+    end
+
+    subgraph BE [Backend Services]
+        reports[Reports]:::backend
+        recommendation[Recommendation]:::backend
+        checkout[Checkout]:::backend
+        shipping[Shipping]:::backend
+        catalog[Catalog]:::backend
+        notification[Notification]:::backend
+    end
+
+    subgraph PAY [Payment Gateway]
+        gateway{Gateway}:::payment
+        visaprocessor[Visa Processor]:::payment
+        mastercard[Mastercard Processor]:::payment
+    end
+
+    %% Connections
+    Ingress --> webapp & assetcache & blog
+    
+    webapp --> reports & checkout & shipping & recommendation
+    
+    checkout --> notification & recommendation & gateway
+    
+    recommendation --> catalog
+    reports --> recommendation & catalog
+    
+    gateway --> visaprocessor & mastercard
+    
+    %% Link Styling (Optional: makes lines lighter)
+    linkStyle default stroke:#9e9e9e,stroke-width:1px;
 ```
 
 ## Attack Description
