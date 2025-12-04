@@ -39,6 +39,7 @@ spec:
               cpu: "500m"
           securityContext:
             readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - all
