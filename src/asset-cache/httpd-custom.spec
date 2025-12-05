@@ -1,0 +1,119 @@
+Name:           httpd
+Version:        2.4.50
+Release:        1%{?dist}
+Summary:        Apache HTTP Server 2.4.50 (full, CGI-enabled build)
+License:        Apache-2.0
+URL:            https://httpd.apache.org/
+Source0:        httpd-2.4.50.tar.gz
+Source1:        apr-1.7.4.tar.gz
+Source2:        apr-util-1.6.3.tar.gz
+Source3:        httpd.conf
+
+BuildRequires:  gcc, make, perl, pcre-devel, expat-devel, openssl-devel
+Requires:       expat, openssl, pcre
+
+%description
+Full Apache HTTP Server 2.4.50 built from source with CGI support.
+Includes all default tools, modules, icons, and manuals — aligned with RHEL layout.
+Intended for CVE demonstration or full testing.
+
+%prep
+%setup -q -n httpd-%{version}
+tar xzf %{SOURCE1} -C srclib/
+mv srclib/apr-1.7.4 srclib/apr
+tar xzf %{SOURCE2} -C srclib/
+mv srclib/apr-util-1.6.3 srclib/apr-util
+
+%build
+./configure \
+  --prefix=/usr \
+  --exec-prefix=/usr \
+  --sysconfdir=/etc/httpd \
+  --includedir=/usr/include/httpd \
+  --libdir=/usr/lib64/httpd \
+  --libexecdir=/usr/lib64/httpd/modules \
+  --datadir=/usr/share/httpd \
+  --localstatedir=/var \
+  --sbindir=/usr/sbin \
+  --mandir=/usr/share/man \
+  --enable-cgi \
+  --with-included-apr \
+  --enable-so \
+  --with-mpm=event
+
+make -j$(nproc)
+
+%install
+rm -rf %{buildroot}
+make install DESTDIR=%{buildroot}
+
+mkdir -p %{buildroot}/var/www/html
+mkdir -p %{buildroot}/var/www/cgi-bin
+mkdir -p %{buildroot}/var/log/httpd
+mkdir -p %{buildroot}/run/httpd
+mkdir -p %{buildroot}/etc/httpd/conf.d
+
+
+# Install custom httpd.conf
+install -Dm644 %{SOURCE3} %{buildroot}/etc/httpd/httpd.conf
+
+# Move modules to /etc/httpd/modules for alignment with config
+mkdir -p %{buildroot}/etc/httpd/modules
+mv %{buildroot}/usr/lib64/httpd/modules/* %{buildroot}/etc/httpd/modules/
+rm -rf %{buildroot}/usr/lib64/httpd/modules
+
+
+%post
+mkdir -p /var/log/httpd /run/httpd
+chmod 755 /var/log/httpd /run/httpd
+exit 0
+
+%preun
+if [ $1 -eq 0 ]; then
+    rm -rf /run/httpd
+fi
+exit 0
+
+%files
+# Core binaries
+/usr/sbin/httpd
+/usr/sbin/apachectl
+/usr/sbin/checkgid
+/usr/sbin/envvars
+/usr/sbin/envvars-std
+/usr/sbin/fcgistarter
+/usr/sbin/htcacheclean
+/usr/sbin/rotatelogs
+
+# CLI utilities
+/usr/bin/ab
+/usr/bin/apr-1-config
+/usr/bin/apu-1-config
+/usr/bin/apxs
+/usr/bin/dbmmanage
+/usr/bin/htdbm
+/usr/bin/htdigest
+/usr/bin/htpasswd
+/usr/bin/httxt2dbm
+/usr/bin/logresolve
+
+# Libraries and modules
+/usr/lib64/httpd/**
+/usr/include/httpd/**
+
+# Full shared data
+/usr/share/httpd/**
+/usr/share/man/**
+/etc/httpd/**
+/var/www/html
+/var/www/cgi-bin
+/var/log/httpd
+/run/httpd
+
+# Docs
+%doc README* LICENSE* NOTICE*
+
+%changelog
+* Tue Oct 08 2024 Demo Build <noreply@example.com> - 2.4.50-1
+- Full Apache build with CGI enabled and all CLI utilities
+- Includes manuals, icons, APR libs, and debug files

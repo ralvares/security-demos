@@ -4,7 +4,7 @@ WORKDIR /app
 COPY entrypoint.go .
 RUN go build entrypoint.go
 
-FROM alpine:3.22
+FROM alpine
 
 RUN apk update && apk upgrade
 RUN apk --purge del apk-tools

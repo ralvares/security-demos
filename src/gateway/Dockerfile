@@ -1,14 +1,29 @@
-FROM maven as builder 
+# -----------------------------------------------------------------------------
+# Stage 1: The Builder
+# Standard Maven image. Podman will pull the specific architecture image 
+# (amd64 or arm64) for each build thread automatically.
+# -----------------------------------------------------------------------------
+FROM docker.io/library/maven:3.8-openjdk-8 AS builder
 
-COPY . /usr/src/poc
-WORKDIR /usr/src/poc
-RUN mvn clean && mvn package
+WORKDIR /app
 
-#FROM openjdk:9-b181-jre
-FROM adoptopenjdk/openjdk9:latest
+# Cache dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# Compile
+COPY src ./src
+RUN mvn package -DskipTests
+
+# -----------------------------------------------------------------------------
+# Stage 2: The Runtime
+# -----------------------------------------------------------------------------
+FROM registry.access.redhat.com/ubi8/openjdk-8-runtime:latest
+
+WORKDIR /app
 
 ENV exploit=false
-
 USER 1001
 
-COPY --from=builder /usr/src/poc/target/gateway-1.0-jar-with-dependencies.jar /deployments/gateway-1.0-jar-with-dependencies.jar
+# Copy the JAR from the builder stage
+COPY --from=builder /app/target/*.jar /deployments/gateway-1.0-jar-with-dependencies.jar
