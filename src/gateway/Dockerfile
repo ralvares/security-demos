@@ -26,4 +26,4 @@ ENV exploit=false
 USER 1001
 
 # Copy the JAR from the builder stage
-COPY --from=builder /app/target/*.jar /deployments/gateway-1.0-jar-with-dependencies.jar
+COPY --from=builder /app/target/gateway-1.0-jar-with-dependencies.jar /deployments/gateway-1.0-jar-with-dependencies.jar

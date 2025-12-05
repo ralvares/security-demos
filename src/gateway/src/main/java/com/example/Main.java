@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 
 public class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
+
     public static void main(String[] args) throws IOException, InterruptedException {
         String html = "{'services':[{'name':'Visa Processor','status':'online'},{'name':'Mastercard Processor','status':'online'}]}";
         String listenPort = System.getProperty("listen");
@@ -26,7 +27,7 @@ public class Main {
             server.createContext("/ping", new MyHandler("pong"));
             server.createContext("/posts", new MyHandler(exploitEnabledResponse(), exploitDisabledResponse()));
             server.start();
-            logger.error("${env:SECRET_VALUE:-:}");
+            logger.info("Server started on port: " + listenPort);
         }
 
         if (connectList != null && !connectList.isEmpty()) {
@@ -42,8 +43,8 @@ public class Main {
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                         connection.setRequestMethod("GET");
                         int responseCode = connection.getResponseCode();
-                        System.out.println("Response from " + hostname + ":" + port + ": " + responseCode);
-                        
+                        logger.info("Response from " + hostname + ":" + port + ": " + responseCode);
+
                         if (responseCode == HttpURLConnection.HTTP_OK) {
                             BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                             StringBuilder response = new StringBuilder();
@@ -57,19 +58,19 @@ public class Main {
                             String htmlContent = response.toString();
 
                             if (!htmlContent.isEmpty()) {
-                                System.out.println("OK");
+                                logger.info("Received valid response from " + hostname);
                             }
                         }
 
                         connection.disconnect();
                     } catch (IOException e) {
-                        System.out.println("Connection to " + hostname + ":" + port + " failed: " + e.getMessage());
+                        logger.error("Connection to " + hostname + ":" + port + " failed: " + e.getMessage(), e);
                     }
                 }
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    logger.error("Thread interrupted: " + e.getMessage(), e);
                 }
             }
         }
@@ -77,7 +78,7 @@ public class Main {
     }
 
     private static void logRequest(HttpExchange exchange, String method) {
-        System.out.println("Received " + method + " request: " + exchange.getRequestURI());
+        logger.info("Received " + method + " request: " + exchange.getRequestURI());
     }
 
     private static String exploitEnabledResponse() {
@@ -105,9 +106,9 @@ public class Main {
             logRequest(exchange, exchange.getRequestMethod());
             byte[] responseBytes = response.getBytes();
             exchange.sendResponseHeaders(200, responseBytes.length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(responseBytes);
-            os.close();
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(responseBytes);
+            }
         }
     }
 }
