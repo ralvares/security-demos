@@ -18,11 +18,10 @@ RUN mvn package -DskipTests
 # -----------------------------------------------------------------------------
 # Stage 2: The Runtime
 # -----------------------------------------------------------------------------
-FROM registry.access.redhat.com/ubi8/openjdk-8-runtime:latest
+FROM registry.redhat.io/ubi9/openjdk-21-runtime
 
 WORKDIR /app
 
-ENV exploit=false
 USER 1001
 
 # Copy the JAR from the builder stage
