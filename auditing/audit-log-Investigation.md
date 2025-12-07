@@ -40,29 +40,48 @@ We will now switch to the terminal to reconstruct this timeline using **Behavior
 
 ### Step 1: Investigating the Entry Point
 
-We start by checking our compromised frontend, `asset-cache`. We know this pod was breached via an RCE (Remote Code Execution).
+We begin our investigation by looking for suspicious anonymous API activity originating from within the cluster. Our first clue is a set of `403 Forbidden` audit log entries where the `user` is `system:anonymous` and the `sourceIPs` field contains an address from the pod network (e.g., `10.128.x.y`).
 
-Since this service account should have no permissions, any attempt by the attacker to use `kubectl` from inside this pod should result in an "Access Denied" error. A attacker checks if they can list pods or secrets.
+By focusing on these events, we can identify API requests that likely originated from a pod, rather than from a node, router, or external source. This method allows us to attribute activity to in-cluster workloads and is a common first step in forensic analysis.
 
-We search for `403 Forbidden` responses associated with the `asset-cache` identity.
+Once we identify a pod IP making these anonymous requests, we can correlate it to a specific workload. 
+
+At this stage, we search for anonymous `403 Forbidden` attempts from the pod network:
 
 ```bash
-echo "--- Hunting for Failed API Attempts (Frontend) ---"
-grep '"user":{"username":"system:serviceaccount:frontend:asset-cache"' audit.log | \
-grep '"responseStatus":{"code":403}' | \
-jq '{
-  time: .requestReceivedTimestamp,
-  user: .user.username,
-  verb: .verb,
-  resource: .objectRef.resource,
-  ALERT: "Unauthorized API Call Blocked"
-}'
+echo "--- Hunting for Anonymous API Attempts (Frontend) ---"
+grep '"user":{"username":"system:anonymous"' audit.log | \
+grep '"stage":"ResponseComplete"' | \
+grep '"code":403' | \
+grep '"sourceIPs":\["10.128.' | \
+jq -r '[
+  .requestReceivedTimestamp,
+  .user.username,
+  .verb,
+  .requestURI,
+  (.responseStatus.code | tostring),
+  (.sourceIPs[0] // "-"),
+  (.userAgent // "-")
+] | @tsv' | column -t -s $'\t'
 ```
 
-**The Finding:**
-We see multiple entries. The attacker tried to `list secrets` and `get pods` using the `asset-cache` token, but OpenShift blocked them (403).
+Explanation: Understanding `sourceIPs`
+- The audit field `sourceIPs` reflects the IPs observed by the API server for the client connection. In most cases, the first element is the pod IP (e.g., `10.128.x.y`).
+- For deeper enrichment, OpenShift Network Observability can link the IP to the pod/workload, namespace, and node, providing a quick pivot from IP → pod → owner.
 
-  * **Forensic Insight:** This confirms the pod is compromised, but the attacker hit a wall. They need a better token.
+
+#### About the asset-cache Pod
+
+Through this correlation, we determined that the suspicious pod IP belonged to the `asset-cache` pod in the `frontend` namespace. The `asset-cache` application is a stateless frontend cache service, typically exposed to external traffic and designed to improve performance by storing frequently accessed data. In this scenario, it was running with minimal privileges and, crucially, did not mount a Kubernetes service account token.
+
+This lack of a service account token meant that any API requests made from the pod would be anonymous. The attacker exploited a remote code execution (RCE) vulnerability in the `asset-cache` application, allowing them to run arbitrary commands inside the pod. Their first attempts to access the Kubernetes API were therefore made as `system:anonymous`, and were blocked by RBAC, as seen in the audit logs.
+
+Only after linking the pod IP to the `asset-cache` workload did we realize this was the initial entry point for the attack chain. This highlights the importance of correlating network-level evidence with workload metadata during forensic investigations.
+
+**The Finding:**
+We see multiple entries. The attacker tried to `list secrets` and `get pods` from the `asset-cache` pod, but OpenShift blocked them (403).
+
+  * **Forensic Insight:** This confirms the pod is compromised, but the attacker hit a wall. They need a valid account.
 
 ### Step 2: Detecting Reconnaissance (The "Who am I?" Check)
 
@@ -75,15 +94,26 @@ A legitimate payment application is deterministic—it writes to databases, it p
 We hunt for `SelfSubjectAccessReviews`. This API call is the digital equivalent of a user running `can-i`. It is a high-fidelity signal of a human manually enumerating permissions.
 
 ```bash
-echo "--- Hunting for Privilege Enumeration (Payments) ---"
-grep '"user":{"username":"system:serviceaccount:payments:visa-processor"' audit.log | \
-grep '"resource":"selfsubjectaccessreviews"' | \
-jq '{
-  time: .requestReceivedTimestamp,
-  user: .user.username,
-  action: "Checking Permissions (Recon)",
-  decision: .annotations["authorization.k8s.io/decision"]
-}'
+echo "--- Hunting for Privilege Enumeration (Any ServiceAccount) ---"
+cat audit.log | \
+jq -r -s '
+  map(select(
+    (.user.username | startswith("system:serviceaccount:")) and
+    # Exclude platform/system namespaces
+    (.user.username | contains(":openshift-") | not) and
+    (.user.username | contains(":stackrox") | not) and
+     (.user.username | contains(":kube-system") | not) and
+    (.objectRef.resource == "selfsubjectaccessreviews")
+  )) |
+  unique_by(.auditID) |
+  (["Time","Actor","Decision","Reason"] | @tsv),
+  (.[] | [
+    .requestReceivedTimestamp,
+    .user.username,
+    (.annotations["authorization.k8s.io/decision"] // "-"),
+    (.annotations["authorization.k8s.io/reason"] // "-")
+  ] | @tsv)
+' | column -t -s $'\t'
 ```
 
 **The Finding:**
@@ -102,12 +132,17 @@ echo "--- Hunting for Secret Harvesting ---"
 grep '"user":{"username":"system:serviceaccount:payments:visa-processor"' audit.log | \
 grep '"resource":"secrets"' | \
 grep '"verb":"list"' | \
-jq '{
-  time: .requestReceivedTimestamp,
-  user: .user.username,
-  action: "Listing All Secrets",
-  response: .responseStatus.code
-}'
+jq -r -s '
+  unique_by(.auditID) |
+  (["Time","Actor","Status","Pod","Node","Client"] | @tsv),
+  (.[] | [
+    .requestReceivedTimestamp,
+    .user.username,
+    (.responseStatus.code | tostring),
+    (.user.extra["authentication.kubernetes.io/pod-name"][0] // "-"),
+    (.user.extra["authentication.kubernetes.io/node-name"][0] // "-"),
+    (.userAgent | split(" ")[0])  ] | @tsv)
+' | column -t -s $'\t'
 ```
 
 **The Finding:**
@@ -115,47 +150,124 @@ We see a `200 OK` response. The compromised payment processor has successfully l
 
 ### Step 4: The "Smoking Gun" (Host Escape)
 
-The attacker decides to escalate to the underlying Node. They need to deploy a new workload with specific security violations: `hostPID: true` or `privileged: true`.
-
-Sophisticated attackers will randomize the pod name (e.g., `payment-helper-v2`) to blend in. We don't care about the name. We care about the **Capability Request**.
-
-We scan the JSON Request Body for `hostPID: true`, which would allow the container to see every process running on the Linux host (including Root processes).
 
 ```bash
-echo "--- Hunting for Container Escape Vectors ---"
-cat audit.log | jq 'select(.verb == "create" and .objectRef.resource == "pods") | 
-select(.requestObject.spec.hostPID == true) |
-{
-  time: .requestReceivedTimestamp,
-  user: .user.username,
-  pod_name: .objectRef.name,
-  DANGER: "HostPID Requested - Node Compromise Risk"
-}'
+echo "--- Hunting for Pod Creation Events (Non-Platform ServiceAccounts) ---"
+cat audit.log | jq -r -s '
+  map(select(
+    (.user.username | startswith("system:serviceaccount:")) and
+    (.user.username | contains(":openshift-") | not) and
+    (.user.username | contains(":stackrox") | not) and
+    (.user.username | contains(":kube-system") | not) and
+    (.verb == "create")
+  )) |
+  (["Time","Actor","Pod","Namespace"] | @tsv),
+  (.[] | [
+    .requestReceivedTimestamp,
+    .user.username,
+    (.objectRef.name // "-"),
+    (.objectRef.namespace // "-")
+  ] | @tsv)
+' | column -t -s $'\t'
 ```
 
 **The Finding:**
-We match a request. The `visa-processor` identity created a pod named `r00t` with HostPID access.
+We match a request. The `visa-processor` identity created a pod named `visa-processor` on a namespace `payments-v2`
+
+---
+
+#### Forensic Hypothesis & Context
+
+The attacker decides to escalate to the underlying Node. They need to deploy a new workload with specific security violations: `hostPID: true` or `privileged: true`.
+
+If your audit log profile does not capture the full request body, you cannot directly see fields like `hostPID` or `privileged`. However, by hunting for pod creation events by non-platform service accounts, you can spot suspicious activity and pivot to deeper investigation (e.g., checking pod specs via `oc get pod -o yaml` if the pod still exists).
+
+In a full forensic scenario, we would scan the JSON Request Body for `hostPID: true`, which would allow the container to see every process running on the Linux host (including Root processes). But even without the body, this query helps you identify the likely escape vector.
+
+**About Audit Log Body Options:**
+**Audit Log Profile Options:**
+
+| Profile              | Description |
+|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Default              | Logs only metadata for read and write requests; does not log request bodies except for OAuth access token requests. This is the default policy. |
+| WriteRequestBodies   | In addition to logging metadata for all requests, logs request bodies for every write request to the API servers (create, update, patch). This profile has more resource overhead than the Default profile. |
+| AllRequestBodies     | In addition to logging metadata for all requests, logs request bodies for every read and write request to the API servers (get, list, create, update, patch). This profile has the most resource overhead. |
+
+Choose `WriteRequestBodies` or `AllRequestBodies` if you need to capture the full request body for forensic investigations. Be aware that these profiles increase resource usage and log volume.
+ 
+This allows you to:
+
+- Detect security-sensitive fields like `hostPID: true`, `privileged: true`, or `volumes[].hostPath` directly in the log.
+- See the exact pod spec submitted at creation time, including all security context and volume mounts.
+- Write precise queries to hunt for container escape vectors, privilege escalation, or suspicious mounts.
+
+**Example query for hostPID:**
+```bash
+echo "--- Hunting for Pod Creations with hostPID: true ---"
+cat audit.log | jq -r -s '
+  map(select(
+    .verb == "create" and
+    .objectRef.resource == "pods" and
+    (.requestObject.spec.hostPID == true)
+  )) |
+  (["Time","Actor","Pod","Namespace","hostPID"] | @tsv),
+  (.[] | [
+    .requestReceivedTimestamp,
+    .user.username,
+    (.objectRef.name // "-"),
+    (.objectRef.namespace // "-"),
+    (.requestObject.spec.hostPID | tostring)
+  ] | @tsv)
+' | column -t -s $'\t'
+```
+
+**Example query for Privileged:**
+```bash
+echo "--- Hunting for Pod Creations with privileged: true ---"
+cat audit.log | jq -r -s '
+  map(select(
+    .verb == "create" and
+    .objectRef.resource == "pods" and
+    (.requestObject.spec.containers[]?.securityContext.privileged == true) and
+    (.objectRef.namespace | test("^(openshift|kube-system)") | not) and
+    (.user.username | test("^system:node:") | not)
+  )) |
+  (["Time","Actor","Pod","Namespace","Privileged"] | @tsv),
+  (.[] | [
+    .requestReceivedTimestamp,
+    .user.username,
+    (.objectRef.name // "-"),
+    (.objectRef.namespace // "-"),
+    ([ .requestObject.spec.containers[]? | select(.securityContext.privileged == true) | .securityContext.privileged ] | map(tostring) | join(",") // "-")
+  ] | @tsv)
+' | column -t -s $'\t'
+```
+
+**Note:** If your audit log profile is only `Metadata`, the request body is not present, so you cannot detect these fields directly. For deep forensics.
 
 ### Step 5: The Backdoor (Interactive Tunneling)
 
-Finally, now that the privileged `r00t` pod is running, the attacker needs to enter it to execute their attack on the host. **This** is where we finally see the `exec` call.
+Finally, now that the privileged `visa-processor` pod is running, the attacker needs to enter it to execute their attack on the host. **This** is where we finally see the `exec` call.
+
 
 ```bash
-echo "--- Hunting for Tunneling into Privileged Pods ---"
+echo "--- Hunting for Exec Events (Pod, Node) ---"
 grep '"subresource":"exec"' audit.log | \
-grep '"objectRef.name":"r00t"' | \
-jq '{
-  time: .requestReceivedTimestamp,
-  user: .user.username,
-  target_pod: .objectRef.name,
-  command: .requestURI
-}'
+jq -r -s '
+  (["Time","Actor","Pod","Node"] | @tsv),
+  (.[] | [
+    .requestReceivedTimestamp,
+    .user.username,
+    (.user.extra["authentication.kubernetes.io/pod-name"][0] // .objectRef.name // "-"),
+    (.user.extra["authentication.kubernetes.io/node-name"][0] // "-")
+  ] | @tsv)
+' | column -t -s $'\t'
 ```
 
 **The Finding:**
-The `visa-processor` identity is opening a shell (`/bin/bash`) inside the `r00t` pod.
+The `visa-processor` identity is opening a shell inside the pod.
 
-The "loop is closed" only means the attacker has established their connection. You are absolutely right—we haven't seen the *impact* yet. The `r00t` pod wasn't the goal; it was the **vehicle** to get to the host.
+The "loop is closed" only means the attacker has established their connection. You are absolutely right—we haven't seen the *impact* yet. The pod wasn't the goal; it was the **vehicle** to get to the host.
 
 Here is the final, critical chapter of the investigation: **The Node Compromise**.
 
@@ -163,31 +275,55 @@ Here is the final, critical chapter of the investigation: **The Node Compromise*
 
 ### Step 6: The Node Takeover
 
-The attacker is now inside the `r00t` pod. But this pod has `hostPID: true` and is privileged. This means inside the container, they are effectively `root` on the actual OpenShift Node.
+> **Note:** The following forensic analysis assumes that your audit log profile is set to capture request bodies (e.g., `WriteRequestBodies` or `AllRequestBodies`). Without this, you will not see the full pod spec, container image, or command in the audit log. Since pods are often short-lived, other methods (such as external SIEM, EDR, or node-level forensics) are required to reconstruct the attack if audit bodies are not available.
 
-They will now attempt to use `nsenter` to "break out" of the container namespace and enter the host's actual filesystem. This is often harder to spot in Audit Logs because once they are "on the node" as root, they might stop talking to the Kubernetes API and start issuing standard Linux commands (which Audit Logs don't see).
+At this stage, the attacker has achieved a privileged foothold inside the `visa-processor` pod, which was created with both `hostPID: true` and `privileged: true`. These settings effectively remove most container boundaries, granting the attacker visibility and control over the host node's processes and resources.
 
-**However**, they almost always make one final, noisy API call to verify their persistence or access cloud metadata.
+The next move is inferred from the pod specification: the attacker likely attempts to escape the container namespace and access the host's filesystem and process space. While we often suspect tools like `nsenter`, the audit log does not capture what happens inside the container. Instead, we rely on forensic signals from the pod spec:
 
-We look for the `r00t` pod accessing sensitive host paths or cloud metadata services.
+- **Pod creation with `hostPID` and `privileged`**: The audit log shows the creation of a pod with these dangerous settings, a strong indicator of an attempted container escape.
+- **Suspicious or unusual commands**: If the audit log profile captures request bodies, you can see the full command array used to launch the container. Any command that attempts namespace manipulation (e.g., `nsenter`, `chroot`, `mount`, or custom binaries) is a red flag, but even generic shells (`/bin/bash`, `/bin/sh`) in privileged pods should be scrutinized.
+- **Container image used**: The audit log also reveals the image specified for the pod. Unusual or minimal images (like `alpine`, `busybox`), or images not normally used in your environment, can indicate attacker activity or attempts to evade detection.
+- **Sensitive hostPath mounts**: The attacker may also mount critical host directories (like `/`, `/etc`, `/var/run`, `/root`, or `/etc/kubernetes`) into the pod, providing direct access to the node's files.
+
+By reviewing the pod spec in the audit log, you can:
+* See the exact container image and command used, providing context for the attacker's intent and tooling—without needing to guess the method (e.g., `nsenter`).
+* Correlate suspicious images and commands with dangerous settings (`hostPID`, `privileged`, sensitive hostPath mounts) to build a high-confidence picture of a node compromise attempt.
+
+Once on the node, the attacker can:
+* Read or modify sensitive files.
+* Create or alter static pod manifests for persistence.
+* Access container runtime sockets to control other containers or escalate further.
+* etc..
+
+**Forensic Implications:**
+While the actual use of escape tools and subsequent host actions are not visible in Kubernetes audit logs, the combination of these pod creation events, dangerous settings, suspicious commands, unusual images, and sensitive mounts is a high-fidelity signal of node compromise. The queries below help you spot these behaviors.
 
 ```bash
-echo "--- Hunting for Host Filesystem Access ---"
-# We look for the 'r00t' pod mounting sensitive host paths
-cat audit.log | jq 'select(.objectRef.name == "r00t") | 
-select(.requestObject.spec.volumes[].hostPath != null) |
-{
-  time: .requestReceivedTimestamp,
-  pod: .objectRef.name,
-  mounted_path: .requestObject.spec.volumes[].hostPath.path,
-  ALERT: "Host Path Mount Detected"
-}'
+PODNAME="visa-processor"
+echo "--- Hunting for Pod Creations by Name ---"
+cat audit.log | jq -r -s --arg pod "$PODNAME" '
+  map(select(
+    .verb == "create" and
+    .objectRef.resource == "pods" and
+    (.objectRef.name == $pod)
+  )) |
+  map({
+    time: .requestReceivedTimestamp,
+    actor: .user.username,
+    pod: (.objectRef.name // "-"),
+    ns: (.objectRef.namespace // "-"),
+    image: ([.requestObject.spec.containers[]?.image] | join(" | ")),
+    command: ([.requestObject.spec.containers[]?.command | join(" ")] | join(" | "))
+  })
+  | map(select(.image != ""))
+  | (["Time","Actor","Pod","Namespace","Image","Command"] | @tsv),
+    (.[] | [.time, .actor, .pod, .ns, .image, .command] | @tsv)
+' | column -t -s $'\t'
 ```
 
 **The Finding:**
-We see the pod mounting `/` (the root filesystem) or `/etc` to `/host`.
-
-  * **Forensic Insight (CoreOS):** With host access, the attacker won’t typically modify immutable system files. Instead, they can create or modify static pods (e.g., via `/etc/kubernetes/manifests`), enumerate running containers and processes, scrape in-memory secrets and environment variables, access container runtime sockets, and harvest credentials/configs present on the node to persist and expand control.
+We see the pod created with a command that explicitly invokes `nsenter`, confirming the attacker's intent to escape the container and access the host.
 
 -----
 
@@ -215,13 +351,13 @@ flowchart TD
     end
 
     subgraph Phase3 ["Phase 3: Escalation"]
-        D["Log: visa-processor creates pod r00t (HostPID)"]:::escalation
-        E["Log: visa-processor execs into r00t"]:::escalation
+        D["Log: visa-processor creates pod fake visa-processor (HostPID)"]:::escalation
+        E["Log: visa-processor execs into fake visa-processor"]:::escalation
         Note3["Container Escape & Privileged Access"]
     end
 
     subgraph Phase4 ["Phase 4: Impact"]
-        F["Log: r00t mounts HostPath /etc"]:::takeover
+        F["Log: Fake visa-processor access Host Namespace"]:::takeover
         Note4["Physical Node Compromised"]
     end
 
@@ -235,5 +371,5 @@ We have reconstructed the crime scene using only the Audit Logs, mapping the att
 1.  **Asset-Cache (Frontend):** `403 Forbidden` on API calls. *Conclusion: Compromised, but contained by RBAC.*
 2.  **Visa-Processor (Lateral Move):** `SelfSubjectAccessReview`. *Conclusion: Token stolen, Reconnaissance detected.*
 3.  **Visa-Processor (Exfiltration):** `List Secrets`. *Conclusion: Credential Harvesting.*
-4.  **Visa-Processor (Escalation):** Deployed `r00t` with `HostPID`. *Conclusion: Container Escape.*
-5.  **Visa-Processor (Action):** Executed shell in `r00t`. *Conclusion: Node Takeover.*
+4.  **Visa-Processor (Escalation):** Deployed `fake visa-processor` with `HostPID`. *Conclusion: Container Escape.*
+5.  **Visa-Processor (Action):** Executed shell in `fake visa-processor`. *Conclusion: Node Takeover.*
