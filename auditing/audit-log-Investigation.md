@@ -1,5 +1,37 @@
 # Forensic Engineering: The OpenShift Audit Log Investigation
 
+## 1. Overview
+
+Audit logs in OpenShift are the authoritative, tamper-evident record of every API request processed by the control plane. Each entry captures **who** performed the action, **what** they did, **when** it occurred, **where** in the cluster it happened, and **how** the request was evaluated.
+
+Properly enabled and analyzed, these logs form the backbone of threat detection, incident response, compliance evidence, and continuous-monitoring programs.
+
+### Why Audit Logs Are Critical
+
+*   **Credential Abuse:** Attackers "log in" with stolen tokens and run standard API calls.
+*   **Privilege Escalation:** Misconfigured RoleBindings that silently lift permissions.
+*   **Lateral Movement:** Cross-namespace secret reads are often visible only in audit metadata.
+*   **Policy Drift:** Excessive SecurityContextConstraints (SCC) exemptions.
+
+## 2. Audit Log Structure
+
+Audit events are emitted as JSON objects. Under the **Default** profile, only metadata is captured; request bodies are omitted.
+
+| Field | Description | Example |
+| :--- | :--- | :--- |
+| `timestamp` | Time the API server received the request. | `2025-07-02T10:15:00Z` |
+| `user.username` | User / service-account identity. | `system:serviceaccount:default:default` |
+| `user.groups` | Groups attached to the identity. | `["system:serviceaccounts","system:authenticated"]` |
+| `sourceIPs` | Source IP address(es). | `["10.128.0.45"]` |
+| `verb` | API verb. | `get`, `create`, `delete`, `patch` |
+| `objectRef.resource` | Target resource kind. | `secrets`, `pods`, `rolebindings` |
+| `objectRef.namespace` | Namespace (project). | `production` |
+| `subresource` | Subresource acted on. | `exec`, `portforward` |
+| `responseStatus.code` | Result of the request. | `200` (OK), `403` (Forbidden) |
+| `annotations` | RBAC decision, PodSecurity/SCC match. | `"authorization.k8s.io/decision":"allow"` |
+
+> **Note:** Request bodies for **Secret**, **Route**, and **OAuthClient** are *never* logged in any profile.
+
 ## Part 1: The Immutable Truth (Revised)
 
 In any production cluster, observability is crucial. Metrics such as CPU usage and memory consumption provide insights into the **health** of applications. However, during a security incident, the focus shifts from **health** to **accountability** and **intent**.
