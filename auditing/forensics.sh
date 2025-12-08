@@ -14,6 +14,40 @@ if ! command -v jq &> /dev/null; then
 fi
 
 # ==============================================================================
+# 0. SETUP: Fetch Audit Logs from Masters
+# ==============================================================================
+# Usage: audit_fetch [output_file]
+audit_fetch() {
+    local OUTPUT_FILE="${1:-audit.log}"
+
+    if ! command -v oc &> /dev/null; then
+        echo "Error: 'oc' command is not found. Please install the OpenShift CLI."
+        return 1
+    fi
+
+    # Clear existing file or create new one
+    > "$OUTPUT_FILE"
+
+    echo "--- Fetching Audit Logs from Master Nodes to '$OUTPUT_FILE' ---"
+    
+    # Get list of master nodes
+    local masters
+    masters=$(oc get nodes -l node-role.kubernetes.io/master -o custom-columns=NAME:.metadata.name --no-headers)
+
+    if [ -z "$masters" ]; then
+        echo "Error: No master nodes found or 'oc' command failed."
+        return 1
+    fi
+
+    for master in $masters; do
+        echo "Fetching logs from ${master}..."
+        oc adm node-logs "${master}" --path=kube-apiserver/audit.log >> "$OUTPUT_FILE"
+    done
+    
+    echo "Done. Logs are available in '$OUTPUT_FILE'."
+}
+
+# ==============================================================================
 # 1. INITIAL ACCESS: Detect Anonymous Probing
 # ==============================================================================
 # Usage: audit_anon <log_file> [ip_prefix]
