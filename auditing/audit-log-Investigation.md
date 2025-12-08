@@ -1,20 +1,32 @@
 # Forensic Engineering: The OpenShift Audit Log Investigation
 
-## Part 1: The Immutable Truth
+## Part 1: The Immutable Truth (Revised)
 
-In any production cluster, observability is crucial. Metrics such as CPU usage, memory consumption, and latency provide insights into the **health** of applications and infrastructure. However, during a security incident, the focus shifts from **health** to **accountability** and **intent**.
+In any production cluster, observability is crucial. Metrics such as CPU usage and memory consumption provide insights into the **health** of applications. However, during a security incident, the focus shifts from **health** to **accountability** and **intent**.
 
-Audit logs become indispensable in these scenarios. They serve as the definitive record of actions within the cluster, enabling forensic analysis to uncover the **who**, **what**, **when**, **where**, and **why** of every interaction. This shift in focus underscores the importance of maintaining comprehensive and immutable audit logs to ensure clarity and accountability during critical investigations.
+Audit logs serve as the definitive record of actions within the cluster. They are the authoritative record of the Control Plane, capturing the **5 Ws** of every interaction with the API Server: **Who**, **What**, **Where**, **When**, and the **Decision** (RBAC).
 
-This is where the OpenShift Audit Log becomes the most critical tool in your arsenal. It is the authoritative record of the Control Plane, capturing the **5 Ws** of every interaction with the API Server: **Who**, **What**, **Where**, **When**, and the **Decision** (RBAC).
-
-### The Critical Prerequisite: Log Forwarding
+## Prerequisite 1: Storage Integrity (The "Safe")
 
 Before we start the hunt, we must address the most important rule of forensic logging: **Storage Integrity.**
 
-Audit logs are generated on the Master nodes. If an attacker successfully escalates privileges and takes over the node (Root compromise), they can technically wipe the log files on that server to cover their tracks.
+Audit logs are generated on the Master nodes. If an attacker successfully escalates privileges and takes over the node (Root compromise), they can wipe the log files. Therefore, for these logs to be legally and forensically valid, they **must be forwarded** to an external system (Splunk, Elastic, Remote Syslog).
 
-Therefore, for these logs to be legally and forensically valid, they **must be forwarded** to an external, system (like Splunk, Elastic, or a remote syslog server). In this architecture, even if the attacker burns the cluster to the ground, the evidence of *how* they did it remains safe in your external SIEM.
+## Prerequisite 2: The Audit Profile (The "Resolution")
+
+Secure logs are useless if they don't contain enough detail. This is defined by the **Audit Log Policy**.
+
+By default, OpenShift uses the **Metadata** profile. This is like a phone bill: it tells you *who* called *whom* and for *how long*, but it does not record the *conversation*.
+
+For a deep forensic investigation—where we need to see the exact commands an attacker ran (`exec`), the malicious image they pulled, or the IP address assigned to their pod—we require a higher resolution: **Request Bodies**.
+
+| Profile | Forensic Visibility | What you see | What you miss |
+| :--- | :--- | :--- | :--- |
+| **Default** | Low | Metadata (User, Verb, Resource, Response Code). | **The Payload.** You cannot see the pod spec (hostPID), the specific command arguments, or the IP assignment in status updates. |
+| **WriteRequestBodies** | **High (Recommended)** | All Metadata + **The Full Payload** for "Write" actions (Create, Update, Patch). | Read payloads (e.g., you can't see *which* secret specifically was read if looking at the body, but you know a read happened). |
+| **AllRequestBodies** | Maximum | Everything. | Nothing. (Extremely high storage cost). |
+
+> **Forensic Note:** For this investigation, we assume the cluster was configured with **`WriteRequestBodies`**. This allows us to see the "Smoking Gun" evidence: the malicious `hostPID` flag in the pod creation request and the exact IP address assigned by the Node.
 
 -----
 
@@ -185,21 +197,9 @@ If your audit log profile does not capture the full request body, you cannot dir
 In a full forensic scenario, we would scan the JSON Request Body for `hostPID: true`, which would allow the container to see every process running on the Linux host (including Root processes). But even without the body, this query helps you identify the likely escape vector.
 
 **About Audit Log Body Options:**
-**Audit Log Profile Options:**
+(See Part 1 for a detailed explanation of Audit Log Profiles).
 
-| Profile              | Description |
-|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Default              | Logs only metadata for read and write requests; does not log request bodies except for OAuth access token requests. This is the default policy. |
-| WriteRequestBodies   | In addition to logging metadata for all requests, logs request bodies for every write request to the API servers (create, update, patch). This profile has more resource overhead than the Default profile. |
-| AllRequestBodies     | In addition to logging metadata for all requests, logs request bodies for every read and write request to the API servers (get, list, create, update, patch). This profile has the most resource overhead. |
-
-Choose `WriteRequestBodies` or `AllRequestBodies` if you need to capture the full request body for forensic investigations. Be aware that these profiles increase resource usage and log volume.
- 
-This allows you to:
-
-- Detect security-sensitive fields like `hostPID: true`, `privileged: true`, or `volumes[].hostPath` directly in the log.
-- See the exact pod spec submitted at creation time, including all security context and volume mounts.
-- Write precise queries to hunt for container escape vectors, privilege escalation, or suspicious mounts.
+Since we have `WriteRequestBodies` enabled, we can directly query for these dangerous security contexts in the request payload.
 
 **Example query for hostPID:**
 ```bash
