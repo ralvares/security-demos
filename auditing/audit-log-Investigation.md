@@ -62,25 +62,44 @@ At this stage, we search for anonymous `403 Forbidden` attempts from the pod net
 
 ```bash
 echo "--- Hunting for Anonymous API Attempts (Frontend) ---"
-grep '"user":{"username":"system:anonymous"' audit.log | \
-grep '"stage":"ResponseComplete"' | \
-grep '"code":403' | \
-grep '"sourceIPs":\["10.128.' | \
-jq -r '[
-  .requestReceivedTimestamp,
-  .user.username,
-  .verb,
-  .requestURI,
-  (.responseStatus.code | tostring),
-  (.sourceIPs[0] // "-"),
-  (.userAgent // "-")
-] | @tsv' | column -t -s $'\t'
+(echo "TIMESTAMP VERB URI NAMESPACE SOURCE_IP"; jq -r --arg ip "10.128." 'select(
+  .user.username == "system:anonymous" and 
+  .responseStatus.code == 403 and 
+  (.sourceIPs[0] | startswith($ip))
+) | [
+  .requestReceivedTimestamp, 
+  .verb, 
+  .requestURI, 
+  .objectRef.namespace,
+  .sourceIPs[0]
+] | @tsv' audit.log) | column -t
 ```
 
 Explanation: Understanding `sourceIPs`
 - The audit field `sourceIPs` reflects the IPs observed by the API server for the client connection. In most cases, the first element is the pod IP (e.g., `10.128.x.y`).
 - For deeper enrichment, OpenShift Network Observability can link the IP to the pod/workload, namespace, and node, providing a quick pivot from IP → pod → owner.
 
+
+#### Network Identity
+
+Finally, to correlate network flows with these events, we need to know the IP address assigned to the malicious pod at the time of creation. In OpenShift/OVN, this is stored in the `k8s.ovn.org/pod-networks` annotation.
+
+**The Query:**
+```bash
+(echo "TIMESTAMP NAMESPACE POD IP"; jq -r --arg pod "$POD_NAME" 'select(
+  .objectRef.resource == "pods" and
+  .requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] != null and
+  ($pod == "" or .objectRef.name == $pod)
+) | [
+  .requestReceivedTimestamp,
+  .objectRef.namespace,
+  .objectRef.name,
+  (.requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0]) 
+] | @tsv' audit.log) | column -t
+```
+
+**The Finding:**
+This reveals the ephemeral IP address assigned to the asset-cache pod.
 
 #### About the asset-cache Pod
 
@@ -107,25 +126,19 @@ We hunt for `SelfSubjectAccessReviews`. This API call is the digital equivalent 
 
 ```bash
 echo "--- Hunting for Privilege Enumeration (Any ServiceAccount) ---"
-cat audit.log | \
-jq -r -s '
-  map(select(
-    (.user.username | startswith("system:serviceaccount:")) and
-    # Exclude platform/system namespaces
-    (.user.username | contains(":openshift-") | not) and
-    (.user.username | contains(":stackrox") | not) and
-     (.user.username | contains(":kube-system") | not) and
-    (.objectRef.resource == "selfsubjectaccessreviews")
-  )) |
-  unique_by(.auditID) |
-  (["Time","Actor","Decision","Reason"] | @tsv),
-  (.[] | [
-    .requestReceivedTimestamp,
-    .user.username,
-    (.annotations["authorization.k8s.io/decision"] // "-"),
-    (.annotations["authorization.k8s.io/reason"] // "-")
-  ] | @tsv)
-' | column -t -s $'\t'
+(echo "TIMESTAMP USER NAMESPACE DECISION REASON"; jq -r --arg user "system:serviceaccount:" 'select(
+  .objectRef.resource == "selfsubjectaccessreviews" and
+  (.user.username | startswith($user)) and
+  (.user.username | contains("openshift") | not) and
+  (.user.username | contains("stackrox") | not) and
+  (.user.username | contains("kube-system") | not)
+) | [
+  .requestReceivedTimestamp, 
+  .user.username, 
+  .objectRef.namespace,
+  .annotations["authorization.k8s.io/decision"],
+  .annotations["authorization.k8s.io/reason"]
+] | @tsv' audit.log) | column -t
 ```
 
 **The Finding:**
@@ -141,20 +154,17 @@ We query for the `list` verb on the `secrets` resource performed by this account
 
 ```bash
 echo "--- Hunting for Secret Harvesting ---"
-grep '"user":{"username":"system:serviceaccount:payments:visa-processor"' audit.log | \
-grep '"resource":"secrets"' | \
-grep '"verb":"list"' | \
-jq -r -s '
-  unique_by(.auditID) |
-  (["Time","Actor","Status","Pod","Node","Client"] | @tsv),
-  (.[] | [
-    .requestReceivedTimestamp,
-    .user.username,
-    (.responseStatus.code | tostring),
-    (.user.extra["authentication.kubernetes.io/pod-name"][0] // "-"),
-    (.user.extra["authentication.kubernetes.io/node-name"][0] // "-"),
-    (.userAgent | split(" ")[0])  ] | @tsv)
-' | column -t -s $'\t'
+(echo "TIMESTAMP USER NAMESPACE CODE USER_AGENT"; jq -r --arg user "visa-processor" 'select(
+  .verb == "list" and
+  .objectRef.resource == "secrets" and
+  (.user.username | contains($user))
+) | [
+  .requestReceivedTimestamp, 
+  .user.username, 
+  .objectRef.namespace,
+  .responseStatus.code,
+  (.userAgent | split(" ")[0])
+] | @tsv' audit.log) | column -t
 ```
 
 **The Finding:**
@@ -164,23 +174,21 @@ We see a `200 OK` response. The compromised payment processor has successfully l
 
 
 ```bash
-echo "--- Hunting for Pod Creation Events (Non-Platform ServiceAccounts) ---"
-cat audit.log | jq -r -s '
-  map(select(
-    (.user.username | startswith("system:serviceaccount:")) and
-    (.user.username | contains(":openshift-") | not) and
-    (.user.username | contains(":stackrox") | not) and
-    (.user.username | contains(":kube-system") | not) and
-    (.verb == "create")
-  )) |
-  (["Time","Actor","Pod","Namespace"] | @tsv),
-  (.[] | [
-    .requestReceivedTimestamp,
-    .user.username,
-    (.objectRef.name // "-"),
-    (.objectRef.namespace // "-")
-  ] | @tsv)
-' | column -t -s $'\t'
+echo "--- Hunting for Privileged Pods & HostPID ---"
+(echo "TIMESTAMP USER POD NAMESPACE ALERT"; jq -r 'select(
+  .verb == "create" and 
+  .objectRef.resource == "pods" and 
+  (
+    (.requestObject.spec.hostPID == true) or 
+    (any(.requestObject.spec.containers[]?; .securityContext.privileged == true))
+  )
+) | [
+  .requestReceivedTimestamp, 
+  .user.username, 
+  .objectRef.name, 
+  .objectRef.namespace,
+  "ALERT: Dangerous Pod Spec"
+] | @tsv' audit.log) | column -t
 ```
 
 **The Finding:**
@@ -188,88 +196,37 @@ We match a request. The `visa-processor` identity created a pod named `visa-proc
 
 ---
 
-#### Forensic Hypothesis & Context
+#### Forensic Context: The Container Escape
 
-The attacker decides to escalate to the underlying Node. They need to deploy a new workload with specific security violations: `hostPID: true` or `privileged: true`.
+The attacker decided to escalate to the underlying Node. To do this, they deployed a new workload with specific security violations: `hostPID: true` or `privileged: true`.
 
-If your audit log profile does not capture the full request body, you cannot directly see fields like `hostPID` or `privileged`. However, by hunting for pod creation events by non-platform service accounts, you can spot suspicious activity and pivot to deeper investigation (e.g., checking pod specs via `oc get pod -o yaml` if the pod still exists).
-
-In a full forensic scenario, we would scan the JSON Request Body for `hostPID: true`, which would allow the container to see every process running on the Linux host (including Root processes). But even without the body, this query helps you identify the likely escape vector.
-
-**About Audit Log Body Options:**
-(See Part 1 for a detailed explanation of Audit Log Profiles).
-
-Since we have `WriteRequestBodies` enabled, we can directly query for these dangerous security contexts in the request payload.
-
-**Example query for hostPID:**
-```bash
-echo "--- Hunting for Pod Creations with hostPID: true ---"
-cat audit.log | jq -r -s '
-  map(select(
-    .verb == "create" and
-    .objectRef.resource == "pods" and
-    (.requestObject.spec.hostPID == true)
-  )) |
-  (["Time","Actor","Pod","Namespace","hostPID"] | @tsv),
-  (.[] | [
-    .requestReceivedTimestamp,
-    .user.username,
-    (.objectRef.name // "-"),
-    (.objectRef.namespace // "-"),
-    (.requestObject.spec.hostPID | tostring)
-  ] | @tsv)
-' | column -t -s $'\t'
-```
-
-**Example query for Privileged:**
-```bash
-echo "--- Hunting for Pod Creations with privileged: true ---"
-cat audit.log | jq -r -s '
-  map(select(
-    .verb == "create" and
-    .objectRef.resource == "pods" and
-    (.requestObject.spec.containers[]?.securityContext.privileged == true) and
-    (.objectRef.namespace | test("^(openshift|kube-system)") | not) and
-    (.user.username | test("^system:node:") | not)
-  )) |
-  (["Time","Actor","Pod","Namespace","Privileged"] | @tsv),
-  (.[] | [
-    .requestReceivedTimestamp,
-    .user.username,
-    (.objectRef.name // "-"),
-    (.objectRef.namespace // "-"),
-    ([ .requestObject.spec.containers[]? | select(.securityContext.privileged == true) | .securityContext.privileged ] | map(tostring) | join(",") // "-")
-  ] | @tsv)
-' | column -t -s $'\t'
-```
-
-**Note:** If your audit log profile is only `Metadata`, the request body is not present, so you cannot detect these fields directly. For deep forensics.
+Because our audit log profile (`WriteRequestBodies`) captures the full request payload, we were able to directly detect these dangerous fields in the `create` request.
 
 ### Step 5: The Backdoor (Interactive Tunneling)
 
-Finally, now that the privileged `visa-processor` pod is running, the attacker needs to enter it to execute their attack on the host. **This** is where we finally see the `exec` call.
+Finally, with the privileged `visa-processor` pod running, the attacker needed to enter it to execute their attack on the host. To establish this interactive session, attackers typically use `exec` (to get a shell) or `port-forward` (to tunnel traffic). **In this incident**, we observed the `exec` call.
 
 
 ```bash
-echo "--- Hunting for Exec Events (Pod, Node) ---"
-grep '"subresource":"exec"' audit.log | \
-jq -r -s '
-  (["Time","Actor","Pod","Node"] | @tsv),
-  (.[] | [
-    .requestReceivedTimestamp,
-    .user.username,
-    (.user.extra["authentication.kubernetes.io/pod-name"][0] // .objectRef.name // "-"),
-    (.user.extra["authentication.kubernetes.io/node-name"][0] // "-")
-  ] | @tsv)
-' | column -t -s $'\t'
+echo "--- Hunting for Exec Sessions ---"
+(echo "TIMESTAMP USER NAMESPACE POD URI"; jq -r 'select(
+  .objectRef.subresource == "exec" and
+  .responseStatus.code == 101
+) | [
+  .requestReceivedTimestamp, 
+  .user.username, 
+  .objectRef.namespace,
+  .objectRef.name, 
+  .requestURI
+] | @tsv' audit.log) | column -t
 ```
 
 **The Finding:**
-The `visa-processor` identity is opening a shell inside the pod.
+The `visa-processor` identity opened a shell inside the pod.
 
-The "loop is closed" only means the attacker has established their connection. You are absolutely right—we haven't seen the *impact* yet. The pod wasn't the goal; it was the **vehicle** to get to the host.
+The "loop was closed," meaning the attacker had established their connection. However, we hadn't seen the *impact* yet. The pod wasn't the goal; it was the **vehicle** to get to the host.
 
-Here is the final, critical chapter of the investigation: **The Node Compromise**.
+This led to the final, critical chapter of the investigation: **The Node Compromise**.
 
 -----
 
@@ -300,26 +257,18 @@ Once on the node, the attacker can:
 While the actual use of escape tools and subsequent host actions are not visible in Kubernetes audit logs, the combination of these pod creation events, dangerous settings, suspicious commands, unusual images, and sensitive mounts is a high-fidelity signal of node compromise. The queries below help you spot these behaviors.
 
 ```bash
-PODNAME="visa-processor"
-echo "--- Hunting for Pod Creations by Name ---"
-cat audit.log | jq -r -s --arg pod "$PODNAME" '
-  map(select(
-    .verb == "create" and
-    .objectRef.resource == "pods" and
-    (.objectRef.name == $pod)
-  )) |
-  map({
-    time: .requestReceivedTimestamp,
-    actor: .user.username,
-    pod: (.objectRef.name // "-"),
-    ns: (.objectRef.namespace // "-"),
-    image: ([.requestObject.spec.containers[]?.image] | join(" | ")),
-    command: ([.requestObject.spec.containers[]?.command | join(" ")] | join(" | "))
-  })
-  | map(select(.image != ""))
-  | (["Time","Actor","Pod","Namespace","Image","Command"] | @tsv),
-    (.[] | [.time, .actor, .pod, .ns, .image, .command] | @tsv)
-' | column -t -s $'\t'
+POD_NAME="visa-processor"
+echo "--- Extracting Payload for Pod: $POD_NAME ---"
+(echo "NAMESPACE IMAGE COMMAND"; jq -r --arg pod "$POD_NAME" 'select(
+  .verb == "create" and 
+  .objectRef.resource == "pods" and 
+  .objectRef.name == $pod and
+  .requestObject.spec.containers != null
+) | . as $parent | .requestObject.spec.containers[] | [
+  $parent.objectRef.namespace,
+  .image, 
+  (.command | join(" "))
+] | @tsv' audit.log) | column -t
 ```
 
 **The Finding:**
