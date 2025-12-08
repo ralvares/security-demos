@@ -1,6 +1,6 @@
 # OpenShift Audit Log Forensics
 
-This directory contains a complete toolkit and investigation guide for performing forensic analysis on OpenShift/Kubernetes Audit Logs. It is designed to demonstrate how to reconstruct a security incident—from initial access to node compromise—using only the immutable evidence found in the API logs.
+This directory contains a complete toolkit and investigation guide for performing forensic analysis on OpenShift/Kubernetes Audit Logs. It is designed to demonstrate how to reconstruct a security incident, from initial access to node compromise, using only the immutable evidence found in the API logs.
 
 ## Contents
 
@@ -43,6 +43,11 @@ Once loaded, you have access to the following forensic capabilities:
 | `audit_lookup_pod_by_ip` | Correlate an IP address to a Pod using OVN annotations. |
 | `audit_track_ip_activity` | Show the full history of actions performed by a specific IP. |
 | `audit_track_pod_lifecycle` | Reconstruct the complete timeline of a pod (Creation -> IP -> Events). |
+| `audit_detect_admin_grants` | Detect creation of `ClusterRoleBinding` to `cluster-admin`. |
+| `audit_detect_port_forward` | Detect usage of `oc port-forward` tunneling. |
+| `audit_detect_node_debug` | Detect usage of `oc debug node` (Root Shell on Host). |
+| `audit_detect_sensitive_mounts` | Detect pods mounting `/etc/kubernetes` or container sockets. |
+| `audit_detect_bruteforce` | Identify top sources of `401 Unauthorized` errors. |
 
 ## The Investigation Scenario
 

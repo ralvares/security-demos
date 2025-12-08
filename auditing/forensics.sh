@@ -475,6 +475,106 @@ audit_track_pod_lifecycle() {
 }
 
 # ==============================================================================
+# 14. PRIVILEGE ESCALATION: Detect Cluster-Admin Grants
+# ==============================================================================
+# Usage: audit_detect_admin_grants <log_file>
+audit_detect_admin_grants() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- [14] Hunting for Grants of 'cluster-admin' privileges ---"
+    (echo "TIMESTAMP ACTOR BINDING TARGET_USER/GROUP"; jq -r 'select(
+      (.objectRef.resource == "clusterrolebindings") and
+      (.verb == "create" or .verb == "update" or .verb == "patch") and
+      (.requestObject.roleRef.name == "cluster-admin")
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      .objectRef.name,
+      (.requestObject.subjects[]? | .name)
+    ] | @tsv' "$LOG_FILE") | column -t
+}
+
+# ==============================================================================
+# 15. LATERAL MOVEMENT: Detect Port Forwarding
+# ==============================================================================
+# Usage: audit_detect_port_forward <log_file>
+audit_detect_port_forward() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- [15] Hunting for Port Forwarding Tunnels ---"
+    (echo "TIMESTAMP USER NAMESPACE POD"; jq -r 'select(
+      .objectRef.subresource == "portforward" and
+      .responseStatus.code == 101
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      .objectRef.namespace,
+      .objectRef.name
+    ] | @tsv' "$LOG_FILE") | column -t
+}
+
+# ==============================================================================
+# 16. PRIVILEGE ESCALATION: Detect Node Debugging (Root Shell)
+# ==============================================================================
+# Usage: audit_detect_node_debug <log_file>
+audit_detect_node_debug() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- [16] Hunting for 'oc debug node' usage ---"
+    (echo "TIMESTAMP USER POD NODE"; jq -r 'select(
+      .verb == "create" and
+      .objectRef.resource == "pods" and
+      (.objectRef.name // "" | endswith("-debug")) and
+      (.requestObject.spec.containers[0].securityContext.privileged == true)
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      .objectRef.name,
+      .requestObject.spec.nodeName
+    ] | @tsv' "$LOG_FILE") | column -t
+}
+
+# ==============================================================================
+# 17. PERSISTENCE: Detect Sensitive Host Mounts
+# ==============================================================================
+# Usage: audit_detect_sensitive_mounts <log_file>
+audit_detect_sensitive_mounts() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- [17] Hunting for Sensitive Host Paths (/etc/kubernetes, /var/lib/etcd) ---"
+    (echo "TIMESTAMP USER POD MOUNT_PATH"; jq -r 'select(
+      .verb == "create" and
+      .objectRef.resource == "pods" and
+      .requestObject.spec.volumes != null
+    ) | . as $parent | .requestObject.spec.volumes[] | select(
+      .hostPath != null and
+      (
+        (.hostPath.path // "" | startswith("/etc/kubernetes")) or
+        (.hostPath.path // "" | startswith("/var/lib/etcd")) or
+        (.hostPath.path // "" | contains("docker.sock")) or
+        (.hostPath.path // "" | contains("crio.sock"))
+      )
+    ) | [
+      $parent.requestReceivedTimestamp,
+      $parent.user.username,
+      $parent.objectRef.name,
+      .hostPath.path
+    ] | @tsv' "$LOG_FILE") | column -t
+}
+
+# ==============================================================================
+# 18. CREDENTIAL ACCESS: Detect Brute Force Attacks
+# ==============================================================================
+# Usage: audit_detect_bruteforce <log_file>
+audit_detect_bruteforce() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- [18] Hunting for Brute Force (Top 401 Unauthorized Sources) ---"
+    echo "COUNT SOURCE_IP"
+    jq -r 'select(.responseStatus.code == 401) | .sourceIPs[0]' "$LOG_FILE" | sort | uniq -c | sort -nr | head -n 10
+}
+
+# ==============================================================================
 # HELP MENU
 # ==============================================================================
 audit_help() {
@@ -498,6 +598,11 @@ audit_help() {
     echo "  audit_detect_impersonation       <file>               - Find usage of --as impersonation"
     echo "  audit_track_ip_activity          <file> <ip>          - Investigate IP history and identity switching"
     echo "  audit_track_pod_lifecycle        <file> <pod>         - Show full lifecycle history of a pod"
+    echo "  audit_detect_admin_grants        <file>               - Find creation of 'cluster-admin' bindings"
+    echo "  audit_detect_port_forward        <file>               - Find 'port-forward' usage"
+    echo "  audit_detect_node_debug          <file>               - Find 'oc debug node' usage"
+    echo "  audit_detect_sensitive_mounts    <file>               - Find pods mounting /etc/kubernetes etc"
+    echo "  audit_detect_bruteforce          <file>               - Find top sources of 401 Unauthorized"
     echo ""
     echo "Example: audit_detect_privileged_pods audit.log"
 }
