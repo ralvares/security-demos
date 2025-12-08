@@ -25,23 +25,23 @@ audit_fetch() {
         return 1
     fi
 
-    # Clear existing file or create new one
-    > "$OUTPUT_FILE"
-
     echo "--- Fetching Audit Logs from Master Nodes to '$OUTPUT_FILE' ---"
     
-    # Get list of master nodes
-    local masters
-    masters=$(oc get nodes -l node-role.kubernetes.io/master -o custom-columns=NAME:.metadata.name --no-headers)
-
-    if [ -z "$masters" ]; then
-        echo "Error: No master nodes found or 'oc' command failed."
+    # Check connectivity/permissions first
+    if ! oc get nodes -l node-role.kubernetes.io/master &> /dev/null; then
+        echo "Error: Failed to get master nodes. Check your 'oc' login and permissions."
         return 1
     fi
 
-    for master in $masters; do
-        echo "Fetching logs from ${master}..."
-        oc adm node-logs "${master}" --path=kube-apiserver/audit.log >> "$OUTPUT_FILE"
+    # Clear/Create file
+    > "$OUTPUT_FILE"
+
+    # Iterate over master nodes
+    oc get nodes -l node-role.kubernetes.io/master -o custom-columns=NAME:.metadata.name --no-headers | while read -r master; do
+        if [ -n "$master" ]; then
+            echo "Fetching logs from ${master}..."
+            oc adm node-logs "${master}" --path=kube-apiserver/audit.log >> "$OUTPUT_FILE"
+        fi
     done
     
     echo "Done. Logs are available in '$OUTPUT_FILE'."
