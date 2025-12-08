@@ -187,14 +187,19 @@ audit_extract_pod_payload() {
 
     echo "--- [6] Extracting Payload for Pod: $POD_NAME ---"
     (echo "NAMESPACE IMAGE COMMAND"; jq -r --arg pod "$POD_NAME" 'select(
-      .verb == "create" and 
       .objectRef.resource == "pods" and 
-      .objectRef.name == $pod and
-      .requestObject.spec.containers != null
-    ) | . as $parent | .requestObject.spec.containers[] | [
-      $parent.objectRef.namespace,
+      .objectRef.name == $pod
+    ) | 
+    (
+      if (.responseObject.spec.containers != null) then .responseObject 
+      elif (.requestObject.spec.containers != null) then .requestObject
+      else empty end
+    ) | 
+    . as $obj |
+    $obj.spec.containers[] | [
+      $obj.metadata.namespace,
       .image, 
-      (.command | join(" "))
+      (if .command and (.command | length > 0) then (.command | join(" ")) else "(default)" end)
     ] | @tsv' "$LOG_FILE") | column -t
 }
 
@@ -465,16 +470,7 @@ audit_track_pod_lifecycle() {
     echo ""
 
     # 3. Extract Payload (Image & Command)
-    echo "--- Payload Information ---"
-    (echo "IMAGE COMMAND"; jq -r --arg pod "$POD_NAME" 'select(
-      .verb == "create" and 
-      .objectRef.resource == "pods" and 
-      .objectRef.name == $pod and
-      .requestObject.spec.containers != null
-    ) | .requestObject.spec.containers[] | [
-      .image, 
-      (.command | join(" "))
-    ] | @tsv' "$LOG_FILE" | sort | uniq) | column -t
+    audit_extract_pod_payload "$LOG_FILE" "$POD_NAME"
 }
 
 # ==============================================================================
