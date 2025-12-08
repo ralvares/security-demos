@@ -16,8 +16,8 @@ fi
 # ==============================================================================
 # 0. SETUP: Fetch Audit Logs from Masters
 # ==============================================================================
-# Usage: audit_fetch [output_file]
-audit_fetch() {
+# Usage: audit_fetch_logs [output_file]
+audit_fetch_logs() {
     local OUTPUT_FILE="${1:-audit.log}"
 
     if ! command -v oc &> /dev/null; then
@@ -51,12 +51,12 @@ audit_fetch() {
 # ==============================================================================
 # 1. INITIAL ACCESS: Detect Anonymous Probing
 # ==============================================================================
-# Usage: audit_anon <log_file> [ip_prefix]
-audit_anon() {
+# Usage: audit_detect_anonymous_access <log_file> [ip_prefix]
+audit_detect_anonymous_access() {
     local LOG_FILE="${1:-audit.log}"
     local IP_PREFIX="${2:-10.128.}"
 
-    echo "--- [1] Hunting for Anonymous Probes from IP range: $IP_PREFIX ---"
+    echo "--- [1] Hunting for Anonymous Probes (Denied) from IP range: $IP_PREFIX ---"
     (echo "TIMESTAMP VERB URI SOURCE_IP"; jq -r --arg ip "$IP_PREFIX" 'select(
       .user.username == "system:anonymous" and 
       .responseStatus.code == 403 and 
@@ -72,13 +72,13 @@ audit_anon() {
 # ==============================================================================
 # 2. DISCOVERY: Detect Reconnaissance (Privilege Enumeration)
 # ==============================================================================
-# Usage: audit_recon <log_file> [user_pattern]
-audit_recon() {
+# Usage: audit_detect_reconnaissance <log_file> [user_pattern]
+audit_detect_reconnaissance() {
     local LOG_FILE="${1:-audit.log}"
     local USER_PATTERN="${2:-system:serviceaccount:}"
 
     echo "--- [2] Hunting for Recon (SelfSubjectAccessReview) by: $USER_PATTERN ---"
-    (echo "TIMESTAMP USER NAMESPACE DECISION REASON"; jq -r --arg user "$USER_PATTERN" 'select(
+    (echo "TIMESTAMP USER DECISION REASON"; jq -r --arg user "$USER_PATTERN" 'select(
       .objectRef.resource == "selfsubjectaccessreviews" and
       (.user.username | startswith($user)) and
       (.user.username | contains("openshift") | not) and
@@ -87,7 +87,6 @@ audit_recon() {
     ) | [
       .requestReceivedTimestamp, 
       .user.username, 
-      .objectRef.namespace,
       .annotations["authorization.k8s.io/decision"],
       .annotations["authorization.k8s.io/reason"]
     ] | @tsv' "$LOG_FILE") | column -t
@@ -96,36 +95,38 @@ audit_recon() {
 # ==============================================================================
 # 3. CREDENTIAL ACCESS: Detect Resource Harvesting
 # ==============================================================================
-# Usage: audit_harvesting <log_file> [target_user]
-audit_harvesting() {
+# Usage: audit_detect_resource_harvesting <log_file> [target_user] [ip_prefix]
+audit_detect_resource_harvesting() {
     local LOG_FILE="${1:-audit.log}"
     local TARGET_USER="$2"
+    local IP_PREFIX="${3:-10.128.}"
 
     if [ -z "$TARGET_USER" ]; then
         echo "Error: You must provide a target user (e.g., 'visa-processor')"
         return 1
     fi
 
-    echo "--- [3] Hunting for Resource Harvesting by: $TARGET_USER ---"
-    (echo "TIMESTAMP USER RESOURCE CODE USER_AGENT"; jq -r --arg user "$TARGET_USER" 'select(
+    echo "--- [3] Hunting for Resource Harvesting by: $TARGET_USER (IP: $IP_PREFIX) ---"
+    (echo "TIMESTAMP USER RESOURCE CODE USER_AGENT SOURCE_IP"; jq -r --arg user "$TARGET_USER" --arg ip "$IP_PREFIX" 'select(
       .verb == "list" and
-      (.objectRef.resource == "secrets" or .objectRef.resource == "configmaps" or .objectRef.resource == "pods") and
-      (.user.username | contains($user))
+      (.user.username | contains($user)) and
+      (.sourceIPs[0] | startswith($ip))
     ) | [
       .requestReceivedTimestamp, 
       .user.username, 
       .objectRef.resource,
       .responseStatus.code,
-      (.userAgent | split(" ")[0])
+      (.userAgent | split(" ")[0]),
+      .sourceIPs[0]
     ] | @tsv' "$LOG_FILE") | column -t
 }
 
 # ==============================================================================
 # 4. ESCALATION: Detect Container Escapes (HostPID / Privileged)
 # ==============================================================================
-# Usage: audit_escape <log_file>
+# Usage: audit_detect_privileged_pods <log_file>
 # Note: Uses 'any' and '?' to safely handle logs where requestObject is null
-audit_escape() {
+audit_detect_privileged_pods() {
     local LOG_FILE="${1:-audit.log}"
 
     echo "--- [4] Hunting for Privileged Pods & HostPID ---"
@@ -145,15 +146,15 @@ audit_escape() {
       .user.username, 
       .objectRef.name, 
       .objectRef.namespace,
-      "ALERT: Dangerous Pod Spec"
+      "Created POD with Dangerous Specs"
     ] | @tsv' "$LOG_FILE") | column -t
 }
 
 # ==============================================================================
 # 5. LATERAL MOVEMENT: Detect Exec Sessions
 # ==============================================================================
-# Usage: audit_exec <log_file> [pod_name]
-audit_exec() {
+# Usage: audit_detect_exec_sessions <log_file> [pod_name]
+audit_detect_exec_sessions() {
     local LOG_FILE="${1:-audit.log}"
     local POD_NAME="$2"
 
@@ -173,9 +174,9 @@ audit_exec() {
 # ==============================================================================
 # 6. PAYLOAD ANALYSIS: Extract Image & Command
 # ==============================================================================
-# Usage: audit_payload <log_file> <pod_name>
+# Usage: audit_extract_pod_payload <log_file> <pod_name>
 # Note: Checks for 'containers != null' to prevent crashes on partial logs
-audit_payload() {
+audit_extract_pod_payload() {
     local LOG_FILE="${1:-audit.log}"
     local POD_NAME="$2"
 
@@ -200,8 +201,8 @@ audit_payload() {
 # ==============================================================================
 # 7. NETWORK FORENSICS: Find Pod by IP (OVN Annotation Method)
 # Best for clusters where standard Status IP logging is missing or filtered.
-# Usage: audit_ovn_ips <log_file> <ip_address>
-audit_ovn_ips() {
+# Usage: audit_lookup_pod_by_ip <log_file> <ip_address>
+audit_lookup_pod_by_ip() {
     local LOG_FILE="${1:-audit.log}"
     local TARGET_IP="$2"
 
@@ -227,8 +228,8 @@ audit_ovn_ips() {
 # ==============================================================================
 # 8. KUBEVIRT FORENSICS: Detect VM Access & Creation
 # ==============================================================================
-# Usage: audit_kubevirt_console <log_file>
-audit_virt_console() {
+# Usage: audit_detect_kubevirt_console <log_file>
+audit_detect_kubevirt_console() {
     local LOG_FILE="${1:-audit.log}"
     echo "--- [8a] Hunting for VM Console/VNC Access ---"
     (echo "TIMESTAMP USER VM_NAME ACCESS_TYPE ALERT"; jq -r 'select(
@@ -245,8 +246,8 @@ audit_virt_console() {
     ] | @tsv' "$LOG_FILE") | column -t
 }
 
-# Usage: audit_kubevirt_vm <log_file>
-audit_virt_vm() {
+# Usage: audit_detect_kubevirt_vm_creation <log_file>
+audit_detect_kubevirt_vm_creation() {
     local LOG_FILE="${1:-audit.log}"
     echo "--- [8b] Hunting for KubeVirt VM Creations ---"
     (echo "TIMESTAMP USER RESOURCE NAME ACTION"; jq -r 'select(
@@ -264,8 +265,8 @@ audit_virt_vm() {
 # ==============================================================================
 # 9. PERSISTENCE: Detect "Time Bombs" (CronJobs/DaemonSets)
 # ==============================================================================
-# Usage: audit_persistence <log_file> [user_pattern]
-audit_persistence() {
+# Usage: audit_detect_persistence <log_file> [user_pattern]
+audit_detect_persistence() {
     local LOG_FILE="${1:-audit.log}"
     local USER_PATTERN="$2"
     
@@ -292,8 +293,8 @@ audit_persistence() {
 # ==============================================================================
 # 10. TAMPERING: Detect Config/Secret Modification
 # ==============================================================================
-# Usage: audit_tampering <log_file> [user_pattern]
-audit_tampering() {
+# Usage: audit_detect_tampering <log_file> [user_pattern]
+audit_detect_tampering() {
     local LOG_FILE="${1:-audit.log}"
     local USER_PATTERN="$2"
     
@@ -319,8 +320,8 @@ audit_tampering() {
 # ==============================================================================
 # 11. EVASION: Detect User Impersonation
 # ==============================================================================
-# Usage: audit_impersonation <log_file>
-audit_impersonation() {
+# Usage: audit_detect_impersonation <log_file>
+audit_detect_impersonation() {
     local LOG_FILE="${1:-audit.log}"
     
     echo "--- [11] Hunting for User Impersonation (--as=...) ---"
@@ -341,8 +342,8 @@ audit_impersonation() {
 # ==============================================================================
 # 12. INVESTIGATION: IP History & Identity Switching
 # ==============================================================================
-# Usage: audit_ip_history <log_file> <ip_address>
-audit_ip_history() {
+# Usage: audit_track_ip_activity <log_file> <ip_address>
+audit_track_ip_activity() {
     local LOG_FILE="${1:-audit.log}"
     local TARGET_IP="$2"
 
@@ -351,18 +352,126 @@ audit_ip_history() {
         return 1
     fi
 
+    # 1. Identify the Pod Owner (if possible)
+    echo "--- Identifying Pod for IP: $TARGET_IP ---"
+    local POD_OWNER=$(jq -r --arg ip "$TARGET_IP" 'select(
+      .objectRef.resource == "pods" and
+      .requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] != null
+    ) | 
+    (.requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0]) as $pod_ip |
+    select($pod_ip == $ip) |
+    "\(.objectRef.namespace)/\(.objectRef.name)"' "$LOG_FILE" | head -n 1)
+
+    if [ -n "$POD_OWNER" ]; then
+        echo "Pod Owner: $POD_OWNER"
+    else
+        echo "Pod Owner: Unknown (Creation event not found in this log)"
+    fi
+    echo ""
+
     echo "--- History of Activity for IP: $TARGET_IP ---"
     
-    (echo "TIMESTAMP USER VERB URI CODE"; jq -r --arg ip "$TARGET_IP" 'select(
+    (echo "TIMESTAMP USER VERB RESOURCE CODE"; jq -r --arg ip "$TARGET_IP" 'select(
       # Check if the IP list contains our target
       (.sourceIPs[]? | contains($ip))
     ) | [
       .requestReceivedTimestamp,
       .user.username,
       .verb,
-      .requestURI,
+      .objectRef.resource,
       .responseStatus.code
     ] | @tsv' "$LOG_FILE") | column -t
+}
+
+# ==============================================================================
+# 13. INVESTIGATION: Pod Lifecycle & History
+# ==============================================================================
+# Usage: audit_track_pod_lifecycle <log_file> <pod_name>
+audit_track_pod_lifecycle() {
+    local LOG_FILE="${1:-audit.log}"
+    local POD_NAME="$2"
+
+    if [ -z "$POD_NAME" ]; then
+        echo "Error: You must provide a pod name."
+        return 1
+    fi
+
+    echo "--- Lifecycle History for Pod: $POD_NAME ---"
+
+    # 1. Extract Pod Metadata (Namespace, ServiceAccount, Node, IP)
+    # Priority: Object with OVN annotation (has IP) -> Object with Spec (has NS/SA)
+    local POD_META=$(jq -r --arg pod "$POD_NAME" 'select(
+      .objectRef.resource == "pods" and
+      .objectRef.name == $pod and
+      (.requestObject.spec != null or .responseObject.spec != null) and
+      ((.responseObject // .requestObject) | .metadata.annotations["k8s.ovn.org/pod-networks"] != null)
+    ) | 
+    (.responseObject // .requestObject) | 
+    [
+      (.metadata.namespace // "Unknown"),
+      (.spec.serviceAccountName // "Unknown"),
+      (.spec.nodeName // "Pending"),
+      (.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0])
+    ] | @tsv' "$LOG_FILE" | head -n 1)
+
+    # Fallback if no IP found (e.g. pod failed to schedule or just created)
+    if [ -z "$POD_META" ]; then
+         POD_META=$(jq -r --arg pod "$POD_NAME" 'select(
+          .objectRef.resource == "pods" and
+          .objectRef.name == $pod and
+          (.requestObject.spec != null or .responseObject.spec != null)
+        ) | 
+        (.responseObject // .requestObject) | 
+        [
+          (.metadata.namespace // "Unknown"),
+          (.spec.serviceAccountName // "Unknown"),
+          (.spec.nodeName // "Pending"),
+          "Unknown"
+        ] | @tsv' "$LOG_FILE" | head -n 1)
+    fi
+
+    if [ -n "$POD_META" ]; then
+        read -r P_NS P_SA P_NODE P_IP <<< "$POD_META"
+        echo "Namespace:       $P_NS"
+        echo "Service Account: $P_SA"
+        echo "Node:            $P_NODE"
+        echo "IP Address:      $P_IP"
+    else
+        echo "Metadata:        Unknown (Full Pod Object not found in logs)"
+    fi
+    echo ""
+    
+    # 2. Find Creation Timestamp
+    # We look for 'create' on the pod itself (true creation) or 'create binding' (scheduling)
+    local CREATION_INFO=$(jq -r --arg pod "$POD_NAME" 'select(
+      .objectRef.resource == "pods" and
+      .objectRef.name == $pod and
+      .verb == "create"
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      (.objectRef.subresource // "pod")
+    ] | @tsv' "$LOG_FILE" | sort | head -n 1)
+
+    if [ -n "$CREATION_INFO" ]; then
+        read -r C_TIME C_USER C_RES <<< "$CREATION_INFO"
+        echo "Creation Time:   $C_TIME"
+    else
+        echo "Creation Time:   Unknown (No 'create' event found)"
+    fi
+    echo ""
+
+    # 3. Extract Payload (Image & Command)
+    echo "--- Payload Information ---"
+    (echo "IMAGE COMMAND"; jq -r --arg pod "$POD_NAME" 'select(
+      .verb == "create" and 
+      .objectRef.resource == "pods" and 
+      .objectRef.name == $pod and
+      .requestObject.spec.containers != null
+    ) | .requestObject.spec.containers[] | [
+      .image, 
+      (.command | join(" "))
+    ] | @tsv' "$LOG_FILE" | sort | uniq) | column -t
 }
 
 # ==============================================================================
@@ -374,23 +483,23 @@ audit_help() {
     echo "Usage: source forensics.sh"
     echo "Then run any of the following functions:"
     echo ""
-    echo "  audit_fetch    [output_file]        - Fetch audit logs from all master nodes"
-    echo "  audit_anon     <file> [ip_prefix]   - Find anonymous probes from pod network"
-    echo "  audit_recon    <file> [user]        - Find 'SelfSubjectAccessReviews'"
-    echo "  audit_harvesting <file> <user>      - Find 'List' attempts on Secrets/ConfigMaps/Pods"
-    echo "  audit_escape   <file>               - Find 'HostPID' or 'Privileged' pod creation"
-    echo "  audit_exec     <file> [pod]         - Find 'oc exec' sessions"
-    echo "  audit_payload  <file> <pod>         - Extract Image and Command used"
-    echo "  audit_ovn_ips  <file> <ip>          - Find Pod by IP using OVN annotations"
-    echo "  audit_virt_console <file>       - Find VM Console/VNC/SSH access"
-    echo "  audit_virt_vm      <file>       - Find VM creation events"
-    echo "  audit_persistence      <file> [user] - Find suspicious CronJobs/DaemonSets"
-    echo "  audit_tampering        <file> [user] - Find ConfigMap/Secret modifications"
-    echo "  audit_impersonation    <file>       - Find usage of --as impersonation"
-    echo "  audit_ip_history       <file> <ip>  - Show all activity for a specific IP"
-    echo "  audit_ip_history       <file> <ip>   - Investigate IP history and identity switching"
+    echo "  audit_fetch_logs                 [output_file]        - Fetch audit logs from all master nodes"
+    echo "  audit_detect_anonymous_access    <file> [ip_prefix]   - Find anonymous probes from pod network"
+    echo "  audit_detect_reconnaissance      <file> [user]        - Find 'SelfSubjectAccessReviews'"
+    echo "  audit_detect_resource_harvesting <file> <user> [ip]   - Find 'List' attempts on Secrets/ConfigMaps/Pods"
+    echo "  audit_detect_privileged_pods     <file>               - Find 'HostPID' or 'Privileged' pod creation"
+    echo "  audit_detect_exec_sessions       <file> [pod]         - Find 'oc exec' sessions"
+    echo "  audit_extract_pod_payload        <file> <pod>         - Extract Image and Command used"
+    echo "  audit_lookup_pod_by_ip           <file> <ip>          - Find Pod by IP using OVN annotations"
+    echo "  audit_detect_kubevirt_console    <file>               - Find VM Console/VNC/SSH access"
+    echo "  audit_detect_kubevirt_vm_creation <file>              - Find VM creation events"
+    echo "  audit_detect_persistence         <file> [user]        - Find suspicious CronJobs/DaemonSets"
+    echo "  audit_detect_tampering           <file> [user]        - Find ConfigMap/Secret modifications"
+    echo "  audit_detect_impersonation       <file>               - Find usage of --as impersonation"
+    echo "  audit_track_ip_activity          <file> <ip>          - Investigate IP history and identity switching"
+    echo "  audit_track_pod_lifecycle        <file> <pod>         - Show full lifecycle history of a pod"
     echo ""
-    echo "Example: audit_escape audit.log"
+    echo "Example: audit_detect_privileged_pods audit.log"
 }
 
 # If the script is executed directly (not sourced), show help.

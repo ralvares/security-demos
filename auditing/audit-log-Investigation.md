@@ -82,6 +82,14 @@ We will now switch to the terminal to reconstruct this timeline using **Behavior
 
 ## Part 3: The Investigation
 
+### Setup: Load the Forensic Library
+
+Before we begin, we will load our forensic toolkit. This library contains pre-built functions to query the audit logs efficiently.
+
+```bash
+source forensics.sh
+```
+
 ### Step 1: Investigating the Entry Point
 
 We begin our investigation by looking for suspicious anonymous API activity originating from within the cluster. Our first clue is a set of `403 Forbidden` audit log entries where the `user` is `system:anonymous` and the `sourceIPs` field contains an address from the pod network (e.g., `10.128.x.y`).
@@ -93,17 +101,7 @@ Once we identify a pod IP making these anonymous requests, we can correlate it t
 At this stage, we search for anonymous `403 Forbidden` attempts from the pod network:
 
 ```bash
-echo "--- Hunting for Anonymous API Attempts (Frontend) ---"
-(echo "TIMESTAMP VERB URI SOURCE_IP"; jq -r --arg ip "10." 'select(
-  .user.username == "system:anonymous" and 
-  .responseStatus.code == 403 and 
-  (.sourceIPs[0] | startswith($ip))
-) | [
-  .requestReceivedTimestamp, 
-  .verb, 
-  .requestURI, 
-  .sourceIPs[0]
-] | @tsv' audit.log) | column -t
+audit_detect_anonymous_access audit.log
 ```
 
 Explanation: Understanding `sourceIPs`
@@ -118,19 +116,7 @@ Finally, to correlate network flows with these events, we need to know the IP ad
 **The Query:**
 ```bash
 TARGET_IP=10.128.0.7
-echo "--- [7] Hunting for Pod owning IP: $TARGET_IP ---"
-    (echo "TIMESTAMP NAMESPACE POD IP"; jq -r --arg ip "$TARGET_IP" 'select(
-      .objectRef.resource == "pods" and
-      .requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] != null
-    ) | 
-    (.requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0]) as $pod_ip |
-    select($pod_ip == $ip) |
-    [
-      .requestReceivedTimestamp,
-      .objectRef.namespace,
-      .objectRef.name,
-      $pod_ip
-    ] | @tsv' audit.log) | column -t
+audit_lookup_pod_by_ip audit.log $TARGET_IP
 ```
 
 **The Finding:**
@@ -157,16 +143,7 @@ We run a history check on this specific IP to see if it ever made a request with
 
 ```bash
 TARGET_IP="10.128.0.7"
-echo "--- History of Activity for IP: $TARGET_IP ---"
-(echo "TIMESTAMP USER VERB URI CODE"; jq -r --arg ip "$TARGET_IP" 'select(
-  (.sourceIPs[]? | contains($ip))
-) | [
-  .requestReceivedTimestamp,
-  .user.username,
-  .verb,
-  .requestURI,
-  .responseStatus.code
-] | @tsv' audit.log) | column -t
+audit_track_ip_activity audit.log $TARGET_IP
 ```
 
 **The Finding:**
@@ -185,20 +162,7 @@ A legitimate payment application is deterministic—it writes to databases, it p
 We hunt for `SelfSubjectAccessReviews`. This API call is the digital equivalent of a user running `can-i`. It is a high-fidelity signal of a human manually enumerating permissions.
 
 ```bash
-echo "--- Hunting for Privilege Enumeration (Any ServiceAccount) ---"
-(echo "TIMESTAMP USER NAMESPACE DECISION REASON"; jq -r --arg user "system:serviceaccount:" 'select(
-  .objectRef.resource == "selfsubjectaccessreviews" and
-  (.user.username | startswith($user)) and
-  (.user.username | contains("openshift") | not) and
-  (.user.username | contains("stackrox") | not) and
-  (.user.username | contains("kube-system") | not)
-) | [
-  .requestReceivedTimestamp, 
-  .user.username, 
-  .objectRef.namespace,
-  .annotations["authorization.k8s.io/decision"],
-  .annotations["authorization.k8s.io/reason"]
-] | @tsv' audit.log) | column -t
+audit_detect_reconnaissance audit.log
 ```
 
 **The Finding:**
@@ -213,17 +177,7 @@ A payment processor should only mount the specific secrets it needs at boot time
 We query for the `list` verb on the `secrets` resource performed by this account.
 
 ```bash
-echo "--- Hunting for Resource Harvesting ---"
-(echo "TIMESTAMP USER RESOURCE USER_AGENT"; jq -r --arg user "visa-processor" 'select(
-  .verb == "list" and
-  (.objectRef.resource == "secrets" or .objectRef.resource == "configmaps" or .objectRef.resource == "pods") and
-  (.user.username | contains($user))
-) | [
-  .requestReceivedTimestamp, 
-  .user.username, 
-  .objectRef.resource,
-  (.userAgent | split(" ")[0])
-] | @tsv' audit.log) | column -t
+audit_detect_resource_harvesting audit.log visa-processor
 ```
 
 **The Finding:**
@@ -231,27 +185,12 @@ We see a `200 OK` response. The compromised payment processor has successfully l
 
 ### Step 4: The "Smoking Gun" (Host Escape)
 
+With the credentials harvested, the attacker has likely found a way to escalate privileges. The ultimate goal in many container breaches is to escape the container sandbox and gain control of the underlying Node (Host OS).
+
+To do this, they must deploy a "Privileged" pod or one with `HostPID` enabled. This allows them to see all processes on the server, effectively breaking the isolation. We hunt for the creation of such dangerous pods.
 
 ```bash
-echo "--- Hunting for Privileged Pods & HostPID ---"
-(echo "TIMESTAMP USER POD NAMESPACE ALERT"; jq -r 'select(
-  .verb == "create" and 
-  .objectRef.resource == "pods" and 
-  (.user.username | contains("openshift") | not) and
-  (.user.username | contains("stackrox") | not) and
-  (.user.username | contains("kube-system") | not) and
-  (.user.username | contains("system:node") | not) and
-  (
-    (.requestObject.spec.hostPID == true) or 
-    (any(.requestObject.spec.containers[]?; .securityContext.privileged == true))
-  )
-) | [
-  .requestReceivedTimestamp, 
-  .user.username, 
-  .objectRef.name, 
-  .objectRef.namespace,
-  "ALERT: Dangerous Pod Spec"
-] | @tsv' audit.log) | column -t
+audit_detect_privileged_pods audit.log
 ```
 
 **The Finding:**
@@ -271,16 +210,7 @@ Finally, with the privileged `visa-processor` pod running, the attacker needed t
 
 
 ```bash
-echo "--- Hunting for Exec Sessions ---"
-(echo "TIMESTAMP USER NAMESPACE POD"; jq -r 'select(
-  .objectRef.subresource == "exec" and
-  .responseStatus.code == 101
-) | [
-  .requestReceivedTimestamp, 
-  .user.username, 
-  .objectRef.namespace,
-  .objectRef.name
-] | @tsv' audit.log) | column -t
+audit_detect_exec_sessions audit.log
 ```
 
 **The Finding:**
@@ -320,17 +250,7 @@ While the actual use of escape tools and subsequent host actions are not visible
 
 ```bash
 POD_NAME="visa-processor"
-echo "--- Extracting Payload for Pod: $POD_NAME ---"
-(echo "NAMESPACE IMAGE COMMAND"; jq -r --arg pod "$POD_NAME" 'select(
-  .verb == "create" and 
-  .objectRef.resource == "pods" and 
-  .objectRef.name == $pod and
-  .requestObject.spec.containers != null
-) | . as $parent | .requestObject.spec.containers[] | [
-  $parent.objectRef.namespace,
-  .image, 
-  (.command | join(" "))
-] | @tsv' audit.log) | column -t
+audit_track_pod_lifecycle audit.log $POD_NAME
 ```
 
 **The Finding:**
