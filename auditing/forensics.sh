@@ -398,7 +398,7 @@ audit_track_pod_lifecycle() {
 
     echo "--- Lifecycle History for Pod: $POD_NAME ---"
 
-    # 1. Extract Pod Metadata (Namespace, ServiceAccount, Node, IP)
+    # 1. Extract Pod Metadata (Namespace, ServiceAccount, Node, IP, SCC)
     # Priority: Object with OVN annotation (has IP) -> Object with Spec (has NS/SA)
     local POD_META=$(jq -r --arg pod "$POD_NAME" 'select(
       .objectRef.resource == "pods" and
@@ -411,7 +411,8 @@ audit_track_pod_lifecycle() {
       (.metadata.namespace // "Unknown"),
       (.spec.serviceAccountName // "Unknown"),
       (.spec.nodeName // "Pending"),
-      (.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0])
+      (.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0]),
+      (.metadata.annotations["openshift.io/scc"] // "Unknown")
     ] | @tsv' "$LOG_FILE" | head -n 1)
 
     # Fallback if no IP found (e.g. pod failed to schedule or just created)
@@ -426,16 +427,18 @@ audit_track_pod_lifecycle() {
           (.metadata.namespace // "Unknown"),
           (.spec.serviceAccountName // "Unknown"),
           (.spec.nodeName // "Pending"),
-          "Unknown"
+          "Unknown",
+          (.metadata.annotations["openshift.io/scc"] // "Unknown")
         ] | @tsv' "$LOG_FILE" | head -n 1)
     fi
 
     if [ -n "$POD_META" ]; then
-        read -r P_NS P_SA P_NODE P_IP <<< "$POD_META"
+        read -r P_NS P_SA P_NODE P_IP P_SCC <<< "$POD_META"
         echo "Namespace:       $P_NS"
         echo "Service Account: $P_SA"
         echo "Node:            $P_NODE"
         echo "IP Address:      $P_IP"
+        echo "SCC:             $P_SCC"
     else
         echo "Metadata:        Unknown (Full Pod Object not found in logs)"
     fi
