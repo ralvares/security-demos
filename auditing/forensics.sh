@@ -196,7 +196,6 @@ audit_payload() {
 
 # ==============================================================================
 # 7. NETWORK FORENSICS: Find Pod IP (OVN Annotation Method)
-# ==============================================================================
 # Best for clusters where standard Status IP logging is missing or filtered.
 # Usage: audit_ovn_ips <log_file> [pod_name]
 audit_ovn_ips() {
@@ -217,6 +216,55 @@ audit_ovn_ips() {
 }
 
 # ==============================================================================
+# 8. KUBEVIRT FORENSICS: Detect VM Access & Creation
+# ==============================================================================
+# Usage: audit_kubevirt_console <log_file>
+audit_virt_console() {
+    local LOG_FILE="${1:-audit.log}"
+    echo "--- [8a] Hunting for VM Console/VNC Access ---"
+    (echo "TIMESTAMP USER VM_NAME ACCESS_TYPE ALERT"; jq -r 'select(
+      # Check for specific KubeVirt subresources
+      .objectRef.subresource == "console" or 
+      .objectRef.subresource == "vnc" or 
+      .objectRef.subresource == "ssh"
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      .objectRef.name,
+      .objectRef.subresource,
+      "REMOTE_ACCESS"
+    ] | @tsv' "$LOG_FILE") | column -t
+}
+
+# Usage: audit_kubevirt_vm <log_file>
+audit_virt_vm() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- [8b] Hunting for KubeVirt VM Activity (Filtered) ---"
+    
+    (echo "TIMESTAMP USER RESOURCE NAME ACTION"; jq -r 'select(
+      # 1. Resource Match (VM or VMI)
+      (.objectRef.resource == "virtualmachines" or .objectRef.resource == "virtualmachineinstances") and
+      
+      # 2. BLACKLIST: Filter out system service accounts
+      (.user.username | contains("openshift-") | not) and
+      (.user.username | contains("stackrox") | not) and
+      (.user.username | contains("kube-system") | not) and
+      (.user.username | startswith("system:kube-") | not) and
+      
+      # 3. HIDE PENDING: Only show lines where the Name exists
+      (.objectRef.name != null)
+      
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      .objectRef.resource,
+      .objectRef.name,
+      .verb
+    ] | @tsv' "$LOG_FILE") | column -t
+}
+
+# ==============================================================================
 # HELP MENU
 # ==============================================================================
 audit_help() {
@@ -233,6 +281,8 @@ audit_help() {
     echo "  audit_exec     <file> [pod]         - Find 'oc exec' sessions"
     echo "  audit_payload  <file> <pod>         - Extract Image and Command used"
     echo "  audit_ovn_ips  <file> [pod]         - Extract IP address from OVN annotations"
+    echo "  audit_virt_console <file>       - Find VM Console/VNC/SSH access"
+    echo "  audit_virt_vm      <file>       - Find VM creation events"
     echo ""
     echo "Example: audit_escape audit.log"
 }
