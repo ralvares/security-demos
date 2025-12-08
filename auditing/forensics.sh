@@ -264,6 +264,124 @@ audit_virt_vm() {
     ] | @tsv' "$LOG_FILE") | column -t
 }
 
+# Usage: check_cluster_admins
+check_cluster_admins() {
+    echo "--- Hunting for Dangerous 'cluster-admin' ServiceAccounts ---"
+    
+    # We pipe the Header + the Data into column -t for perfect alignment
+    (echo "NAMESPACE SERVICE_ACCOUNT"; oc get clusterrolebindings -o json | jq -r '
+      .items[] | 
+      select(.roleRef.name == "cluster-admin") |
+      .subjects[]? | 
+      select(.kind == "ServiceAccount") |
+      
+      # FILTER: Block system namespaces (openshift-*, kube-system, etc.)
+      select(.namespace | startswith("openshift-") | not) |
+      select(.namespace | startswith("kube-system") | not) |
+      select(.namespace | contains("stackrox") | not) |
+      
+      [.namespace, .name] | @tsv
+    ') | column -t
+}
+
+# Usage: audit_rbac_elevation <log_file>
+audit_rbac_elevation() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- Hunting for RBAC Elevations (Granting cluster-admin) ---"
+    
+    jq -r 'select(
+      # 1. Look for creation/modification of bindings
+      (.verb == "create" or .verb == "patch" or .verb == "update") and
+      (.objectRef.resource == "clusterrolebindings" or .objectRef.resource == "rolebindings") and
+      
+      # 2. Look for the "cluster-admin" role in the Request Body
+      # Note: Requires WriteRequestBodies to be 100% accurate, 
+      # but often "cluster-admin" appears in the object name too.
+      (
+        .requestObject.roleRef.name == "cluster-admin" or 
+        .objectRef.name == "cluster-admin" # Heuristic if body missing
+      )
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      .objectRef.resource,
+      .objectRef.name,
+      "GRANTED_ADMIN"
+    ] | @tsv' "$LOG_FILE" | column -t
+}
+
+# ==============================================================================
+# 9. PERSISTENCE: Detect "Time Bombs" (CronJobs/DaemonSets)
+# ==============================================================================
+# Usage: audit_persistence <log_file>
+audit_persistence() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- [9] Hunting for Persistence (CronJobs/DaemonSets) ---"
+    
+    (echo "TIMESTAMP USER TYPE NAME IMAGE"; jq -r 'select(
+      .verb == "create" and
+      (.objectRef.resource == "cronjobs" or .objectRef.resource == "daemonsets" or .objectRef.resource == "deployments") and
+      (.user.username | contains("openshift-") | not) and
+      (.user.username | contains("kube-system") | not)
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      .objectRef.resource,
+      .objectRef.name,
+      # Try to extract image from the pod template inside the workload
+      (.requestObject.spec.jobTemplate.spec.template.spec.containers[0].image // 
+       .requestObject.spec.template.spec.containers[0].image // 
+       "unknown")
+    ] | @tsv' "$LOG_FILE") | column -t
+}
+
+# ==============================================================================
+# 10. TAMPERING: Detect Config/Secret Modification
+# ==============================================================================
+# Usage: audit_tampering <log_file>
+audit_tampering() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- [10] Hunting for Config/Secret Tampering (Patch/Update) ---"
+    
+    (echo "TIMESTAMP USER RESOURCE NAME ACTION"; jq -r 'select(
+      (.verb == "patch" or .verb == "update") and
+      (.objectRef.resource == "configmaps" or .objectRef.resource == "secrets") and
+      
+      # Filter out system noise (Controllers updating their own leaders/state)
+      (.user.username | contains("system:") | not) and
+      (.user.username | contains("openshift-") | not)
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      .objectRef.resource,
+      .objectRef.name,
+      .verb
+    ] | @tsv' "$LOG_FILE") | column -t
+}
+
+# ==============================================================================
+# 11. EVASION: Detect User Impersonation
+# ==============================================================================
+# Usage: audit_impersonation <log_file>
+audit_impersonation() {
+    local LOG_FILE="${1:-audit.log}"
+    
+    echo "--- [11] Hunting for User Impersonation (--as=...) ---"
+    
+    (echo "TIMESTAMP REAL_USER IMPERSONATED_USER VERB URI"; jq -r 'select(
+      .impersonatedUser != null
+    ) | [
+      .requestReceivedTimestamp,
+      .user.username,
+      .impersonatedUser.username,
+      .verb,
+      .requestURI
+    ] | @tsv' "$LOG_FILE") | column -t
+}
+
 # ==============================================================================
 # HELP MENU
 # ==============================================================================
@@ -283,6 +401,11 @@ audit_help() {
     echo "  audit_ovn_ips  <file> [pod]         - Extract IP address from OVN annotations"
     echo "  audit_virt_console <file>       - Find VM Console/VNC/SSH access"
     echo "  audit_virt_vm      <file>       - Find VM creation events"
+    echo "  check_cluster_admins                - List 'cluster-admin' ServiceAccounts"
+    echo "  audit_rbac_elevation <file>         - Find RBAC changes granting 'cluster-admin'"
+    echo "  audit_persistence      <file>       - Find suspicious CronJobs/DaemonSets"
+    echo "  audit_tampering        <file>       - Find ConfigMap/Secret modifications"
+    echo "  audit_impersonation    <file>       - Find usage of --as impersonation"
     echo ""
     echo "Example: audit_escape audit.log"
 }
