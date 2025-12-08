@@ -225,6 +225,7 @@ audit_help() {
     echo "Usage: source forensics.sh"
     echo "Then run any of the following functions:"
     echo ""
+    echo "  audit_fetch    [output_file]        - Fetch audit logs from all master nodes"
     echo "  audit_anon     <file> [ip_prefix]   - Find anonymous probes from pod network"
     echo "  audit_recon    <file> [user]        - Find 'SelfSubjectAccessReviews'"
     echo "  audit_secrets  <file> <user>        - Find 'List Secrets' attempts"
