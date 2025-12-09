@@ -211,7 +211,7 @@ def extract_wide_info(resource, raw_obj):
         images = ",".join([c.get('image', '') for c in containers if isinstance(c, dict)])
         selector_dict = get_path(obj, 'spec', 'selector', 'matchLabels', default={})
         selector = ",".join([f"{k}={v}" for k, v in selector_dict.items()]) if isinstance(selector_dict, dict) and selector_dict else "<none>"
-        info = [images, selector]
+        info = [selector]
     elif resource == 'virtualmachineinstances':
         node = get_path(obj, 'status', 'nodeName', default='<none>')
         interfaces = get_path(obj, 'status', 'interfaces', default=[])
@@ -331,7 +331,7 @@ def main():
                 if resource == 'pods': headers.extend(["IP", "NODE"])
                 elif resource == 'services': headers.extend(["TYPE", "CLUSTER-IP", "SELECTOR"])
                 elif resource == 'nodes': headers.extend(["OS-IMAGE", "KERNEL-VERSION", "CONTAINER-RUNTIME"])
-                elif resource == 'deployments': headers.extend(["IMAGES", "SELECTOR"])
+                elif resource == 'deployments': headers.extend(["SELECTOR"])
                 elif resource == 'virtualmachineinstances': headers.extend(["IP", "NODE"])
 
             if args.show_labels: headers.append("LABELS")
