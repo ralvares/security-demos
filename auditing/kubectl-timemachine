@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 def setup_args():
     # Use a single parser with nargs='*' to capture commands flexibly
     parser = argparse.ArgumentParser(
-        description="kubectl-timemachine: Forensic Digital Twin for Kubernetes",
+        description="timemachine: Forensic Digital Twin for Kubernetes",
         usage="%(prog)s [flags] <command> <resource> [name]"
     )
     
