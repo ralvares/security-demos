@@ -20,7 +20,7 @@ This directory contains a complete toolkit and investigation guide for performin
 
 1.  **Extract the sample logs:**
     ```bash
-    tar -xzvf audit.log.tar.gz
+    tar -xzvf audit.tar.gz
     ```
 
 2.  **Load the forensic library:**

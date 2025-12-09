@@ -108,16 +108,19 @@ audit_detect_reconnaissance() {
 audit_detect_resource_harvesting() {
     local LOG_FILE="${1:-audit.log}"
     local TARGET_USER="$2"
+    local IP_PREFIX="${3:-10.}"
 
     if [ -z "$TARGET_USER" ]; then
         echo "Error: You must provide a target user (e.g., 'visa-processor')"
         return 1
     fi
 
-    echo "--- [3] Hunting for Resource Harvesting by: $TARGET_USER ---"
-    (echo "TIMESTAMP USER RESOURCE CODE USER_AGENT SOURCE_IP"; jq -r --arg user "$TARGET_USER" 'select(
+    echo "--- [3] Hunting for Resource Harvesting by: $TARGET_USER from POD network ---"
+    (echo "TIMESTAMP USER RESOURCE CODE USER_AGENT SOURCE_IP"; jq -r --arg user "$TARGET_USER" --arg ip "$IP_PREFIX" 'select(
       .verb == "list" and
-      (.user.username | contains($user))    ) | [
+      (.user.username | contains($user)) and
+      (.sourceIPs[0] | startswith($ip))
+    ) | [
       .requestReceivedTimestamp, 
       .user.username, 
       .objectRef.resource,
@@ -130,15 +133,17 @@ audit_detect_resource_harvesting() {
 # ==============================================================================
 # 4. ESCALATION: Detect Container Escapes (HostPID / Privileged)
 # ==============================================================================
-# Usage: audit_detect_privileged_pods <log_file>
+# Usage: audit_detect_privileged_pods <log_file> [user_pattern]
 # Note: Uses 'any' and '?' to safely handle logs where requestObject is null
 audit_detect_privileged_pods() {
     local LOG_FILE="${1:-audit.log}"
+    local TARGET_USER="$2"
 
-    echo "--- [4] Hunting for Privileged Pods & HostPID ---"
-    (echo "TIMESTAMP USER POD NAMESPACE ALERT"; jq -r 'select(
+    echo "--- [4] Hunting for Privileged Pods & HostPID (User Filter: ${TARGET_USER:-ALL}) ---"
+    (echo "TIMESTAMP USER POD NAMESPACE ALERT"; jq -r --arg user "$TARGET_USER" 'select(
       .verb == "create" and 
       .objectRef.resource == "pods" and 
+      ($user == "" or (.user.username | contains($user))) and
       (.user.username | contains("openshift") | not) and
       (.user.username | contains("stackrox") | not) and
       (.user.username | contains("kube-system") | not) and
@@ -385,8 +390,8 @@ audit_track_ip_activity() {
     echo "--- History of Activity for IP: $TARGET_IP ---"
     
     (echo "TIMESTAMP USER VERB RESOURCE CODE"; jq -r --arg ip "$TARGET_IP" 'select(
-      # Check if the IP list contains our target
-      (.sourceIPs[]? | contains($ip))
+      # Check if the IP list contains our target (Exact Match)
+      (.sourceIPs[]? == $ip)
     ) | [
       .requestReceivedTimestamp,
       .user.username,
@@ -397,7 +402,35 @@ audit_track_ip_activity() {
 }
 
 # ==============================================================================
-# 13. INVESTIGATION: Pod Lifecycle & History
+# 13. INVESTIGATION: User Activity History
+# ==============================================================================
+# Usage: audit_track_user_activity <log_file> <user>
+audit_track_user_activity() {
+    local LOG_FILE="${1:-audit.log}"
+    local TARGET_USER="$2"
+
+    if [ -z "$TARGET_USER" ]; then
+        echo "Error: You must provide a username."
+        return 1
+    fi
+
+    echo "--- History of Activity for User: $TARGET_USER ---"
+    
+    (echo "TIMESTAMP VERB RESOURCE NAMESPACE NAME CODE POD_SOURCE"; jq -r --arg user "$TARGET_USER" 'select(
+      (.user.username | contains($user))
+    ) | [
+      .requestReceivedTimestamp,
+      .verb,
+      (.objectRef.resource + (if .objectRef.subresource then "/" + .objectRef.subresource else "" end)),
+      (.objectRef.namespace // "-"),
+      (.objectRef.name // "-"),
+      .responseStatus.code,
+      (.user.extra["authentication.kubernetes.io/pod-name"][0] // "-")
+    ] | @tsv' "$LOG_FILE" | sort -u) | column -t
+}
+
+# ==============================================================================
+# 14. INVESTIGATION: Pod Lifecycle & History
 # ==============================================================================
 # Usage: audit_track_pod_lifecycle <log_file> <pod_name>
 audit_track_pod_lifecycle() {
@@ -582,6 +615,33 @@ audit_detect_bruteforce() {
 }
 
 # ==============================================================================
+# UTILITY: Super Shrink (Forensic Evidence Only)
+# ==============================================================================
+audit_shrink() {
+    local INPUT_FILE="${1:-audit.log}"
+
+    if [ ! -f "$INPUT_FILE" ]; then
+        echo "Error: File $INPUT_FILE not found."
+        return 1
+    fi
+
+    echo "--- Shrinking $INPUT_FILE (Simple Sed Mode) ---"
+    echo "Original size: $(du -h "$INPUT_FILE" | cut -f1)"
+
+    # Remove noisy namespaces and service accounts
+    sed -i '' \
+        -e '/stackrox/d' \
+        -e '/openshift-operator-lifecycle-manager/d' \
+        -e '/netobserv/d' \
+        -e '/openshift-marketplace/d' \
+        "$INPUT_FILE"
+
+    echo "Shrunk size:   $(du -h "$INPUT_FILE" | cut -f1)"
+}
+
+
+
+# ==============================================================================
 # HELP MENU
 # ==============================================================================
 audit_help() {
@@ -594,7 +654,7 @@ audit_help() {
     echo "  audit_detect_anonymous_access    <file> [ip_prefix]   - Find anonymous probes from pod network"
     echo "  audit_detect_reconnaissance      <file> [user]        - Find 'SelfSubjectAccessReviews'"
     echo "  audit_detect_resource_harvesting <file> <user> [ip]   - Find 'List' attempts on Secrets/ConfigMaps/Pods"
-    echo "  audit_detect_privileged_pods     <file>               - Find 'HostPID' or 'Privileged' pod creation"
+    echo "  audit_detect_privileged_pods     <file> [user]        - Find 'HostPID' or 'Privileged' pod creation"
     echo "  audit_detect_exec_sessions       <file> [pod]         - Find 'oc exec' sessions"
     echo "  audit_extract_pod_payload        <file> <pod>         - Extract Image and Command used"
     echo "  audit_lookup_pod_by_ip           <file> <ip>          - Find Pod by IP using OVN annotations"
@@ -604,6 +664,8 @@ audit_help() {
     echo "  audit_detect_tampering           <file> [user]        - Find ConfigMap/Secret modifications"
     echo "  audit_detect_impersonation       <file>               - Find usage of --as impersonation"
     echo "  audit_track_ip_activity          <file> <ip>          - Investigate IP history and identity switching"
+    echo "  audit_correlate_identity_switch  <file> <ip>          - Find users performing actions denied to IP"
+    echo "  audit_track_user_activity        <file> <user>        - Investigate full history of a user"
     echo "  audit_track_pod_lifecycle        <file> <pod>         - Show full lifecycle history of a pod"
     echo "  audit_detect_admin_grants        <file>               - Find creation of 'cluster-admin' bindings"
     echo "  audit_detect_port_forward        <file>               - Find 'port-forward' usage"
