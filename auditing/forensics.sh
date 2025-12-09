@@ -108,25 +108,22 @@ audit_detect_reconnaissance() {
 audit_detect_resource_harvesting() {
     local LOG_FILE="${1:-audit.log}"
     local TARGET_USER="$2"
-    local IP_PREFIX="${3:-10.}"
 
     if [ -z "$TARGET_USER" ]; then
         echo "Error: You must provide a target user (e.g., 'visa-processor')"
         return 1
     fi
 
-    echo "--- [3] Hunting for Resource Harvesting by: $TARGET_USER from POD network ---"
-    (echo "TIMESTAMP USER RESOURCE CODE USER_AGENT SOURCE_IP"; jq -r --arg user "$TARGET_USER" --arg ip "$IP_PREFIX" 'select(
+    echo "--- [3] Hunting for Resource Harvesting by: $TARGET_USER ---"
+    (echo "TIMESTAMP USER RESOURCE CODE USER_AGENT"; jq -r --arg user "$TARGET_USER" 'select(
       .verb == "list" and
-      (.user.username | contains($user)) and
-      (.sourceIPs[0] | startswith($ip))
+      (.user.username | contains($user))
     ) | [
       .requestReceivedTimestamp, 
       .user.username, 
       .objectRef.resource,
       .responseStatus.code,
-      (.userAgent | split(" ")[0]),
-      .sourceIPs[0]
+      (.userAgent | split(" ")[0])
     ] | @tsv' "$LOG_FILE") | column -t
 }
 
