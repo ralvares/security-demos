@@ -10,12 +10,17 @@ from datetime import datetime, timezone
 # ==============================================================================
 # KUBECTL TIMEMACHINE: Forensic Digital Twin for Kubernetes
 # ------------------------------------------------------------------------------
-# Usage:
-#   kubectl timemachine get pods --time "2025-12-08T16:00:00"
-#   (Automatically converts your Local Time -> UTC for the logs)
+# A forensic tool that reconstructs cluster state from Audit Logs using DuckDB.
+#
+# FINAL VERSION (v18):
+#   - Robust Argument Parsing (Flags anywhere)
+#   - Crash-proof JSON handling
+#   - Auto-Timezone detection
+#   - Full OpenShift/K8s resource support
 # ==============================================================================
 
 def setup_args():
+    # Use a single parser with nargs='*' to capture commands flexibly
     parser = argparse.ArgumentParser(
         description="kubectl-timemachine: Forensic Digital Twin for Kubernetes",
         usage="%(prog)s [flags] <command> <resource> [name]"
@@ -30,40 +35,30 @@ def setup_args():
     parser.add_argument("-l", "--selector", help="Selector (label query) to filter on")
     parser.add_argument("--show-labels", action="store_true", help="Show all labels as the last column")
 
-    # Positional Args
+    # Positional Args (Captures 'get', 'pods', etc. regardless of flag position)
     parser.add_argument("args", nargs="*", help="Command and Resource")
     
     return parser
 
 def normalize_time(time_str):
-    """
-    Parses input time. 
-    If timezone is missing (e.g. '16:00'), assumes LOCAL system time and converts to UTC.
-    """
+    """Parses input time. If timezone is missing, assumes LOCAL and converts to UTC."""
     if not time_str: return None
     
-    # Handle simple date YYYY-MM-DD -> End of Day (Local)
+    # Handle YYYY-MM-DD -> End of Day
     if len(time_str) == 10 and '-' in time_str and 'T' not in time_str:
         time_str += "T23:59:59"
 
     try:
         # Check if user explicitly provided 'Z' (UTC)
         if time_str.endswith('Z'):
-            utc_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-            local_dt = utc_dt.astimezone() # Convert to local just for display
-            print(f"--- 🕒 Snapshot: {local_dt.strftime('%Y-%m-%d %H:%M:%S')} (Local) → {time_str} (UTC) ---")
             return time_str
         
-        # Assume Local Time (Naive)
+        # Assume Local Time -> Convert to UTC
         # Try formats with/without seconds
         fmt = "%Y-%m-%dT%H:%M:%S"
         if len(time_str) == 16: fmt = "%Y-%m-%dT%H:%M" # Handle "16:00"
         
-        local_dt = datetime.strptime(time_str, fmt)
-        # Make it "aware" of the local system timezone
-        local_dt = local_dt.astimezone()
-        
-        # Convert to UTC
+        local_dt = datetime.strptime(time_str, fmt).astimezone()
         utc_dt = local_dt.astimezone(timezone.utc)
         utc_str = utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
         
@@ -71,7 +66,7 @@ def normalize_time(time_str):
         return utc_str
 
     except Exception as e:
-        print(f"Warning: Could not parse time '{time_str}'. Assuming UTC string match. ({e})")
+        # Fallback
         if not time_str.endswith('Z'): return time_str + 'Z'
         return time_str
 
@@ -105,10 +100,12 @@ def is_cluster_scoped(resource):
     return resource in ['namespaces', 'nodes', 'persistentvolumes', 'clusterrolebindings', 'clusterroles']
 
 def safe_parse_json(obj):
+    """Recursively attempts to parse JSON to handle double-encoding"""
     if isinstance(obj, dict): return obj
     if not isinstance(obj, str): return {}
     try:
         parsed = json.loads(obj)
+        # Handle double-encoded strings: "{\"kind\":...}" -> {"kind":...}
         if isinstance(parsed, str):
             try: return json.loads(parsed)
             except: return {}
@@ -116,7 +113,6 @@ def safe_parse_json(obj):
     except: return {}
 
 def calculate_age(creation_ts, snapshot_time_utc):
-    """Calculates age relative to the Snapshot Time (UTC)"""
     if not creation_ts: return "?"
     try:
         fmt = "%Y-%m-%dT%H:%M:%SZ"
@@ -124,13 +120,12 @@ def calculate_age(creation_ts, snapshot_time_utc):
         created = datetime.strptime(creation_ts, fmt).replace(tzinfo=timezone.utc)
         
         if snapshot_time_utc:
-            # Parse the Normalized UTC string
             now = datetime.strptime(snapshot_time_utc, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
         else:
             now = datetime.now(timezone.utc)
 
         delta = now - created
-        if delta.total_seconds() < 0: return "0s" # Event in future relative to snapshot
+        if delta.total_seconds() < 0: return "0s" 
 
         if delta.days > 0: return f"{delta.days}d"
         hours, remainder = divmod(delta.seconds, 3600)
@@ -143,6 +138,7 @@ def extract_status(obj):
     obj = safe_parse_json(obj)
     status = obj.get('status', {})
     if isinstance(status, str): return status
+    
     if 'printableStatus' in status: return status['printableStatus']
     if 'phase' in status: return status['phase']
     if 'conditions' in status and isinstance(status['conditions'], list):
@@ -162,6 +158,8 @@ def get_path(d, *keys, default=None):
 def extract_pod_ip(obj):
     ip = get_path(obj, 'status', 'podIP')
     if ip: return ip
+    
+    # OpenShift OVN
     try:
         ovn_annot = get_path(obj, 'metadata', 'annotations', 'k8s.ovn.org/pod-networks')
         if ovn_annot:
@@ -170,6 +168,8 @@ def extract_pod_ip(obj):
                 ips = ovn_data['default'].get('ip_addresses', [])
                 if ips: return ips[0].split('/')[0]
     except: pass
+    
+    # Multus
     try:
         cni_annot = get_path(obj, 'metadata', 'annotations', 'k8s.v1.cni.cncf.io/network-status')
         if cni_annot:
@@ -182,11 +182,11 @@ def extract_pod_ip(obj):
 def extract_labels(obj):
     obj = safe_parse_json(obj)
     labels = get_path(obj, 'metadata', 'labels')
-    if not labels or not isinstance(labels, dict):
-        return "" 
+    if not labels or not isinstance(labels, dict): return "" 
     return ",".join([f"{k}={v}" for k, v in sorted(labels.items())])
 
 def extract_wide_info(resource, raw_obj):
+    """Extracts extra columns for -o wide with Safety Checks"""
     obj = safe_parse_json(raw_obj)
     if not obj: return []
     info = []
@@ -277,7 +277,8 @@ def main():
     args = parser.parse_args()
     
     if not args.args or len(args.args) < 1:
-        parser.print_help(); sys.exit(1)
+        parser.print_help()
+        sys.exit(1)
 
     command = args.args[0]
     if command != "get":
@@ -294,7 +295,6 @@ def main():
     if not os.path.exists(args.auditlog_file):
         print(f"Error: File '{args.auditlog_file}' not found."); sys.exit(1)
 
-    # NORMALIZE TIME (Local -> UTC)
     args.time = normalize_time(args.time)
 
     req_res = map_resource(resource_input)
@@ -344,8 +344,6 @@ def main():
 
                 payload = safe_parse_json(row[2])
                 created = get_path(payload, 'metadata', 'creationTimestamp')
-                
-                # PASS SNAPSHOT TIME to calculator
                 age = calculate_age(created, args.time)
                 status = extract_status(payload)
                 
