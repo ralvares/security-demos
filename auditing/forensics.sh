@@ -36,13 +36,22 @@ audit_fetch_logs() {
     # Clear/Create file
     echo > "$OUTPUT_FILE"
 
-    masters=$(oc get nodes -l node-role.kubernetes.io/master -o custom-columns=POD:.metadata.name --no-headers)
+    masters=$(oc get nodes -l node-role.kubernetes.io/master -o custom-columns=NAME:.metadata.name --no-headers)
 
     # Iterate over master nodes
-    for master in $(echo $masters)                                                  
-    do                                                                        
-      echo "Fetching logs from ${master}..."                                        
-      oc adm node-logs ${master} --path=kube-apiserver/audit.log >> "$OUTPUT_FILE"
+    for master in $(echo "$masters"); do
+      echo ">>> Fetching logs from ${master}..."
+      
+      # List all audit log files in /var/log/kube-apiserver/
+      # We look for audit.log and rotated audit-*.log files (possibly .gz)
+      oc adm node-logs "$master" --path=kube-apiserver/ | grep -E 'audit.*\.log(\.gz)?$' | while read -r log_file; do
+          echo "    Found log file: $log_file"
+          if [[ "$log_file" == *.gz ]]; then
+              oc adm node-logs "$master" --path="kube-apiserver/$log_file" | gunzip -c | sed '/^$/d' >> "$OUTPUT_FILE"
+          else
+              oc adm node-logs "$master" --path="kube-apiserver/$log_file" | sed '/^$/d' >> "$OUTPUT_FILE"
+          fi
+      done
     done
     
     echo "Done. Logs are available in '$OUTPUT_FILE'."

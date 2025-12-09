@@ -115,6 +115,11 @@ def safe_parse_json(obj):
 def calculate_age(creation_ts, snapshot_time_utc):
     if not creation_ts: return "?"
     try:
+        # Handle "YYYY-MM-DD HH:MM:SS" format (common in some audit logs/DuckDB outputs)
+        if ' ' in creation_ts and 'T' not in creation_ts:
+            creation_ts = creation_ts.replace(' ', 'T')
+            if not creation_ts.endswith('Z'): creation_ts += 'Z'
+
         fmt = "%Y-%m-%dT%H:%M:%SZ"
         if "." in creation_ts: fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
         created = datetime.strptime(creation_ts, fmt).replace(tzinfo=timezone.utc)
@@ -137,6 +142,7 @@ def calculate_age(creation_ts, snapshot_time_utc):
 def extract_status(obj):
     obj = safe_parse_json(obj)
     status = obj.get('status', {})
+    if status is None: return "-"
     if isinstance(status, str): return status
     
     if 'printableStatus' in status: return status['printableStatus']
