@@ -54,9 +54,9 @@ audit_fetch_logs() {
 # Usage: audit_detect_anonymous_access <log_file> [ip_prefix]
 audit_detect_anonymous_access() {
     local LOG_FILE="${1:-audit.log}"
-    local IP_PREFIX="${2:-10.128.}"
+    local IP_PREFIX="${2:-10.}"
 
-    echo "--- [1] Hunting for Anonymous Probes (Denied) from IP range: $IP_PREFIX ---"
+    echo "--- [1] Hunting for Anonymous Probes (Denied) from pod network ---"
     (echo "TIMESTAMP VERB URI SOURCE_IP"; jq -r --arg ip "$IP_PREFIX" 'select(
       .user.username == "system:anonymous" and 
       .responseStatus.code == 403 and 
@@ -99,19 +99,16 @@ audit_detect_reconnaissance() {
 audit_detect_resource_harvesting() {
     local LOG_FILE="${1:-audit.log}"
     local TARGET_USER="$2"
-    local IP_PREFIX="${3:-10.128.}"
 
     if [ -z "$TARGET_USER" ]; then
         echo "Error: You must provide a target user (e.g., 'visa-processor')"
         return 1
     fi
 
-    echo "--- [3] Hunting for Resource Harvesting by: $TARGET_USER (IP: $IP_PREFIX) ---"
-    (echo "TIMESTAMP USER RESOURCE CODE USER_AGENT SOURCE_IP"; jq -r --arg user "$TARGET_USER" --arg ip "$IP_PREFIX" 'select(
+    echo "--- [3] Hunting for Resource Harvesting by: $TARGET_USER ---"
+    (echo "TIMESTAMP USER RESOURCE CODE USER_AGENT SOURCE_IP"; jq -r --arg user "$TARGET_USER" 'select(
       .verb == "list" and
-      (.user.username | contains($user)) and
-      (.sourceIPs[0] | startswith($ip))
-    ) | [
+      (.user.username | contains($user))    ) | [
       .requestReceivedTimestamp, 
       .user.username, 
       .objectRef.resource,
@@ -200,7 +197,7 @@ audit_extract_pod_payload() {
       $obj.metadata.namespace,
       .image, 
       (if .command and (.command | length > 0) then (.command | join(" ")) else "(default)" end)
-    ] | @tsv' "$LOG_FILE") | column -t
+    ] | @tsv' "$LOG_FILE" | sort -u) | column -t
 }
 
 # ==============================================================================
@@ -219,6 +216,7 @@ audit_lookup_pod_by_ip() {
     echo "--- [7] Hunting for Pod owning IP: $TARGET_IP ---"
     (echo "TIMESTAMP POD IP"; jq -r --arg ip "$TARGET_IP" 'select(
       .objectRef.resource == "pods" and
+      (.requestObject | type == "object") and
       .requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] != null
     ) | 
     (.requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0]) as $pod_ip |
@@ -361,6 +359,7 @@ audit_track_ip_activity() {
     echo "--- Identifying Pod for IP: $TARGET_IP ---"
     local POD_OWNER=$(jq -r --arg ip "$TARGET_IP" 'select(
       .objectRef.resource == "pods" and
+      (.requestObject | type == "object") and
       .requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] != null
     ) | 
     (.requestObject.metadata.annotations["k8s.ovn.org/pod-networks"] | fromjson | .default.ip_addresses[0] | split("/")[0]) as $pod_ip |

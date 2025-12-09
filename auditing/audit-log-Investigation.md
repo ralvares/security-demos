@@ -115,7 +115,7 @@ Finally, to correlate network flows with these events, we need to know the IP ad
 
 **The Query:**
 ```bash
-TARGET_IP=10.128.0.7
+TARGET_IP=10.128.0.212
 audit_lookup_pod_by_ip audit.log $TARGET_IP
 ```
 
@@ -142,7 +142,7 @@ Now that we have a suspicious IP (`10.128.0.7`), we must ask: **"Did this IP eve
 We run a history check on this specific IP to see if it ever made a request with a *valid* identity. This is how we detect if the attacker managed to steal a token and use it from the compromised pod.
 
 ```bash
-TARGET_IP="10.128.0.7"
+TARGET_IP="10.128.0.212"
 audit_track_ip_activity audit.log $TARGET_IP
 ```
 
