@@ -55,15 +55,43 @@ If a ConfigMap was deleted, you can retrieve its last known state and output it 
 ./kubectl-timemachine get nodes --auditlog-file /path/to/custom-audit.log
 ```
 
+### 6. Get All Resources
+Retrieve a comprehensive overview of the cluster state (similar to `kubectl get all`):
+```bash
+./kubectl-timemachine get all -A
+```
+
 ## Supported Resources
 
 The tool currently supports the following resources (and their short aliases):
+
+**Core:**
 - `pods` (po)
 - `services` (svc)
-- `deployments` (deploy)
 - `configmaps` (cm)
 - `serviceaccounts` (sa)
 - `namespaces` (ns)
 - `nodes` (no)
+- `secrets` (se)
 - `persistentvolumes` (pv)
+- `persistentvolumeclaims` (pvc)
 - `clusterrolebindings` (crb)
+
+**Workloads:**
+- `deployments` (deploy)
+- `daemonsets` (ds)
+- `statefulsets` (sts)
+- `replicasets` (rs)
+- `jobs`
+- `cronjobs` (cj)
+
+**Network:**
+- `ingresses` (ing)
+- `routes` (rt)
+
+**Virtualization:**
+- `virtualmachines` (vm)
+- `virtualmachineinstances` (vmi)
+
+**Special:**
+- `all` (aggregates common resources)

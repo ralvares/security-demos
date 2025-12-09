@@ -8,11 +8,11 @@ import os
 from datetime import datetime, timezone
 
 # ==============================================================================
-# AUDIT FORENSICS: Pure Python implementation powered by DuckDB
+# KUBECTL TIMEMACHINE: Forensic Digital Twin for Kubernetes
 # ------------------------------------------------------------------------------
-# Usage:
-#   ./audit_forensics.py get pods -A
-#   ./audit_forensics.py get namespaces
+# A forensic tool that reconstructs cluster state from Audit Logs using DuckDB.
+#
+# NEW FEATURE: 'get all' support
 # ==============================================================================
 
 def setup_args():
@@ -26,7 +26,7 @@ def setup_args():
     base_parser.add_argument("-o", "--output", choices=["yaml", "json", "table"], default="table", help="Output format")
 
     parser = argparse.ArgumentParser(
-        description="Kubernetes Forensic Tool using Audit Logs",
+        description="kubectl-timemachine: Forensic Digital Twin for Kubernetes",
         parents=[base_parser]
     )
     
@@ -40,15 +40,35 @@ def setup_args():
 
 def map_resource(alias):
     mapping = {
-        'po': 'pods', 'pod': 'pods',
-        'svc': 'services', 'service': 'services',
-        'deploy': 'deployments', 'deployment': 'deployments',
-        'cm': 'configmaps', 'configmap': 'configmaps',
-        'sa': 'serviceaccounts', 'serviceaccount': 'serviceaccounts',
-        'ns': 'namespaces', 'namespace': 'namespaces',
-        'no': 'nodes', 'node': 'nodes',
-        'pv': 'persistentvolumes', 'persistentvolume': 'persistentvolumes',
-        'crb': 'clusterrolebindings', 'clusterrolebinding': 'clusterrolebindings'
+        # Core
+        'po': 'pods', 'pod': 'pods', 'pods': 'pods',
+        'svc': 'services', 'service': 'services', 'services': 'services',
+        'cm': 'configmaps', 'configmap': 'configmaps', 'configmaps': 'configmaps',
+        'sa': 'serviceaccounts', 'serviceaccount': 'serviceaccounts', 'serviceaccounts': 'serviceaccounts',
+        'ns': 'namespaces', 'namespace': 'namespaces', 'namespaces': 'namespaces',
+        'no': 'nodes', 'node': 'nodes', 'nodes': 'nodes',
+        'se': 'secrets', 'secret': 'secrets', 'secrets': 'secrets',
+        'pv': 'persistentvolumes', 'persistentvolume': 'persistentvolumes', 'persistentvolumes': 'persistentvolumes',
+        'pvc': 'persistentvolumeclaims', 'persistentvolumeclaim': 'persistentvolumeclaims', 'persistentvolumeclaims': 'persistentvolumeclaims',
+        
+        # Workloads
+        'deploy': 'deployments', 'deployment': 'deployments', 'deployments': 'deployments',
+        'ds': 'daemonsets', 'daemonset': 'daemonsets', 'daemonsets': 'daemonsets',
+        'sts': 'statefulsets', 'statefulset': 'statefulsets', 'statefulsets': 'statefulsets',
+        'rs': 'replicasets', 'replicaset': 'replicasets', 'replicasets': 'replicasets',
+        'job': 'jobs', 'jobs': 'jobs',
+        'cj': 'cronjobs', 'cronjob': 'cronjobs', 'cronjobs': 'cronjobs',
+        
+        # Network
+        'ing': 'ingresses', 'ingress': 'ingresses', 'ingresses': 'ingresses',
+        'rt': 'routes', 'route': 'routes', 'routes': 'routes',
+        
+        # Virt
+        'vm': 'virtualmachines', 'virtualmachine': 'virtualmachines', 'virtualmachines': 'virtualmachines',
+        'vmi': 'virtualmachineinstances', 'virtualmachineinstance': 'virtualmachineinstances', 'virtualmachineinstances': 'virtualmachineinstances',
+        
+        # Special
+        'all': 'all' 
     }
     return mapping.get(alias.lower(), alias.lower())
 
@@ -59,12 +79,10 @@ def calculate_age(creation_ts):
     if not creation_ts: return "?"
     try:
         fmt = "%Y-%m-%dT%H:%M:%SZ"
-        if "." in creation_ts:
-            fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
+        if "." in creation_ts: fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
         created = datetime.strptime(creation_ts, fmt).replace(tzinfo=timezone.utc)
         now = datetime.now(timezone.utc)
         delta = now - created
-        
         if delta.days > 0: return f"{delta.days}d"
         hours, remainder = divmod(delta.seconds, 3600)
         minutes, _ = divmod(remainder, 60)
@@ -75,13 +93,12 @@ def calculate_age(creation_ts):
 def extract_status(obj):
     status = obj.get('status', {})
     if isinstance(status, str): return status
-    
+    if 'printableStatus' in status: return status['printableStatus']
     if 'phase' in status: return status['phase']
-    
     if 'conditions' in status and isinstance(status['conditions'], list):
         for cond in reversed(status['conditions']):
-            if cond.get('status') == "True":
-                return cond.get('type')
+            if cond.get('status') == "True": return cond.get('type')
+    if 'loadBalancer' in status or 'ingress' in status: return "Admitted"
     return "-"
 
 def build_query(log_file, resource, name, namespace, all_ns, time_limit):
@@ -94,15 +111,10 @@ def build_query(log_file, resource, name, namespace, all_ns, time_limit):
     
     if not cluster_scoped:
         if not all_ns:
-            if namespace:
-                ns_sql = f"AND namespace = '{namespace}'"
-            else:
-                ns_sql = "AND namespace = 'default'"
+            if namespace: ns_sql = f"AND namespace = '{namespace}'"
+            else: ns_sql = "AND namespace = 'default'"
 
-    if cluster_scoped:
-        partition_by = "PARTITION BY name"
-    else:
-        partition_by = "PARTITION BY namespace, name"
+    partition_by = "PARTITION BY name" if cluster_scoped else "PARTITION BY namespace, name"
 
     query = f"""
     WITH raw_stream AS (
@@ -121,19 +133,14 @@ def build_query(log_file, resource, name, namespace, all_ns, time_limit):
     ),
     latest_state AS (
         SELECT *,
-            ROW_NUMBER() OVER (
-                {partition_by}
-                ORDER BY ts DESC
-            ) as rn
+            ROW_NUMBER() OVER ({partition_by} ORDER BY ts DESC) as rn
         FROM raw_stream
         WHERE name IS NOT NULL
     )
     SELECT namespace, name, obj 
     FROM latest_state 
-    WHERE rn = 1 
-      AND verb != 'delete'
-      {ns_sql}
-      {name_sql}
+    WHERE rn = 1 AND verb != 'delete'
+    {ns_sql} {name_sql}
     ORDER BY namespace, name
     """
     return query
@@ -142,87 +149,91 @@ def main():
     parser = setup_args()
     args = parser.parse_args()
     
-    if not args.command:
-        parser.print_help(); sys.exit(1)
+    if not args.command: parser.print_help(); sys.exit(1)
+    if not os.path.exists(args.auditlog_file): print(f"Error: File '{args.auditlog_file}' not found."); sys.exit(1)
 
-    if not os.path.exists(args.auditlog_file):
-        print(f"Error: File '{args.auditlog_file}' not found."); sys.exit(1)
+    req_res = map_resource(args.resource)
+    
+    # "GET ALL" Logic
+    if req_res == 'all':
+        # The standard set of "get all" resources, plus forensics valuable ones
+        resources_to_fetch = [
+            'pods', 'services', 'daemonsets', 'deployments', 'replicasets', 
+            'statefulsets', 'jobs', 'cronjobs', 'routes', 'ingresses', 
+            'virtualmachines', 'virtualmachineinstances'
+        ]
+    else:
+        resources_to_fetch = [req_res]
 
-    resource = map_resource(args.resource)
     con = duckdb.connect(database=':memory:')
     
-    sql = build_query(args.auditlog_file, resource, args.name, args.namespace, args.all_namespaces, args.time)
-    
-    try:
-        results = con.execute(sql).fetchall()
-    except Exception as e:
-        print(f"Query Error: {e}"); sys.exit(1)
+    for resource in resources_to_fetch:
+        sql = build_query(args.auditlog_file, resource, args.name, args.namespace, args.all_namespaces, args.time)
+        try:
+            results = con.execute(sql).fetchall()
+        except: continue # Skip if table empty or error
 
-    if not results:
-        print("No resources found.")
-        return
+        if not results: continue
 
-    # OUTPUT FORMATTING
-    if args.output == "yaml":
-        for row in results:
-            payload = row[2] 
-            if isinstance(payload, str):
-                try: payload = json.loads(payload)
-                except: pass
-            print("---")
-            print(yaml.dump(payload))
+        # Print Resource Header for "get all" readability
+        if len(resources_to_fetch) > 1:
+            print(f"\n--- {resource.upper()} ---")
 
-    elif args.output == "json":
-        out_list = []
-        for row in results:
-            payload = row[2]
-            if isinstance(payload, str): payload = json.loads(payload)
-            out_list.append(payload)
-        print(json.dumps(out_list, indent=2))
+        # --- OUTPUT FORMATTING ---
+        if args.output == "yaml":
+            for row in results:
+                payload = row[2] 
+                if isinstance(payload, str):
+                    try: payload = json.loads(payload)
+                    except: pass
+                print("---")
+                print(yaml.dump(payload))
 
-    else: # Table Mode (Auto-Aligned)
-        cluster_scoped = is_cluster_scoped(resource)
-        
-        # 1. Process data to get widths
-        rows_to_print = []
-        
-        # Headers
-        if cluster_scoped:
-            headers = ["NAME", "AGE", "STATUS"]
-        else:
-            headers = ["NAMESPACE", "NAME", "AGE", "STATUS"]
+        elif args.output == "json":
+            # Just dump raw lines for multi-resource json output to keep it valid-ish
+            for row in results:
+                payload = row[2]
+                print(payload)
+
+        else: # Table Mode
+            cluster_scoped = is_cluster_scoped(resource)
+            rows_to_print = []
             
-        # Add Data
-        for row in results:
-            ns_val = row[0] if row[0] else "-"
-            name_val = row[1]
-            payload = row[2]
-            
-            if isinstance(payload, str): payload = json.loads(payload)
-            
-            created = payload.get('metadata', {}).get('creationTimestamp')
-            age = calculate_age(created)
-            status = extract_status(payload)
-            
-            if cluster_scoped:
-                rows_to_print.append([name_val, age, status])
-            else:
-                rows_to_print.append([ns_val, name_val, age, status])
+            if cluster_scoped: headers = ["NAME", "AGE", "STATUS"]
+            else: headers = ["NAMESPACE", "NAME", "AGE", "STATUS"]
+                
+            for row in results:
+                ns_val = row[0] if row[0] else "-"
+                name_val = row[1]
+                
+                # Prefix name with resource type if "get all" (like real kubectl)
+                if len(resources_to_fetch) > 1:
+                    display_name = f"{map_resource(resource)}/{name_val}"
+                else:
+                    display_name = name_val
 
-        # 2. Calculate Max Widths
-        widths = [len(h) for h in headers]
-        for row in rows_to_print:
-            for i, val in enumerate(row):
-                widths[i] = max(widths[i], len(str(val)))
+                payload = row[2]
+                if isinstance(payload, str): payload = json.loads(payload)
+                
+                created = payload.get('metadata', {}).get('creationTimestamp')
+                age = calculate_age(created)
+                status = extract_status(payload)
+                
+                if cluster_scoped: rows_to_print.append([display_name, age, status])
+                else: rows_to_print.append([ns_val, display_name, age, status])
 
-        # 3. Print
-        # Header
-        header_fmt = "  ".join([f"{{:<{w}}}" for w in widths])
-        print(header_fmt.format(*headers))
-        
-        # Rows
-        for row in rows_to_print:
-            print(header_fmt.format(*row))
+            widths = [len(h) for h in headers]
+            for row in rows_to_print:
+                for i, val in enumerate(row):
+                    widths[i] = max(widths[i], len(str(val)))
+
+            header_fmt = "  ".join([f"{{:<{w}}}" for w in widths])
+            
+            # Only print header once per resource block in "get all" mode
+            if args.output == "table":
+                print(header_fmt.format(*headers))
+                for row in rows_to_print:
+                    print(header_fmt.format(*row))
 
 if __name__ == "__main__":
     main()
