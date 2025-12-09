@@ -291,10 +291,10 @@ audit_detect_persistence() {
     
     (echo "TIMESTAMP USER TYPE NAME IMAGE"; jq -r --arg user "$USER_PATTERN" 'select(
       .verb == "create" and
-      (.objectRef.resource == "cronjobs" or .objectRef.resource == "daemonsets" or .objectRef.resource == "deployments") and
+      (.objectRef.resource == "cronjobs" or .objectRef.resource == "daemonsets" or .objectRef.resource == "deployments" or .objectRef.resource == "pods") and
       ($user == "" or (.user.username | contains($user))) and
       (.user.username | contains("openshift-") | not) and
-      (.user.username | contains("kube-system") | not)
+      (.user.username | contains("kube-") | not)
     ) | [
       .requestReceivedTimestamp,
       .user.username,
