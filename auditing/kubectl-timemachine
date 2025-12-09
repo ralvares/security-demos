@@ -330,8 +330,13 @@ def main():
             cluster_scoped = is_cluster_scoped(resource)
             rows_to_print = []
             
-            headers = ["NAMESPACE", "NAME", "AGE", "STATUS"]
-            if cluster_scoped: headers = ["NAME", "AGE", "STATUS"]
+            stateless_resources = ['configmaps', 'secrets', 'serviceaccounts', 'roles', 'rolebindings', 'clusterroles', 'clusterrolebindings']
+            
+            headers = ["NAMESPACE", "NAME", "AGE"]
+            if cluster_scoped: headers = ["NAME", "AGE"]
+            
+            if resource not in stateless_resources:
+                headers.append("STATUS")
             
             if args.output == "wide":
                 if resource == 'pods': headers.extend(["IP", "NODE"])
@@ -353,8 +358,11 @@ def main():
                 age = calculate_age(created, args.time)
                 status = extract_status(payload)
                 
-                if cluster_scoped: row_data = [display_name, age, status]
-                else: row_data = [ns_val, display_name, age, status]
+                if cluster_scoped: row_data = [display_name, age]
+                else: row_data = [ns_val, display_name, age]
+                
+                if resource not in stateless_resources:
+                    row_data.append(status)
                 
                 if args.output == "wide": row_data.extend(extract_wide_info(resource, payload))
                 if args.show_labels: row_data.append(extract_labels(payload))
