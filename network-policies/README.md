@@ -1,8 +1,3 @@
----
-title: Network Segmentation & Policy Patterns
-description: Practical rationale and patterns for OpenShift / Kubernetes network segmentation with NetworkPolicies.
----
-
 # Network Policies
 
 ## What Are Network Policies
