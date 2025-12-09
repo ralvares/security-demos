@@ -58,3 +58,23 @@ The included guide (`audit-log-Investigation.md`) covers a "Kill Chain" scenario
 4.  **Persistence/Action:** Escaping to the underlying Node using a privileged pod.
 
 Follow the guide to learn how to use the toolkit to uncover each step of this attack.
+
+## Kubectl Timemachine
+
+The `kubectl-timemachine` plugin allows you to "travel back in time" and view the state of the cluster as it was recorded in the audit logs. It reconstructs resources (like Pods) from the audit events.
+
+### Example Usage
+
+```bash
+➜  ~ kubectl timemachine --auditlog-file=audit.log get pods -n payments -o wide 
+NAMESPACE  NAME                                   AGE  STATUS   IP            NODE    
+payments   gateway-79d69c8875-72kpm               26m  Running  10.130.0.71   master-1
+payments   mastercard-processor-59986f994c-gtpdn  26m  Running  10.128.0.215  master-2
+payments   visa-processor-7d57964dc8-x45hb        26m  Running  10.130.0.72   master-1
+➜  ~ kubectl timemachine --auditlog-file=audit.log get pods -n frontend -o wide 
+NAMESPACE  NAME                          AGE  STATUS   IP            NODE    
+frontend   asset-cache-7d548fc66f-l67rb  26m  Running  10.128.0.212  master-2
+frontend   blog-7776768bf6-zq2rp         26m  Running  10.130.0.69   master-1
+frontend   webapp-7f77777944-zp85r       26m  Running  10.130.0.70   master-1
+➜  ~ 
+```
