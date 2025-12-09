@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+import duckdb
+import argparse
+import yaml
+import json
+import sys
+import os
+from datetime import datetime, timezone
+
+# ==============================================================================
+# AUDIT FORENSICS: Pure Python implementation powered by DuckDB
+# ------------------------------------------------------------------------------
+# Usage:
+#   ./audit_forensics.py get pods -A
+#   ./audit_forensics.py get namespaces
+# ==============================================================================
+
+def setup_args():
+    base_parser = argparse.ArgumentParser(add_help=False)
+    
+    # Flags
+    base_parser.add_argument("--auditlog-file", default="audit.log", help="Path to audit.log file")
+    base_parser.add_argument("--time", help="Snapshot time (ISO8601), e.g. 2025-12-08T12:00:00Z")
+    base_parser.add_argument("-n", "--namespace", help="Namespace scope")
+    base_parser.add_argument("-A", "--all-namespaces", action="store_true", help="List in all namespaces")
+    base_parser.add_argument("-o", "--output", choices=["yaml", "json", "table"], default="table", help="Output format")
+
+    parser = argparse.ArgumentParser(
+        description="Kubernetes Forensic Tool using Audit Logs",
+        parents=[base_parser]
+    )
+    
+    subparsers = parser.add_subparsers(dest="command", help="Command")
+    
+    get_parser = subparsers.add_parser("get", parents=[base_parser], help="Display resources")
+    get_parser.add_argument("resource", help="Resource type")
+    get_parser.add_argument("name", nargs="?", help="Resource name")
+    
+    return parser
+
+def map_resource(alias):
+    mapping = {
+        'po': 'pods', 'pod': 'pods',
+        'svc': 'services', 'service': 'services',
+        'deploy': 'deployments', 'deployment': 'deployments',
+        'cm': 'configmaps', 'configmap': 'configmaps',
+        'sa': 'serviceaccounts', 'serviceaccount': 'serviceaccounts',
+        'ns': 'namespaces', 'namespace': 'namespaces',
+        'no': 'nodes', 'node': 'nodes',
+        'pv': 'persistentvolumes', 'persistentvolume': 'persistentvolumes',
+        'crb': 'clusterrolebindings', 'clusterrolebinding': 'clusterrolebindings'
+    }
+    return mapping.get(alias.lower(), alias.lower())
+
+def is_cluster_scoped(resource):
+    return resource in ['namespaces', 'nodes', 'persistentvolumes', 'clusterrolebindings', 'clusterroles']
+
+def calculate_age(creation_ts):
+    if not creation_ts: return "?"
+    try:
+        fmt = "%Y-%m-%dT%H:%M:%SZ"
+        if "." in creation_ts:
+            fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
+        created = datetime.strptime(creation_ts, fmt).replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        delta = now - created
+        
+        if delta.days > 0: return f"{delta.days}d"
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        if hours > 0: return f"{hours}h{minutes}m"
+        return f"{minutes}m"
+    except: return "?"
+
+def extract_status(obj):
+    status = obj.get('status', {})
+    if isinstance(status, str): return status
+    
+    if 'phase' in status: return status['phase']
+    
+    if 'conditions' in status and isinstance(status['conditions'], list):
+        for cond in reversed(status['conditions']):
+            if cond.get('status') == "True":
+                return cond.get('type')
+    return "-"
+
+def build_query(log_file, resource, name, namespace, all_ns, time_limit):
+    
+    time_sql = f"AND requestReceivedTimestamp <= '{time_limit}'" if time_limit else ""
+    name_sql = f"AND name = '{name}'" if name else ""
+    
+    ns_sql = ""
+    cluster_scoped = is_cluster_scoped(resource)
+    
+    if not cluster_scoped:
+        if not all_ns:
+            if namespace:
+                ns_sql = f"AND namespace = '{namespace}'"
+            else:
+                ns_sql = "AND namespace = 'default'"
+
+    if cluster_scoped:
+        partition_by = "PARTITION BY name"
+    else:
+        partition_by = "PARTITION BY namespace, name"
+
+    query = f"""
+    WITH raw_stream AS (
+        SELECT 
+            requestReceivedTimestamp as ts,
+            verb,
+            json_extract_string(objectRef, '$.resource') as resource,
+            json_extract_string(objectRef, '$.namespace') as namespace,
+            json_extract_string(objectRef, '$.name') as name,
+            COALESCE(responseObject, requestObject) as obj
+        FROM read_json_auto('{log_file}', ignore_errors=true)
+        WHERE verb IN ('create', 'update', 'patch', 'delete')
+          AND resource = '{resource}'
+          {time_sql}
+          AND (responseObject IS NOT NULL OR requestObject IS NOT NULL)
+    ),
+    latest_state AS (
+        SELECT *,
+            ROW_NUMBER() OVER (
+                {partition_by}
+                ORDER BY ts DESC
+            ) as rn
+        FROM raw_stream
+        WHERE name IS NOT NULL
+    )
+    SELECT namespace, name, obj 
+    FROM latest_state 
+    WHERE rn = 1 
+      AND verb != 'delete'
+      {ns_sql}
+      {name_sql}
+    ORDER BY namespace, name
+    """
+    return query
+
+def main():
+    parser = setup_args()
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help(); sys.exit(1)
+
+    if not os.path.exists(args.auditlog_file):
+        print(f"Error: File '{args.auditlog_file}' not found."); sys.exit(1)
+
+    resource = map_resource(args.resource)
+    con = duckdb.connect(database=':memory:')
+    
+    sql = build_query(args.auditlog_file, resource, args.name, args.namespace, args.all_namespaces, args.time)
+    
+    try:
+        results = con.execute(sql).fetchall()
+    except Exception as e:
+        print(f"Query Error: {e}"); sys.exit(1)
+
+    if not results:
+        print("No resources found.")
+        return
+
+    # OUTPUT FORMATTING
+    if args.output == "yaml":
+        for row in results:
+            payload = row[2] 
+            if isinstance(payload, str):
+                try: payload = json.loads(payload)
+                except: pass
+            print("---")
+            print(yaml.dump(payload))
+
+    elif args.output == "json":
+        out_list = []
+        for row in results:
+            payload = row[2]
+            if isinstance(payload, str): payload = json.loads(payload)
+            out_list.append(payload)
+        print(json.dumps(out_list, indent=2))
+
+    else: # Table Mode (Auto-Aligned)
+        cluster_scoped = is_cluster_scoped(resource)
+        
+        # 1. Process data to get widths
+        rows_to_print = []
+        
+        # Headers
+        if cluster_scoped:
+            headers = ["NAME", "AGE", "STATUS"]
+        else:
+            headers = ["NAMESPACE", "NAME", "AGE", "STATUS"]
+            
+        # Add Data
+        for row in results:
+            ns_val = row[0] if row[0] else "-"
+            name_val = row[1]
+            payload = row[2]
+            
+            if isinstance(payload, str): payload = json.loads(payload)
+            
+            created = payload.get('metadata', {}).get('creationTimestamp')
+            age = calculate_age(created)
+            status = extract_status(payload)
+            
+            if cluster_scoped:
+                rows_to_print.append([name_val, age, status])
+            else:
+                rows_to_print.append([ns_val, name_val, age, status])
+
+        # 2. Calculate Max Widths
+        widths = [len(h) for h in headers]
+        for row in rows_to_print:
+            for i, val in enumerate(row):
+                widths[i] = max(widths[i], len(str(val)))
+
+        # 3. Print
+        # Header
+        header_fmt = "  ".join([f"{{:<{w}}}" for w in widths])
+        print(header_fmt.format(*headers))
+        
+        # Rows
+        for row in rows_to_print:
+            print(header_fmt.format(*row))
+
+if __name__ == "__main__":
+    main()
