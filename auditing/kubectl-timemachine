@@ -249,6 +249,13 @@ def build_query(log_file, resource, name, namespace, all_ns, time_limit, selecto
 
     partition_by = "PARTITION BY name" if cluster_scoped else "PARTITION BY namespace, name"
 
+    # Allow body-less events ONLY for specific resources that are commonly redacted
+    allow_redacted = resource in ['secrets', 'routes', 'oauthaccesstokens', 'oauthauthorizetokens']
+    
+    body_clause = ""
+    if not allow_redacted:
+        body_clause = "AND (responseObject IS NOT NULL OR requestObject IS NOT NULL)"
+
     query = f"""
     WITH raw_stream AS (
         SELECT 
@@ -257,12 +264,26 @@ def build_query(log_file, resource, name, namespace, all_ns, time_limit, selecto
             json_extract_string(objectRef, '$.resource') as resource,
             json_extract_string(objectRef, '$.namespace') as namespace,
             json_extract_string(objectRef, '$.name') as name,
-            COALESCE(responseObject, requestObject) as obj
+            COALESCE(
+                responseObject, 
+                requestObject, 
+                json_object(
+                    'kind', '{resource}', 
+                    'metadata', json_object(
+                        'name', json_extract_string(objectRef, '$.name'),
+                        'namespace', json_extract_string(objectRef, '$.namespace'),
+                        'creationTimestamp', requestReceivedTimestamp,
+                        'labels', json_object()
+                    ),
+                    'spec', json_object(),
+                    'status', json_object()
+                )
+            ) as obj
         FROM read_json_auto('{log_file}', ignore_errors=true)
         WHERE verb IN ('create', 'update', 'patch', 'delete')
           AND resource = '{resource}'
           {time_sql}
-          AND (responseObject IS NOT NULL OR requestObject IS NOT NULL)
+          {body_clause}
     ),
     latest_state AS (
         SELECT *,
