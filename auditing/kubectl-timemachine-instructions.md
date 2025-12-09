@@ -58,7 +58,7 @@ oc timemachine get pods -A
 View what deployments existed yesterday at 4:00 PM (Local Time). The tool automatically detects your timezone and converts it to UTC.
 
 ```bash
-kubectl timemachine get deployments -A --time "2025-12-08T16:00:00"
+oc timemachine get deployments -A --time "2025-12-08T16:00:00"
 ```
 
 *Output:*
