@@ -10,55 +10,87 @@ Ensure you have Python 3 installed along with the required dependencies:
 pip install duckdb pyyaml
 ```
 
+## Installation as a kubectl Plugin
+
+You can use this tool as a native `kubectl` plugin.
+
+1. Rename the script to `kubectl-timemachine`.
+2. Make it executable: `chmod +x kubectl-timemachine`.
+3. Move it to a directory in your `$PATH` (e.g., `/usr/local/bin`).
+
+Once installed, you can invoke it directly via `kubectl`:
+
+```bash
+oc timemachine get deployment -n payments-v2 --show-labels
+```
+
 ## Usage
 
 The basic syntax is similar to `kubectl`:
 
 ```bash
-./kubectl-timemachine get <resource> [name] [flags]
+oc timemachine get <resource> [name] [flags]
 ```
 
 ### Common Flags
 
 - `--auditlog-file <path>`: Path to the audit log file (default: `audit.log`).
-- `--time <timestamp>`: The point in time to view the cluster state (ISO8601 format, e.g., `2025-12-08T12:00:00Z`). If omitted, it shows the latest state found in the logs.
+- `--time <timestamp>`: Snapshot time (e.g., `2025-12-08T16:00:00`). Automatically detects local timezone and converts to UTC.
 - `-n, --namespace <ns>`: Filter by a specific namespace.
 - `-A, --all-namespaces`: List resources across all namespaces.
-- `-o, --output <format>`: Output format. Supported values: `table` (default), `yaml`, `json`.
+- `-o, --output <format>`: Output format. Supported values: `table` (default), `yaml`, `json`, `wide`.
+- `-l, --selector <selector>`: Filter by label selector (e.g., `app=visa,tier=backend`).
+- `--show-labels`: Show all labels as the last column in the output.
 
 ## Examples
 
 ### 1. List all pods in the default namespace (latest state in logs)
 ```bash
-./kubectl-timemachine get pods
+oc timemachine get pods
 ```
 
 ### 2. List pods in all namespaces
 ```bash
-./kubectl-timemachine get pods -A
+oc timemachine get pods -A
 ```
 
 ### 3. Time Travel: See the state of deployments at a specific time
-View what deployments existed yesterday at noon:
+View what deployments existed yesterday at 4:00 PM (Local Time). The tool automatically detects your timezone and converts it to UTC.
+
 ```bash
-./kubectl-timemachine get deployments -A --time "2025-12-08T12:00:00Z"
+kubectl timemachine get deployments -A --time "2025-12-08T16:00:00"
 ```
+
+*Output:*
+`--- 🕒 Snapshot: 2025-12-08 16:00:00 (Local) → 2025-12-08 12:00:00Z (UTC) ---`
 
 ### 4. Recover a deleted resource manifest
 If a ConfigMap was deleted, you can retrieve its last known state and output it as YAML:
 ```bash
-./kubectl-timemachine get cm my-config -n my-app -o yaml > recovered-config.yaml
+oc timemachine get cm my-config -n my-app -o yaml > recovered-config.yaml
 ```
 
 ### 5. Specify a custom audit log file
 ```bash
-./kubectl-timemachine get nodes --auditlog-file /path/to/custom-audit.log
+oc timemachine get nodes --auditlog-file /path/to/custom-audit.log
 ```
 
 ### 6. Get All Resources
 Retrieve a comprehensive overview of the cluster state (similar to `kubectl get all`):
 ```bash
-./kubectl-timemachine get all -A
+oc timemachine get all -A
+```
+
+### 7. Advanced Filtering and Output
+List pods with extra details (IP, Node) matching a specific label:
+```bash
+oc timemachine get pods -n payments -l app=visa -o wide
+```
+
+### 8. Show Labels
+Display labels alongside resource information:
+```bash
+oc timemachine get pods --show-labels
 ```
 
 ## Supported Resources
@@ -88,6 +120,7 @@ The tool currently supports the following resources (and their short aliases):
 **Network:**
 - `ingresses` (ing)
 - `routes` (rt)
+- `networkpolicies` (netpol)
 
 **Virtualization:**
 - `virtualmachines` (vm)
