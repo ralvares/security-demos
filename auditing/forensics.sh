@@ -630,7 +630,7 @@ audit_shrink() {
       #sed -i '' -E '/stackrox|netobserv|"resource": *"leases"|"namespace": *"openshift-/d' "$INPUT_FILE"
       #sed -i '' -E '/stackrox|netobserv|"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"username": *"system:serviceaccount:openshift-/d' "$INPUT_FILE"
       #sed -i '' -E '/stackrox|netobserv|"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"username": *"system:serviceaccount:openshift-|"apiGroup": *"operator.openshift.io"|"username": *"system:kube-*|"system:masters"/d' "$INPUT_FILE"    
-      sed -i '' -E '/stackrox|netobserv|"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"username": *"system:serviceaccount:openshift-|"apiGroup": *"operator.openshift.io"|"username": *"system:kube-*|"system:masters"|"username": *"system:multus/d' "$INPUT_FILE"
+      sed -i '' -E '/stackrox|netobserv|"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"username": *"system:serviceaccount:openshift-|"apiGroup": *"operator.openshift.io"|"username": *"system:kube-*|"system:masters"/d' "$INPUT_FILE"
 
     echo "Shrunk size:   $(du -h "$INPUT_FILE" | cut -f1)"
 }
