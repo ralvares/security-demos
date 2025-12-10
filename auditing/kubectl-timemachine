@@ -385,7 +385,11 @@ def main():
 
     req_res = map_resource(resource_input)
     if req_res == 'all':
-        resources_to_fetch = ['nodes','pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs', 'routes', 'ingresses', 'virtualmachines', 'virtualmachineinstances']
+        resources_to_fetch = [
+            'nodes', 'pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs',
+            'routes', 'ingresses', 'networkpolicies', 'virtualmachines', 'virtualmachineinstances',
+            'roles', 'rolebindings', 'clusterroles', 'clusterrolebindings'
+        ]
     else:
         resources_to_fetch = [req_res]
 
