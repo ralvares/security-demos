@@ -626,11 +626,77 @@ audit_shrink() {
     echo "Original size: $(du -h "$INPUT_FILE" | cut -f1)"
 
     # Remove noisy namespaces and service accounts
-      #sed -i '' -E '/stackrox|openshift-.*|"resource":"leases"/d' "$INPUT_FILE"
-      #sed -i '' -E '/stackrox|netobserv|"resource": *"leases"|"namespace": *"openshift-/d' "$INPUT_FILE"
-      #sed -i '' -E '/stackrox|netobserv|"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"username": *"system:serviceaccount:openshift-/d' "$INPUT_FILE"
-      #sed -i '' -E '/stackrox|netobserv|"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"username": *"system:serviceaccount:openshift-|"apiGroup": *"operator.openshift.io"|"username": *"system:kube-*|"system:masters"/d' "$INPUT_FILE"    
-      sed -i '' -E '/stackrox|netobserv|"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"username": *"system:serviceaccount:openshift-|"apiGroup": *"operator.openshift.io"|"username": *"system:kube-*|"system:masters"/d' "$INPUT_FILE"
+      
+    #sed -i '' -E '/tokenreviews|namespaces\/openshift\/|rhacs-operator|operators.coreos.com|image.openshift.io|"namespace": *"default|"namespace": *"kube-system|"namespace": *"openshift-cnv|"namespace": *"stackrox|"namespace": *"netobserv|"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"apiGroup": *"operator.openshift.io"|"username": *"system:kube-*|"username": *"system:serviceaccount:kube-system|"verb": *"watch"|"status": *"Failure"|"verb": *"delete"/d' "$INPUT_FILE"    
+ 
+    sed -i '' -E \
+ -e '/tokenreviews|namespaces\/openshift\/|rhacs-operator|operators.coreos.com|image.openshift.io/d' \
+ -e '/"namespace": *"default|"namespace": *"kube-system|"namespace": *"openshift-cnv|"namespace": *"stackrox|"namespace": *"netobserv/d' \
+ -e '/"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"apiGroup": *"operator.openshift.io"/d' \
+ -e '/"username": *"system:kube-*|"username": *"system:serviceaccount:kube-system|"verb": *"watch"|"status": *"Failure"|"verb": *"delete"/d' \
+ -e '/system:serviceaccount:openshift-apiserver-operator:openshift-apiserver-operator/d' \
+ -e '/system:serviceaccount:openshift-apiserver:openshift-apiserver-sa/d' \
+ -e '/system:serviceaccount:openshift-authentication-operator:authentication-operator/d' \
+ -e '/system:serviceaccount:openshift-authentication:oauth-openshift/d' \
+ -e '/system:serviceaccount:openshift-catalogd:catalogd-controller-manager/d' \
+ -e '/system:serviceaccount:openshift-cloud-controller-manager-operator:cluster-cloud-controller-manager/d' \
+ -e '/system:serviceaccount:openshift-cluster-machine-approver:machine-approver-sa/d' \
+ -e '/system:serviceaccount:openshift-cluster-olm-operator:cluster-olm-operator/d' \
+ -e '/system:serviceaccount:openshift-cluster-samples-operator:cluster-samples-operator/d' \
+ -e '/system:serviceaccount:openshift-cluster-storage-operator:cluster-storage-operator/d' \
+ -e '/system:serviceaccount:openshift-cluster-storage-operator:csi-snapshot-controller-operator/d' \
+ -e '/system:serviceaccount:openshift-cluster-version:default/d' \
+ -e '/system:serviceaccount:openshift-cnv:bridge-marker/d' \
+ -e '/system:serviceaccount:openshift-cnv:cdi-apiserver/d' \
+ -e '/system:serviceaccount:openshift-cnv:cdi-operator/d' \
+ -e '/system:serviceaccount:openshift-cnv:cdi-sa/d' \
+ -e '/system:serviceaccount:openshift-cnv:cluster-network-addons-operator/d' \
+ -e '/system:serviceaccount:openshift-cnv:kubemacpool-sa/d' \
+ -e '/system:serviceaccount:openshift-cnv:kubevirt-apiserver/d' \
+ -e '/system:serviceaccount:openshift-cnv:kubevirt-controller/d' \
+ -e '/system:serviceaccount:openshift-cnv:kubevirt-handler/d' \
+ -e '/system:serviceaccount:openshift-cnv:kubevirt-ipam-controller-manager/d' \
+ -e '/system:serviceaccount:openshift-cnv:kubevirt-operator/d' \
+ -e '/system:serviceaccount:openshift-console-operator:console-operator/d' \
+ -e '/system:serviceaccount:openshift-controller-manager-operator:openshift-controller-manager-operator/d' \
+ -e '/system:serviceaccount:openshift-dns-operator:dns-operator/d' \
+ -e '/system:serviceaccount:openshift-etcd-operator:etcd-operator/d' \
+ -e '/system:serviceaccount:openshift-image-registry:cluster-image-registry-operator/d' \
+ -e '/system:serviceaccount:openshift-infra:default-rolebindings-controller/d' \
+ -e '/system:serviceaccount:openshift-infra:namespace-security-allocation-controller/d' \
+ -e '/system:serviceaccount:openshift-infra:podsecurity-admission-label-syncer-controller/d' \
+ -e '/system:serviceaccount:openshift-infra:serviceaccount-controller/d' \
+ -e '/system:serviceaccount:openshift-infra:serviceaccount-pull-secrets-controller/d' \
+ -e '/system:serviceaccount:openshift-infra:unidling-controller/d' \
+ -e '/system:serviceaccount:openshift-ingress-operator:ingress-operator/d' \
+ -e '/system:serviceaccount:openshift-insights:operator/d' \
+ -e '/system:serviceaccount:openshift-kube-apiserver-operator:kube-apiserver-operator/d' \
+ -e '/system:serviceaccount:openshift-kube-controller-manager-operator:kube-controller-manager-operator/d' \
+ -e '/system:serviceaccount:openshift-kube-scheduler-operator:openshift-kube-scheduler-operator/d' \
+ -e '/system:serviceaccount:openshift-kube-storage-version-migrator-operator:kube-storage-version-migrator-operator/d' \
+ -e '/system:serviceaccount:openshift-machine-api:cluster-autoscaler-operator/d' \
+ -e '/system:serviceaccount:openshift-machine-api:machine-api-operator/d' \
+ -e '/system:serviceaccount:openshift-machine-config-operator:machine-config-controller/d' \
+ -e '/system:serviceaccount:openshift-machine-config-operator:machine-config-daemon/d' \
+ -e '/system:serviceaccount:openshift-machine-config-operator:machine-config-operator/d' \
+ -e '/system:serviceaccount:openshift-marketplace:marketplace-operator/d' \
+ -e '/system:serviceaccount:openshift-monitoring:alertmanager-main/d' \
+ -e '/system:serviceaccount:openshift-monitoring:cluster-monitoring-operator/d' \
+ -e '/system:serviceaccount:openshift-monitoring:metrics-server/d' \
+ -e '/system:serviceaccount:openshift-monitoring:prometheus-k8s/d' \
+ -e '/system:serviceaccount:openshift-monitoring:prometheus-operator/d' \
+ -e '/system:serviceaccount:openshift-monitoring:thanos-querier/d' \
+ -e '/system:serviceaccount:openshift-netobserv-operator:netobserv-controller-manager/d' \
+ -e '/system:serviceaccount:openshift-network-operator:cluster-network-operator/d' \
+ -e '/system:serviceaccount:openshift-oauth-apiserver:oauth-apiserver-sa/d' \
+ -e '/system:serviceaccount:openshift-operator-controller:operator-controller-controller-manager/d' \
+ -e '/system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount/d' \
+ -e '/system:serviceaccount:openshift-operators:openshift-pipelines-operator/d' \
+ -e '/system:serviceaccount:openshift-pipelines:tekton-resource-pruner/d' \
+ -e '/system:serviceaccount:openshift-pipelines:tekton-triggers-core-interceptors/d' \
+ -e '/system:serviceaccount:openshift-service-ca-operator:service-ca-operator/d' \
+ -e '/system:serviceaccount:openshift-service-ca:service-ca/d' \
+ "$INPUT_FILE"
 
     echo "Shrunk size:   $(du -h "$INPUT_FILE" | cut -f1)"
 }
