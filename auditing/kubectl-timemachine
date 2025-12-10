@@ -159,8 +159,8 @@ def extract_pod_ip(obj):
         if ovn_annot:
             ovn_data = json.loads(ovn_annot)
             if 'default' in ovn_data:
-                ips = ovn_data['default'].get('ip_addresses', [])
-                if ips: return ips[0].split('/')[0]
+                ip = ovn_data['default'].get('ip_address')
+                if ip: return ip.split('/')[0]
     except: pass
     
     # Multus
@@ -229,6 +229,7 @@ def matches_selector(obj, selector):
 def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time_limit, selector, all_namespaces):
     state = {} # (resource, namespace, name) -> object
     target_resources_set = set(resources_to_fetch)
+    valid_events = []
     
     try:
         with open(log_file, 'r') as f:
@@ -270,39 +271,75 @@ def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time
                 if target_name and name != target_name:
                     continue
                 
-                key = (resource, ns, name)
-                
-                if verb == 'delete':
-                    if key in state:
-                        del state[key]
-                else:
-                    # create, update, patch
-                    obj = entry.get('responseObject') or entry.get('requestObject')
-                    
-                    # Handle redacted/missing bodies
-                    if not obj:
-                        allow_redacted = resource in ['secrets', 'routes', 'oauthaccesstokens', 'oauthauthorizetokens', 'nodes']
-                        if allow_redacted:
-                             # Construct minimal object
-                             obj = {
-                                 'kind': resource, 
-                                 'metadata': {
-                                     'name': name,
-                                     'namespace': ns,
-                                     'creationTimestamp': ts,
-                                     'labels': {}
-                                 },
-                                 'spec': {},
-                                 'status': {}
-                             }
-                        else:
-                            continue 
-                    
-                    state[key] = obj
-                    
+                valid_events.append(entry)
+
     except FileNotFoundError:
         print(f"Error: File '{log_file}' not found.")
         sys.exit(1)
+
+    # Sort events by timestamp to handle out-of-order logs
+    valid_events.sort(key=lambda x: x.get('requestReceivedTimestamp', ''))
+
+    for entry in valid_events:
+        obj_ref = entry.get('objectRef', {})
+        resource = obj_ref.get('resource')
+        ns = obj_ref.get('namespace')
+        name = obj_ref.get('name')
+        verb = entry.get('verb')
+        ts = entry.get('requestReceivedTimestamp')
+        
+        key = (resource, ns, name)
+        
+        if verb == 'delete':
+            if key in state:
+                del state[key]
+        else:
+            # create, update, patch
+            raw_obj = entry.get('responseObject') or entry.get('requestObject')
+            obj = safe_parse_json(raw_obj)
+            
+            # Handle redacted/missing bodies
+            if not obj:
+                allow_redacted = resource in ['secrets', 'routes', 'oauthaccesstokens', 'oauthauthorizetokens', 'nodes']
+                if allow_redacted:
+                        # Construct minimal object
+                        obj = {
+                            'kind': resource, 
+                            'metadata': {
+                                'name': name,
+                                'namespace': ns,
+                                'creationTimestamp': ts,
+                                'labels': {}
+                            },
+                            'spec': {},
+                            'status': {}
+                        }
+                else:
+                    continue 
+            
+            # Preserve creationTimestamp if missing in new event
+            if key in state:
+                old_created = get_path(state[key], 'metadata', 'creationTimestamp')
+                new_created = get_path(obj, 'metadata', 'creationTimestamp')
+                
+                if old_created and not new_created:
+                    if 'metadata' not in obj: obj['metadata'] = {}
+                    if isinstance(obj['metadata'], dict):
+                        obj['metadata']['creationTimestamp'] = old_created
+
+            # Preserve Pod IP if missing in new event (mimic DuckDB 'latest_ips' logic)
+            if resource == 'pods' and key in state:
+                old_ip = extract_pod_ip(state[key])
+                new_ip = extract_pod_ip(obj)
+                if old_ip != '<none>' and new_ip == '<none>':
+                    if 'status' not in obj: obj['status'] = {}
+                    if isinstance(obj['status'], str):
+                        obj['status'] = safe_parse_json(obj['status'])
+                    
+                    if isinstance(obj['status'], dict):
+                        obj['status']['podIP'] = old_ip
+
+            state[key] = obj
 
     # Convert state to results list
     results = []
@@ -316,7 +353,14 @@ def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time
 
 def main():
     parser = setup_args()
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
+    
+    # Handle interleaved arguments (e.g. get -n foo pods)
+    for u in unknown:
+        if u.startswith("-"):
+            print(f"Error: unrecognized argument {u}")
+            sys.exit(1)
+        args.args.append(u)
     
     if not args.args or len(args.args) < 1:
         parser.print_help()

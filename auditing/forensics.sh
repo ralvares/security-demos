@@ -626,25 +626,9 @@ audit_shrink() {
     echo "Original size: $(du -h "$INPUT_FILE" | cut -f1)"
 
     # Remove noisy namespaces and service accounts
-    sed -i '' \
-        -e '/stackrox/d' \
-        -e '/openshift-operator-lifecycle-manager/d' \
-        -e '/netobserv/d' \
-        -e '/openshift-marketplace/d' \
-        -e '/openshift-cnv/d' \
-        -e '/openshift-host-network/d' \
-        -e '/openshift-multus/d' \
-        -e '/openshift-network-console/d' \
-        -e '/openshift-network-diagnostics/d' \
-        -e '/openshift-network-node-identity/d' \
-        -e '/openshift-ovn-kubernetes/d' \
-        -e '/openshift-monitoring/d' \
-        -e '/openshift-machine-config-operator/d' \
-        -e '/openshift-config-managed/d' \
-        -e '/openshift-network-operator/d' \
-        -e '/openshift-insights/d' \
-        -e '/openshift-machine-api/d' \
-        "$INPUT_FILE"
+      #sed -i '' -E '/stackrox|openshift-.*|"resource":"leases"/d' "$INPUT_FILE"
+      #sed -i '' -E '/stackrox|netobserv|"resource": *"leases"|"namespace": *"openshift-/d' "$INPUT_FILE"
+      sed -i '' -E '/stackrox|netobserv|"resource": *"leases"|"namespace": *"openshift-|"username": *"system:serviceaccount:openshift-/d' "$INPUT_FILE"
 
     echo "Shrunk size:   $(du -h "$INPUT_FILE" | cut -f1)"
 }

@@ -279,3 +279,100 @@ WHERE rn = 1
   AND Name IS NOT NULL  -- Exclude malformed log entries
 ORDER BY ns, kind, name;
 "
+
+➜  ~ duckdb -c "                                                                                 
+WITH all_events AS (
+    SELECT
+        json_extract_string(objectRef, '$.namespace') as ns,
+        json_extract_string(objectRef, '$.name') as name,
+        requestReceivedTimestamp as ts,
+        verb,
+        -- Extract IP from either Status OR OpenShift Annotation
+        COALESCE(
+            json_extract_string(responseObject, '$.status.podIP'),
+            json_extract_string(
+                json_extract_string(responseObject, '$.metadata.annotations.\"k8s.ovn.org/pod-networks\"'),
+                '$.default.ip_address'
+            )
+        ) as extracted_ip
+    FROM read_json_auto('audit.log.new', ignore_errors=true)
+    WHERE json_extract_string(objectRef, '$.resource') = 'pods'
+),
+-- 1. Get the current status of every pod (Active vs Deleted)
+active_pods AS (
+    SELECT DISTINCT ON (ns, name)
+        ns, name, verb
+    FROM all_events
+    WHERE name IS NOT NULL
+    ORDER BY ns, name, ts DESC
+),
+-- 2. Get the last known IP for every pod (skipping NULLs)
+latest_ips AS (
+    SELECT DISTINCT ON (ns, name)
+        ns, name, extracted_ip as ip
+    FROM all_events
+    WHERE extracted_ip IS NOT NULL
+      AND name IS NOT NULL
+    ORDER BY ns, name, ts DESC
+)
+-- 3. Combine them
+SELECT
+    p.ns AS Namespace,
+    p.name AS Pod,
+    i.ip AS IP
+FROM active_pods p
+LEFT JOIN latest_ips i ON p.ns = i.ns AND p.name = i.name
+WHERE p.verb != 'delete'
+ORDER BY p.ns, p.name;
+"
+┌──────────────────────────────────────┬─────────────────────────────────────────┬─────────────────┐
+│              Namespace               │                   Pod                   │       IP        │
+│               varchar                │                 varchar                 │     varchar     │
+├──────────────────────────────────────┼─────────────────────────────────────────┼─────────────────┤
+│ backend                              │ catalog-6f458f4787-gvv42                │ 10.130.0.181/23 │
+│ backend                              │ checkout-d4f598d84-57pwx                │ 10.130.0.182/23 │
+│ backend                              │ notification-77477dc7ff-4kr6n           │ 10.130.0.184/23 │
+│ backend                              │ recommendation-7fb9bc97dc-k66tj         │ 10.130.0.185/23 │
+│ backend                              │ reports-5c477c86b7-cg947                │ 10.130.0.186/23 │
+│ backend                              │ shipping-56c9c9dd4f-26xzw               │ 10.130.0.187/23 │
+│ frontend                             │ asset-cache-7d548fc66f-x4cmp            │ 10.128.1.202/23 │
+│ frontend                             │ blog-7776768bf6-lxhjp                   │ 10.128.1.203/23 │
+│ frontend                             │ webapp-7f77777944-9xs4h                 │ 10.130.0.188/23 │
+│ openshift-authentication             │ oauth-openshift-67cbf56478-6b6s6        │ NULL            │
+│ openshift-authentication             │ oauth-openshift-67cbf56478-f2zqm        │ NULL            │
+│ openshift-authentication             │ oauth-openshift-67cbf56478-h8mqr        │ NULL            │
+│ openshift-etcd                       │ etcd-guard-master-0                     │ NULL            │
+│ openshift-etcd                       │ etcd-guard-master-1                     │ NULL            │
+│ openshift-etcd                       │ etcd-guard-master-2                     │ NULL            │
+│ openshift-etcd                       │ etcd-master-0                           │ NULL            │
+│ openshift-etcd                       │ etcd-master-1                           │ NULL            │
+│ openshift-etcd                       │ etcd-master-2                           │ NULL            │
+│ openshift-kube-apiserver             │ kube-apiserver-guard-master-0           │ NULL            │
+│ openshift-kube-apiserver             │ kube-apiserver-guard-master-1           │ NULL            │
+│            ·                         │              ·                          │  ·              │
+│            ·                         │              ·                          │  ·              │
+│            ·                         │              ·                          │  ·              │
+│ openshift-kube-apiserver             │ revision-pruner-16-master-0             │ NULL            │
+│ openshift-kube-apiserver             │ revision-pruner-16-master-1             │ NULL            │
+│ openshift-kube-apiserver             │ revision-pruner-16-master-2             │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-guard-master-0  │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-guard-master-1  │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-guard-master-2  │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-master-0        │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-master-1        │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-master-2        │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-guard-master-0 │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-guard-master-1 │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-guard-master-2 │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-master-0       │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-master-1       │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-master-2       │ NULL            │
+│ openshift-operator-lifecycle-manager │ collect-profiles-29422470-vj4ds         │ 10.129.1.125/23 │
+│ payments                             │ gateway-79d69c8875-69zn9                │ 10.130.0.189/23 │
+│ payments                             │ mastercard-processor-59986f994c-lmwmx   │ 10.130.0.190/23 │
+│ payments                             │ visa-processor-7d57964dc8-brrf7         │ 10.130.0.191/23 │
+│ stackrox                             │ scanner-v4-matcher-6d5bdd4dc8-zckqv     │ 10.128.1.204/23 │
+├──────────────────────────────────────┴─────────────────────────────────────────┴─────────────────┤
+│ 44 rows (40 shown)                                                                     3 columns │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+➜  ~ 
