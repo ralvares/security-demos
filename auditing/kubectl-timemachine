@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import duckdb
 import argparse
 import yaml
 import json
@@ -10,11 +9,11 @@ from datetime import datetime, timezone
 # ==============================================================================
 # KUBECTL TIMEMACHINE: Forensic Digital Twin for Kubernetes
 # ------------------------------------------------------------------------------
-# A forensic tool that reconstructs cluster state from Audit Logs using DuckDB.
+# A forensic tool that reconstructs cluster state from Audit Logs.
 #
-# FINAL VERSION (v18):
-#   - Robust Argument Parsing (Flags anywhere)
-#   - Crash-proof JSON handling
+# Simplified Version:
+#   - Pure Python (No DuckDB dependency)
+#   - Robust Argument Parsing
 #   - Auto-Timezone detection
 #   - Full OpenShift/K8s resource support
 # ==============================================================================
@@ -216,77 +215,104 @@ def extract_wide_info(resource, raw_obj):
         info = [ip, node]
     return info
 
-def build_query(log_file, resource, name, namespace, all_ns, time_limit, selector):
-    time_sql = f"AND requestReceivedTimestamp <= '{time_limit}'" if time_limit else ""
-    name_sql = f"AND name = '{name}'" if name else ""
+def matches_selector(obj, selector):
+    if not selector: return True
+    labels = get_path(obj, 'metadata', 'labels') or {}
+    parts = selector.split(',')
+    for part in parts:
+        if '=' in part:
+            k, v = part.split('=', 1)
+            if labels.get(k) != v:
+                return False
+    return True
+
+def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time_limit, selector, all_namespaces):
+    state = {} # (resource, namespace, name) -> object
+    target_resources_set = set(resources_to_fetch)
     
-    label_sql = ""
-    if selector:
-        parts = selector.split(',')
-        for part in parts:
-            if '=' in part:
-                k, v = part.split('=', 1)
-                label_sql += f" AND json_extract_string(obj, '$.metadata.labels.\"{k}\"') = '{v}'"
+    try:
+        with open(log_file, 'r') as f:
+            for line in f:
+                if not line.strip(): continue
+                try:
+                    entry = json.loads(line)
+                except: continue
+                
+                # Time check
+                ts = entry.get('requestReceivedTimestamp')
+                if time_limit and ts and ts > time_limit:
+                    continue
+                
+                verb = entry.get('verb')
+                if verb not in ['create', 'update', 'patch', 'delete']:
+                    continue
+                
+                obj_ref = entry.get('objectRef', {})
+                resource = obj_ref.get('resource')
+                ns = obj_ref.get('namespace')
+                name = obj_ref.get('name')
+                
+                if not resource or not name: continue
+                
+                if resource not in target_resources_set:
+                    continue
+                
+                # Namespace check
+                cluster_scoped = is_cluster_scoped(resource)
+                if not cluster_scoped:
+                    if not all_namespaces:
+                        if target_ns:
+                            if ns != target_ns: continue
+                        else:
+                            if ns != 'default': continue
+                
+                # Name check
+                if target_name and name != target_name:
+                    continue
+                
+                key = (resource, ns, name)
+                
+                if verb == 'delete':
+                    if key in state:
+                        del state[key]
+                else:
+                    # create, update, patch
+                    obj = entry.get('responseObject') or entry.get('requestObject')
+                    
+                    # Handle redacted/missing bodies
+                    if not obj:
+                        allow_redacted = resource in ['secrets', 'routes', 'oauthaccesstokens', 'oauthauthorizetokens', 'nodes']
+                        if allow_redacted:
+                             # Construct minimal object
+                             obj = {
+                                 'kind': resource, 
+                                 'metadata': {
+                                     'name': name,
+                                     'namespace': ns,
+                                     'creationTimestamp': ts,
+                                     'labels': {}
+                                 },
+                                 'spec': {},
+                                 'status': {}
+                             }
+                        else:
+                            continue 
+                    
+                    state[key] = obj
+                    
+    except FileNotFoundError:
+        print(f"Error: File '{log_file}' not found.")
+        sys.exit(1)
 
-    ns_sql = ""
-    cluster_scoped = is_cluster_scoped(resource)
-    
-    if not cluster_scoped:
-        if not all_ns:
-            if namespace: ns_sql = f"AND namespace = '{namespace}'"
-            else: ns_sql = "AND namespace = 'default'"
-
-    partition_by = "PARTITION BY name" if cluster_scoped else "PARTITION BY namespace, name"
-
-    # Allow body-less events ONLY for specific resources that are commonly redacted
-    allow_redacted = resource in ['secrets', 'routes', 'oauthaccesstokens', 'oauthauthorizetokens']
-    
-    body_clause = ""
-    if not allow_redacted:
-        body_clause = "AND (verb = 'delete' OR responseObject IS NOT NULL OR requestObject IS NOT NULL)"
-
-    query = f"""
-    WITH raw_stream AS (
-        SELECT 
-            requestReceivedTimestamp as ts,
-            verb,
-            json_extract_string(objectRef, '$.resource') as resource,
-            json_extract_string(objectRef, '$.namespace') as namespace,
-            json_extract_string(objectRef, '$.name') as name,
-            COALESCE(
-                responseObject, 
-                requestObject, 
-                json_object(
-                    'kind', '{resource}', 
-                    'metadata', json_object(
-                        'name', json_extract_string(objectRef, '$.name'),
-                        'namespace', json_extract_string(objectRef, '$.namespace'),
-                        'creationTimestamp', requestReceivedTimestamp,
-                        'labels', json_object()
-                    ),
-                    'spec', json_object(),
-                    'status', json_object()
-                )
-            ) as obj
-        FROM read_json_auto('{log_file}', ignore_errors=true)
-        WHERE verb IN ('create', 'update', 'patch', 'delete')
-          AND resource = '{resource}'
-          {time_sql}
-          {body_clause}
-    ),
-    latest_state AS (
-        SELECT *,
-            ROW_NUMBER() OVER ({partition_by} ORDER BY ts DESC) as rn
-        FROM raw_stream
-        WHERE name IS NOT NULL
-    )
-    SELECT namespace, name, obj, verb
-    FROM latest_state 
-    WHERE rn = 1
-    {ns_sql} {name_sql} {label_sql}
-    ORDER BY namespace, name
-    """
-    return query
+    # Convert state to results list
+    results = []
+    for (res, ns, name), obj in state.items():
+        if not matches_selector(obj, selector):
+            continue
+        results.append((ns, name, obj, res))
+        
+    results.sort(key=lambda x: (x[0] or "", x[1]))
+    return results
 
 def main():
     parser = setup_args()
@@ -315,35 +341,35 @@ def main():
 
     req_res = map_resource(resource_input)
     if req_res == 'all':
-        resources_to_fetch = ['pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs', 'routes', 'ingresses', 'virtualmachines', 'virtualmachineinstances']
+        resources_to_fetch = ['nodes','pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs', 'routes', 'ingresses', 'virtualmachines', 'virtualmachineinstances']
     else:
         resources_to_fetch = [req_res]
 
-    con = duckdb.connect(database=':memory:')
+    all_results = process_audit_log(args.auditlog_file, resources_to_fetch, args.namespace, name_input, args.time, args.selector, args.all_namespaces)
     
+    # Group by resource
+    results_by_resource = {r: [] for r in resources_to_fetch}
+    for ns, name, obj, res in all_results:
+        if res in results_by_resource:
+            results_by_resource[res].append((ns, name, obj))
+
     for resource in resources_to_fetch:
-        sql = build_query(args.auditlog_file, resource, name_input, args.namespace, args.all_namespaces, args.time, args.selector)
-        try: results = con.execute(sql).fetchall()
-        except: continue
+        results = results_by_resource.get(resource, [])
         if not results: continue
 
         if len(resources_to_fetch) > 1: print(f"\n--- {resource.upper()} ---")
 
         if args.output == "yaml":
-            for row in results:
-                if row[3] == 'delete': continue
-                payload = safe_parse_json(row[2])
+            for ns, name, obj in results:
+                payload = safe_parse_json(obj)
                 print("---")
                 print(yaml.dump(payload))
         elif args.output == "json":
-            for row in results: 
-                if row[3] == 'delete': continue
-                print(row[2])
+            for ns, name, obj in results: 
+                print(json.dumps(obj))
         else: # Table/Wide
             cluster_scoped = is_cluster_scoped(resource)
             rows_to_print = []
-            
-            stateless_resources = ['configmaps', 'secrets', 'serviceaccounts', 'roles', 'rolebindings', 'clusterroles', 'clusterrolebindings']
             
             headers = ["NAMESPACE", "NAME", "AGE"]
             if cluster_scoped: headers = ["NAME", "AGE"]
@@ -357,17 +383,15 @@ def main():
 
             if args.show_labels: headers.append("LABELS")
 
-            for row in results:
-                if row[3] == 'delete': continue
-                ns_val = row[0] if row[0] else "-"
-                name_val = row[1]
+            for ns, name, obj in results:
+                ns_val = ns if ns else "-"
+                name_val = name
                 if len(resources_to_fetch) > 1: display_name = f"{map_resource(resource)}/{name_val}"
                 else: display_name = name_val
 
-                payload = safe_parse_json(row[2])
+                payload = safe_parse_json(obj)
                 created = get_path(payload, 'metadata', 'creationTimestamp')
                 age = calculate_age(created, args.time)
-                status = extract_status(payload)
                 
                 if cluster_scoped: row_data = [display_name, age]
                 else: row_data = [ns_val, display_name, age]
