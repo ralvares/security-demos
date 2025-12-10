@@ -634,6 +634,7 @@ audit_shrink() {
  -e '/"namespace": *"default|"namespace": *"kube-system|"namespace": *"openshift-cnv|"namespace": *"stackrox|"namespace": *"netobserv/d' \
  -e '/"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"apiGroup": *"operator.openshift.io"/d' \
  -e '/"username": *"system:kube-*|"username": *"system:serviceaccount:kube-system|"verb": *"watch"|"status": *"Failure"|"verb": *"delete"/d' \
+ -e '/system:serviceaccounts:stackrox/d' \
  -e '/system:serviceaccount:openshift-apiserver-operator:openshift-apiserver-operator/d' \
  -e '/system:serviceaccount:openshift-apiserver:openshift-apiserver-sa/d' \
  -e '/system:serviceaccount:openshift-authentication-operator:authentication-operator/d' \
