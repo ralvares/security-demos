@@ -451,8 +451,115 @@ EOF
 
 This configuration is the **first line of defense** (at the source).
 
-To further optimize costs, we can configure the OpenShift **Log Forwarder** (Vector/Fluentd) to drop specific events before they leave the cluster.
+To further optimize costs, we can configure the OpenShift **Log Forwarder** to drop specific events before they leave the cluster.
 
   * **Example:** "If the event is from `openshift-monitoring` AND the resource is `leases`, drop it entirely."
 
 This dual-layer approach (Source Tuning + Collector Filtering) ensures you pay only for the data that has real security value.
+
+## Advanced Filtering with ClusterLogForwarder
+
+To extract specific user events or filter out noise before forwarding logs to your SIEM (like Splunk), you can use the `ClusterLogForwarder` API. This allows you to define granular rules based on users, verbs, resources, and more.
+
+### Example 1: Targeting Specific Users and Actions
+
+This configuration captures actions by specific users (e.g., `user1`), successful logins (OAuth token creation), and failed login attempts, while filtering out everything else.
+
+```yaml
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  filters:
+  - kubeAPIAudit:
+      omitStages:
+      - RequestReceived
+      rules:
+      - level: Request # Track "create", "patch", "delete" for user1.
+        users:
+        - user1
+        verbs: ["create", "patch", "delete"]
+      - level: Request # Track successful logins (oauthaccesstokens creation)
+        users:
+        - "system:serviceaccount:openshift-authentication:oauth-openshift"
+        verbs: ["create"]
+        resources:
+        - group: "oauth.openshift.io"
+          resources: ["oauthaccesstokens"]
+      - level: Request # Track failed login attempts
+        users: ["system:anonymous"]
+        nonResourceURLs:
+        - "/oauth/authorize*"
+        verbs: ["get"]
+      - level: None # Filter out everything else
+    name: my-policy
+    type: kubeAPIAudit
+  inputs:
+  - name: selected-audit-logs
+    audit:
+      sources:
+      - kubeAPI
+      - openshiftAPI
+  pipelines:
+  - filterRefs:
+    - my-policy
+    inputRefs:
+    - selected-audit-logs
+    name: enable-logstore
+    outputRefs:
+    - default
+```
+
+### Example 2: Excluding System Users
+
+If you prefer to capture all user activity but exclude system accounts (service accounts, etc.), use this approach:
+
+```yaml
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  filters:
+  - kubeAPIAudit:
+      omitStages:
+      - RequestReceived
+      rules:
+      - level: Request # Track failed login attempts
+        users: ["system:anonymous"]
+        nonResourceURLs:
+        - "/oauth/authorize*"
+        verbs: ["get"]
+      - level: None # Exclude all system users
+        users:
+        - "system:*"
+      - level: Request # Track "create", "patch", "delete" for any other user
+        verbs: ["create", "patch", "delete"]
+      - level: Request # Track successful logins
+        users:
+        - "system:serviceaccount:openshift-authentication:oauth-openshift"
+        verbs: ["create"]
+        resources:
+        - group: "oauth.openshift.io"
+          resources: ["oauthaccesstokens"]
+      - level: None # Filter out everything else
+    name: my-policy
+    type: kubeAPIAudit
+  inputs:
+  - name: selected-audit-logs
+    audit:
+      sources:
+      - kubeAPI
+      - openshiftAPI
+  pipelines:
+  - filterRefs:
+    - my-policy
+    inputRefs:
+    - selected-audit-logs
+    name: enable-logstore
+    outputRefs: 
+    - default
+```
