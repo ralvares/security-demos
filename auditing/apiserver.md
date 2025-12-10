@@ -10,208 +10,69 @@ This policy uses a **"Blocklist Strategy"**: it explicitly silences known noisy 
 
 ## The Configuration
 
+> **Note:** The following configuration uses `None` for many groups to simplify lab testing and reduce log volume. In production environments, it is recommended to use `Default` for most infrastructure groups to retain essential metadata for forensics.
+
 ```yaml
-apiVersion: config.openshift.io/v1
-kind: APIServer
-metadata:
-  name: cluster
 spec:
   audit:
     customRules:
-      # -----------------------------------------------------------
-      # 1. EXTREME NOISE REDUCTION (Core Components)
-      # -----------------------------------------------------------
-      - group: "system:nodes"
-        profile: "None"
-      - group: "system:kube-proxy"
-      - group: "system:kube-controller-manager"
-        profile: "None"
-      - group: "system:kube-scheduler"
-        profile: "None"
-
-      # -----------------------------------------------------------
-      # 2. INFRASTRUCTURE BLOCKLIST (The "Quiet" List)
-      # Specific OpenShift namespaces that are noisy.
-      # We capture Metadata only (Default) to save space.
-      # -----------------------------------------------------------
-      - group: "system:serviceaccounts:kube-node-lease"
-        profile: "Default"
-      - group: "system:serviceaccounts:kube-public"
-        profile: "Default"
-      - group: "system:serviceaccounts:kube-system"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-apiserver"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-apiserver-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-authentication"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-authentication-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-catalogd"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-controller-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-controller-manager-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-credential-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-network-config-controller"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-platform-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-csi-drivers"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-machine-approver"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-node-tuning-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-olm-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-samples-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-storage-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-version"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cnv"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-compliance"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-config"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-config-managed"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-config-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-console"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-console-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-console-user-settings"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-controller-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-controller-manager-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-dns"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-dns-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-etcd"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-etcd-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-host-network"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-image-registry"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ingress"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ingress-canary"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ingress-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-insights"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kni-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-apiserver"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-apiserver-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-controller-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-controller-manager-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-scheduler"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-scheduler-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-storage-version-migrator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-storage-version-migrator-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-machine-api"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-machine-config-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-marketplace"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-monitoring"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-multus"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-netobserv-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-network-console"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-network-diagnostics"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-network-node-identity"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-network-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-nfs-provisioner"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-node"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-nutanix-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-oauth-apiserver"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-openstack-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-operator-controller"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-operator-lifecycle-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-operators"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ovirt-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ovn-kubernetes"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-pipelines"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-route-controller-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-service-ca"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-service-ca-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-user-workload-monitoring"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-virtualization-os-images"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-vsphere-infra"
-        profile: "Default"
-
-      # -----------------------------------------------------------
-      # 3. THE CATCH-ALL (Future-Proof Forensics)
-      # If it wasn't one of the namespaces above, it must be YOUR APP.
-      # This captures full bodies for 'backend', 'payments', and ANY future namespace.
-      # -----------------------------------------------------------
-      - group: "system:serviceaccounts"
-        profile: "WriteRequestBodies"
-
-      # -----------------------------------------------------------
-      # 4. HUMAN USERS (Always Full Capture)
-      # -----------------------------------------------------------
-      - group: "system:authenticated:oauth"
-        profile: "WriteRequestBodies"
-      - group: "system:authenticated"
-        profile: "WriteRequestBodies"
-
-      # 5. Fallback
-      - group: "system:unauthenticated"
-        profile: "Default"
-
-    profile: "Default"
+    - group: system:nodes
+      profile: None
+    - group: system:kube-proxy
+      profile: None
+    - group: system:kube-controller-manager
+      profile: None
+    - group: system:kube-scheduler
+      profile: None
+    - group: system:apiserver
+      profile: None
+    - group: system:serviceaccounts:stackrox
+      profile: None
+    - group: system:serviceaccounts:netobserv
+      profile: None
+    - group: system:serviceaccounts:openshift-cnv
+      profile: None
+    - group: system:serviceaccounts:kube-system
+      profile: None
+    - group: system:serviceaccounts:openshift-monitoring
+      profile: None
+    - group: system:serviceaccounts:openshift-sdn
+      profile: None
+    - group: system:serviceaccounts:openshift-ovn-kubernetes
+      profile: None
+    - group: system:serviceaccounts:openshift-console
+      profile: None
+    - group: system:serviceaccounts:openshift-etcd
+      profile: None
+    - group: system:serviceaccounts:openshift-image-registry
+      profile: None
+    - group: system:serviceaccounts:openshift-machine-config-operator
+      profile: None
+    - group: system:serviceaccounts:openshift-cluster-version
+      profile: None
+    - group: system:serviceaccounts:openshift-apiserver
+      profile: None
+    - group: system:serviceaccounts:openshift-kube-apiserver
+      profile: None
+    - group: system:serviceaccounts:openshift-kube-controller-manager
+      profile: None
+    - group: system:serviceaccounts:openshift-kube-scheduler
+      profile: None
+    - group: system:serviceaccounts:openshift-authentication
+      profile: None
+    - group: system:serviceaccounts:openshift-ingress
+      profile: Default
+    - group: system:serviceaccounts:openshift
+      profile: None
+    - group: system:authenticated:oauth
+      profile: WriteRequestBodies
+    - group: system:authenticated
+      profile: WriteRequestBodies
+    - group: system:serviceaccounts
+      profile: WriteRequestBodies
+    - group: system:unauthenticated
+      profile: None
+    profile: Default
 ```
 
 -----
@@ -261,189 +122,64 @@ You can apply this configuration directly to your cluster using the following co
 cat <<EOF | oc patch apiserver cluster --type=merge --patch-file /dev/stdin
 spec:
   audit:
-    profile: "Default"
     customRules:
-      # 1. EXTREME NOISE REDUCTION
-      - group: "system:nodes"
-        profile: "None"
-      - group: "system:kube-proxy"
-        profile: "None"
-      - group: "system:kube-controller-manager"
-        profile: "None"
-      - group: "system:kube-scheduler"
-        profile: "None"
-
-      # 2. INFRASTRUCTURE BLOCKLIST (Metadata Only)
-      - group: "system:serviceaccounts:kube-node-lease"
-        profile: "Default"
-      - group: "system:serviceaccounts:kube-public"
-        profile: "Default"
-      - group: "system:serviceaccounts:kube-system"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-apiserver"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-apiserver-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-authentication"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-authentication-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-catalogd"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-controller-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-controller-manager-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-credential-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-network-config-controller"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cloud-platform-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-csi-drivers"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-machine-approver"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-node-tuning-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-olm-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-samples-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-storage-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cluster-version"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-cnv"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-compliance"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-config"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-config-managed"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-config-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-console"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-console-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-console-user-settings"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-controller-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-controller-manager-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-dns"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-dns-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-etcd"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-etcd-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-host-network"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-image-registry"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ingress"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ingress-canary"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ingress-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-insights"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kni-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-apiserver"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-apiserver-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-controller-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-controller-manager-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-scheduler"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-scheduler-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-storage-version-migrator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-kube-storage-version-migrator-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-machine-api"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-machine-config-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-marketplace"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-monitoring"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-multus"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-netobserv-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-network-console"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-network-diagnostics"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-network-node-identity"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-network-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-nfs-provisioner"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-node"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-nutanix-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-oauth-apiserver"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-openstack-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-operator-controller"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-operator-lifecycle-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-operators"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ovirt-infra"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-ovn-kubernetes"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-pipelines"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-route-controller-manager"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-service-ca"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-service-ca-operator"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-user-workload-monitoring"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-virtualization-os-images"
-        profile: "Default"
-      - group: "system:serviceaccounts:openshift-vsphere-infra"
-        profile: "Default"
-
-      # 3. THE CATCH-ALL (Future-Proof Forensics)
-      - group: "system:serviceaccounts"
-        profile: "WriteRequestBodies"
-
-      # 4. HUMAN USERS (Always Full Capture)
-      - group: "system:authenticated:oauth"
-        profile: "WriteRequestBodies"
-      - group: "system:authenticated"
-        profile: "WriteRequestBodies"
-
-      # 5. Fallback
-      - group: "system:unauthenticated"
-        profile: "Default"
+    - group: system:nodes
+      profile: None
+    - group: system:kube-proxy
+      profile: None
+    - group: system:kube-controller-manager
+      profile: None
+    - group: system:kube-scheduler
+      profile: None
+    - group: system:apiserver
+      profile: None
+    - group: system:serviceaccounts:stackrox
+      profile: None
+    - group: system:serviceaccounts:netobserv
+      profile: None
+    - group: system:serviceaccounts:openshift-cnv
+      profile: None
+    - group: system:serviceaccounts:kube-system
+      profile: None
+    - group: system:serviceaccounts:openshift-monitoring
+      profile: None
+    - group: system:serviceaccounts:openshift-sdn
+      profile: None
+    - group: system:serviceaccounts:openshift-ovn-kubernetes
+      profile: None
+    - group: system:serviceaccounts:openshift-console
+      profile: None
+    - group: system:serviceaccounts:openshift-etcd
+      profile: None
+    - group: system:serviceaccounts:openshift-image-registry
+      profile: None
+    - group: system:serviceaccounts:openshift-machine-config-operator
+      profile: None
+    - group: system:serviceaccounts:openshift-cluster-version
+      profile: None
+    - group: system:serviceaccounts:openshift-apiserver
+      profile: None
+    - group: system:serviceaccounts:openshift-kube-apiserver
+      profile: None
+    - group: system:serviceaccounts:openshift-kube-controller-manager
+      profile: None
+    - group: system:serviceaccounts:openshift-kube-scheduler
+      profile: None
+    - group: system:serviceaccounts:openshift-authentication
+      profile: None
+    - group: system:serviceaccounts:openshift-ingress
+      profile: Default
+    - group: system:serviceaccounts:openshift
+      profile: None
+    - group: system:authenticated:oauth
+      profile: WriteRequestBodies
+    - group: system:authenticated
+      profile: WriteRequestBodies
+    - group: system:serviceaccounts
+      profile: WriteRequestBodies
+    - group: system:unauthenticated
+      profile: None
+    profile: Default
 EOF
 ```
 
