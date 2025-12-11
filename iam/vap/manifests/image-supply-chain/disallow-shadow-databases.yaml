@@ -1,0 +1,43 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: disallow-shadow-databases
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+  validations:
+  - expression: |
+      namespaces.exists(ns, ns.metadata.name == object.metadata.namespace && 
+        has(ns.metadata.labels) && 
+        'custom.security/database' in ns.metadata.labels && 
+        ns.metadata.labels['custom.security/database'] == 'true') ||
+      object.spec.containers.all(container,
+        !['postgres','mysql','mariadb','mongo','redis']
+          .exists(db, container.image.contains(db))
+      )
+    message: "Pod is running disallowed database images in unapproved namespace. Database pods must only run in namespaces labeled custom.security/database=true"
+    reason: Forbidden
+  variables:
+  - name: namespaces
+    expression: |
+      namespaceObject.all()
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: disallow-shadow-databases-binding
+spec:
+  policyName: disallow-shadow-databases
+  validationActions: ["Deny"]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+      - key: custom.security/enforce
+        operator: In
+        values: ["true"]
