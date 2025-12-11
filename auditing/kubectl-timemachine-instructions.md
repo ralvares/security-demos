@@ -21,7 +21,7 @@ You can use this tool as a native `kubectl` plugin.
 Once installed, you can invoke it directly via `kubectl`:
 
 ```bash
-oc timemachine --auditlog-file=timemachine-demo-audit.log get deployment -n payments-v2 --show-labels
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get deployment -n payments-v2 --show-labels
 ```
 
 ## Usage
@@ -46,19 +46,19 @@ oc timemachine get <resource> [name] [flags]
 
 ### 1. List all pods in the default namespace (latest state in logs)
 ```bash
-oc timemachine --auditlog-file=timemachine-demo-audit.log get pods
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get pods
 ```
 
 ### 2. List pods in all namespaces
 ```bash
-oc timemachine --auditlog-file=timemachine-demo-audit.log get pods -A
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get pods -A
 ```
 
 ### 3. Time Travel: See the state of deployments at a specific time
 View what deployments existed yesterday at 4:00 PM (Local Time). The tool automatically detects your timezone and converts it to UTC.
 
 ```bash
-oc timemachine --auditlog-file=timemachine-demo-audit.log get deployments -A --time "2025-12-08T16:00:00"
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get deployments -A --time "2025-12-08T16:00:00"
 ```
 
 *Output:*
@@ -67,30 +67,30 @@ oc timemachine --auditlog-file=timemachine-demo-audit.log get deployments -A --t
 ### 4. Recover a deleted resource manifest
 If a ConfigMap was deleted, you can retrieve its last known state and output it as YAML:
 ```bash
-oc timemachine --auditlog-file=timemachine-demo-audit.log get cm my-config -n my-app -o yaml > recovered-config.yaml
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get cm my-config -n my-app -o yaml > recovered-config.yaml
 ```
 
 ### 5. Specify a custom audit log file
 ```bash
-oc timemachine --auditlog-file=timemachine-demo-audit.log get nodes
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get nodes
 ```
 
 ### 6. Get All Resources
 Retrieve a comprehensive overview of the cluster state (similar to `kubectl get all`):
 ```bash
-oc timemachine --auditlog-file=timemachine-demo-audit.log get all -A
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get all -A
 ```
 
 ### 7. Advanced Filtering and Output
 List pods with extra details (IP, Node) matching a specific label:
 ```bash
-oc timemachine --auditlog-file=timemachine-demo-audit.log get pods -n payments -l app=visa -o wide
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get pods -n payments -l app=visa -o wide
 ```
 
 ### 8. Show Labels
 Display labels alongside resource information:
 ```bash
-oc timemachine --auditlog-file=timemachine-demo-audit.log get pods --show-labels
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get pods --show-labels
 ```
 
 ## Supported Resources
