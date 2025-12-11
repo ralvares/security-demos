@@ -1,0 +1,69 @@
+apiVersion: policy.networking.k8s.io/v1alpha1
+kind: AdminNetworkPolicy
+metadata:
+  name: deny-all-allow-dns-monitoring-owned-namespaces
+spec:
+  priority: 99
+  subject:
+    namespaces:
+      matchLabels:
+        custom.security/enforce: "true"
+  ingress:
+    - name: allow-openshift-monitoring
+      action: Allow
+      from:
+        - namespaces:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-monitoring
+
+    - name: allow-user-workload-monitoring
+      action: Allow
+      from:
+        - namespaces:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-user-workload-monitoring
+
+    - name: pass-from-owned-namespaces
+      action: Pass
+      from:
+        - namespaces:
+            matchLabels:
+              custom.security/enforce: "true"
+
+    - name: deny-ingress
+      action: Deny
+      from:
+        - namespaces: {}
+  egress:
+    - name: allow-dns
+      action: Allow
+      to:
+        - namespaces:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+      ports:
+        - portNumber:
+            port: 53
+            protocol: UDP
+        - portNumber:
+            port: 53
+            protocol: TCP
+        - portNumber:
+            port: 5353
+            protocol: UDP
+        - portNumber:
+            port: 5353
+            protocol: TCP
+
+    - name: pass-to-owned-namespaces
+      action: Pass
+      to:
+        - namespaces:
+            matchLabels:
+              custom.security/enforce: "true"
+
+    - name: deny-egress
+      action: Deny
+      to:
+        - networks:
+            - 0.0.0.0/0
