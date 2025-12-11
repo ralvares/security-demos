@@ -153,12 +153,3 @@ oc delete -k image-supply-chain
 oc label namespace payments custom.security/enforce- || true
 oc label namespace frontend custom.security/enforce- || true
 ```
-
------
-
-## 3\. Additional Notes
-
-- **RBAC Checks:** Cluster-scoped (no namespace labels needed).
-- **Namespace Labels:** Use `custom.security/enforce=true` to enable enforcement. Rules ignore unlabeled namespaces.
-- **Forcing Reruns:** Always delete the `ComplianceScan` or `ComplianceCheckResult` to trigger re-evaluation after changes.
-- **Customizing Rules:** Edit the YAMLs in [`compliance/manifests`](compliance/manifests ) to adjust allow-lists, labels, or expressions.
