@@ -7,25 +7,53 @@ import os
 from datetime import datetime, timezone
 
 # ==============================================================================
-# KUBECTL TIMEMACHINE: Forensic Digital Twin for Kubernetes
-# ------------------------------------------------------------------------------
-# A forensic tool that reconstructs cluster state from Audit Logs.
-#
-# Simplified Version:
-#   - Pure Python (No DuckDB dependency)
-#   - Robust Argument Parsing
-#   - Auto-Timezone detection
-#   - Full OpenShift/K8s resource support
+# CONFIGURATION
+# ==============================================================================
+
+RESOURCE_ALIASES = {
+    'po': 'pods', 'pod': 'pods', 'pods': 'pods',
+    'svc': 'services', 'service': 'services', 'services': 'services',
+    'cm': 'configmaps', 'configmap': 'configmaps', 'configmaps': 'configmaps',
+    'sa': 'serviceaccounts', 'serviceaccount': 'serviceaccounts', 'serviceaccounts': 'serviceaccounts',
+    'ns': 'namespaces', 'namespace': 'namespaces', 'namespaces': 'namespaces',
+    'no': 'nodes', 'node': 'nodes', 'nodes': 'nodes',
+    'se': 'secrets', 'secret': 'secrets', 'secrets': 'secrets',
+    'pv': 'persistentvolumes', 'persistentvolume': 'persistentvolumes', 'persistentvolumes': 'persistentvolumes',
+    'pvc': 'persistentvolumeclaims', 'persistentvolumeclaim': 'persistentvolumeclaims', 'persistentvolumeclaims': 'persistentvolumeclaims',
+    'deploy': 'deployments', 'deployment': 'deployments', 'deployments': 'deployments',
+    'ds': 'daemonsets', 'daemonset': 'daemonsets', 'daemonsets': 'daemonsets',
+    'sts': 'statefulsets', 'statefulset': 'statefulsets', 'statefulsets': 'statefulsets',
+    'rs': 'replicasets', 'replicaset': 'replicasets', 'replicasets': 'replicasets',
+    'job': 'jobs', 'jobs': 'jobs',
+    'cj': 'cronjobs', 'cronjob': 'cronjobs', 'cronjobs': 'cronjobs',
+    'ing': 'ingresses', 'ingress': 'ingresses', 'ingresses': 'ingresses',
+    'rt': 'routes', 'route': 'routes', 'routes': 'routes',
+    'netpol': 'networkpolicies', 'networkpolicy': 'networkpolicies',
+    'vm': 'virtualmachines', 'virtualmachine': 'virtualmachines', 'virtualmachines': 'virtualmachines',
+    'vmi': 'virtualmachineinstances', 'virtualmachineinstance': 'virtualmachineinstances', 'virtualmachineinstances': 'virtualmachineinstances',
+    'all': 'all'
+}
+
+CLUSTER_SCOPED = {
+    'namespaces', 'nodes', 'persistentvolumes', 
+    'clusterrolebindings', 'clusterroles'
+}
+
+REDACTED_RESOURCES = {
+    'secrets', 'routes', 'oauthaccesstokens', 
+    'oauthauthorizetokens', 'nodes'
+}
+
+# ==============================================================================
+# CORE FUNCTIONS
 # ==============================================================================
 
 def setup_args():
-    # Use a single parser with nargs='*' to capture commands flexibly
     parser = argparse.ArgumentParser(
         description="timemachine: Forensic Digital Twin for Kubernetes",
         usage="%(prog)s [flags] <command> <resource> [name]"
     )
     
-    # Global Flags
     parser.add_argument("--auditlog-file", default="audit.log", help="Path to audit.log file")
     parser.add_argument("--time", help="Snapshot time (ISO8601 or YYYY-MM-DD)")
     parser.add_argument("-n", "--namespace", help="Namespace scope")
@@ -33,113 +61,39 @@ def setup_args():
     parser.add_argument("-o", "--output", choices=["yaml", "json", "table", "wide"], default="table", help="Output format")
     parser.add_argument("-l", "--selector", help="Selector (label query) to filter on")
     parser.add_argument("--show-labels", action="store_true", help="Show all labels as the last column")
-
-    # Positional Args (Captures 'get', 'pods', etc. regardless of flag position)
+    
     parser.add_argument("args", nargs="*", help="Command and Resource")
     
     return parser
 
 def normalize_time(time_str):
-    """Parses input time. If timezone is missing, assumes LOCAL and converts to UTC."""
     if not time_str: return None
-    
-    # Handle YYYY-MM-DD -> End of Day
     if len(time_str) == 10 and '-' in time_str and 'T' not in time_str:
         time_str += "T23:59:59"
 
     try:
-        # Check if user explicitly provided 'Z' (UTC)
-        if time_str.endswith('Z'):
-            return time_str
-        
-        # Assume Local Time -> Convert to UTC
-        # Try formats with/without seconds
+        if time_str.endswith('Z'): return time_str
         fmt = "%Y-%m-%dT%H:%M:%S"
-        if len(time_str) == 16: fmt = "%Y-%m-%dT%H:%M" # Handle "16:00"
-        
+        if len(time_str) == 16: fmt = "%Y-%m-%dT%H:%M"
         local_dt = datetime.strptime(time_str, fmt).astimezone()
         utc_dt = local_dt.astimezone(timezone.utc)
         utc_str = utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-        
         print(f"--- 🕒 Snapshot: {time_str.replace('T', ' ')} (Local) → {utc_str} (UTC) ---")
         return utc_str
-
-    except Exception as e:
-        # Fallback
+    except Exception:
         if not time_str.endswith('Z'): return time_str + 'Z'
         return time_str
 
-def map_resource(alias):
-    mapping = {
-        'po': 'pods', 'pod': 'pods', 'pods': 'pods',
-        'svc': 'services', 'service': 'services', 'services': 'services',
-        'cm': 'configmaps', 'configmap': 'configmaps', 'configmaps': 'configmaps',
-        'sa': 'serviceaccounts', 'serviceaccount': 'serviceaccounts', 'serviceaccounts': 'serviceaccounts',
-        'ns': 'namespaces', 'namespace': 'namespaces', 'namespaces': 'namespaces',
-        'no': 'nodes', 'node': 'nodes', 'nodes': 'nodes',
-        'se': 'secrets', 'secret': 'secrets', 'secrets': 'secrets',
-        'pv': 'persistentvolumes', 'persistentvolume': 'persistentvolumes', 'persistentvolumes': 'persistentvolumes',
-        'pvc': 'persistentvolumeclaims', 'persistentvolumeclaim': 'persistentvolumeclaims', 'persistentvolumeclaims': 'persistentvolumeclaims',
-        'deploy': 'deployments', 'deployment': 'deployments', 'deployments': 'deployments',
-        'ds': 'daemonsets', 'daemonset': 'daemonsets', 'daemonsets': 'daemonsets',
-        'sts': 'statefulsets', 'statefulset': 'statefulsets', 'statefulsets': 'statefulsets',
-        'rs': 'replicasets', 'replicaset': 'replicasets', 'replicasets': 'replicasets',
-        'job': 'jobs', 'jobs': 'jobs',
-        'cj': 'cronjobs', 'cronjob': 'cronjobs', 'cronjobs': 'cronjobs',
-        'ing': 'ingresses', 'ingress': 'ingresses', 'ingresses': 'ingresses',
-        'rt': 'routes', 'route': 'routes', 'routes': 'routes',
-        'netpol': 'networkpolicies', 'networkpolicy': 'networkpolicies',
-        'vm': 'virtualmachines', 'virtualmachine': 'virtualmachines', 'virtualmachines': 'virtualmachines',
-        'vmi': 'virtualmachineinstances', 'virtualmachineinstance': 'virtualmachineinstances', 'virtualmachineinstances': 'virtualmachineinstances',
-        'all': 'all'
-    }
-    return mapping.get(alias.lower(), alias.lower())
-
-def is_cluster_scoped(resource):
-    return resource in ['namespaces', 'nodes', 'persistentvolumes', 'clusterrolebindings', 'clusterroles']
-
 def safe_parse_json(obj):
-    """Recursively attempts to parse JSON to handle double-encoding"""
     if isinstance(obj, dict): return obj
     if not isinstance(obj, str): return {}
     try:
         parsed = json.loads(obj)
-        # Handle double-encoded strings: "{\"kind\":...}" -> {"kind":...}
         if isinstance(parsed, str):
             try: return json.loads(parsed)
             except: return {}
         return parsed
     except: return {}
-
-def calculate_age(creation_ts, snapshot_time_utc):
-    if not creation_ts: return "?"
-    try:
-        # Handle "YYYY-MM-DD HH:MM:SS" format (common in some audit logs/DuckDB outputs)
-        if ' ' in creation_ts and 'T' not in creation_ts:
-            creation_ts = creation_ts.replace(' ', 'T')
-            if not creation_ts.endswith('Z'): creation_ts += 'Z'
-
-        fmt = "%Y-%m-%dT%H:%M:%SZ"
-        if "." in creation_ts: fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
-        created = datetime.strptime(creation_ts, fmt).replace(tzinfo=timezone.utc)
-        
-        if snapshot_time_utc:
-            now = datetime.strptime(snapshot_time_utc, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-        else:
-            now = datetime.now(timezone.utc)
-
-        delta = now - created
-        if delta.total_seconds() < 0: return "0s" 
-
-        if delta.days > 0: return f"{delta.days}d"
-        hours, remainder = divmod(delta.seconds, 3600)
-        minutes, _ = divmod(remainder, 60)
-        if hours > 0: return f"{hours}h{minutes}m"
-        return f"{minutes}m"
-    except: return "?"
-
-def extract_status(obj):
-    return ""
 
 def get_path(d, *keys, default=None):
     current = d
@@ -149,11 +103,59 @@ def get_path(d, *keys, default=None):
         if current is None: return default
     return current
 
+def calculate_age(creation_ts, snapshot_time_utc):
+    if not creation_ts: return "?"
+    try:
+        ts = creation_ts.replace(' ', 'T')
+        if not ts.endswith('Z'): ts += 'Z'
+        fmt = "%Y-%m-%dT%H:%M:%SZ"
+        if "." in ts: fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
+        created = datetime.strptime(ts, fmt).replace(tzinfo=timezone.utc)
+        
+        if snapshot_time_utc:
+            now = datetime.strptime(snapshot_time_utc, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        else:
+            now = datetime.now(timezone.utc)
+
+        delta = now - created
+        if delta.total_seconds() < 0: return "0s" 
+        if delta.days > 0: return f"{delta.days}d"
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        if hours > 0: return f"{hours}h{minutes}m"
+        return f"{minutes}m"
+    except: return "?"
+
+# ==============================================================================
+# EXTRACTION LOGIC
+# ==============================================================================
+
+def extract_status(obj):
+    """Reconstructs Pod Status (Running, Error, CrashLoopBackOff, etc.)"""
+    if not obj: return "Unknown"
+    metadata = obj.get('metadata', {})
+    if metadata.get('deletionTimestamp'): return "Terminating"
+    
+    status = obj.get('status', {})
+    phase = status.get('phase', 'Unknown')
+    
+    container_statuses = status.get('containerStatuses', [])
+    if not isinstance(container_statuses, list): container_statuses = []
+
+    for cs in container_statuses:
+        state = cs.get('state', {})
+        if 'waiting' in state:
+            reason = state['waiting'].get('reason')
+            if reason: return reason
+        if 'terminated' in state:
+            reason = state['terminated'].get('reason')
+            exit_code = state['terminated'].get('exitCode')
+            if exit_code != 0: return reason if reason else "Error"
+    return phase
+
 def extract_pod_ip(obj):
     ip = get_path(obj, 'status', 'podIP')
     if ip: return ip
-    
-    # OpenShift OVN
     try:
         ovn_annot = get_path(obj, 'metadata', 'annotations', 'k8s.ovn.org/pod-networks')
         if ovn_annot:
@@ -162,29 +164,16 @@ def extract_pod_ip(obj):
                 ip = ovn_data['default'].get('ip_address')
                 if ip: return ip.split('/')[0]
     except: pass
-    
-    # Multus
-    try:
-        cni_annot = get_path(obj, 'metadata', 'annotations', 'k8s.v1.cni.cncf.io/network-status')
-        if cni_annot:
-            cni_data = json.loads(cni_annot)
-            if isinstance(cni_data, list) and len(cni_data) > 0:
-                return cni_data[0].get('ips', ['<none>'])[0]
-    except: pass
     return '<none>'
 
 def extract_labels(obj):
-    obj = safe_parse_json(obj)
     labels = get_path(obj, 'metadata', 'labels')
     if not labels or not isinstance(labels, dict): return "" 
     return ",".join([f"{k}={v}" for k, v in sorted(labels.items())])
 
-def extract_wide_info(resource, raw_obj):
-    """Extracts extra columns for -o wide with Safety Checks"""
-    obj = safe_parse_json(raw_obj)
+def extract_wide_info(resource, obj):
     if not obj: return []
     info = []
-    
     if resource == 'pods':
         ip = extract_pod_ip(obj)
         node = get_path(obj, 'spec', 'nodeName', default='<none>')
@@ -192,27 +181,13 @@ def extract_wide_info(resource, raw_obj):
     elif resource == 'services':
         svc_type = get_path(obj, 'spec', 'type', default='ClusterIP')
         cluster_ip = get_path(obj, 'spec', 'clusterIP', default='<none>')
-        selector_dict = get_path(obj, 'spec', 'selector', default={})
-        selector = ",".join([f"{k}={v}" for k, v in selector_dict.items()]) if isinstance(selector_dict, dict) and selector_dict else "<none>"
+        selector = ",".join([f"{k}={v}" for k, v in get_path(obj, 'spec', 'selector', default={}).items()]) if get_path(obj, 'spec', 'selector') else "<none>"
         info = [svc_type, cluster_ip, selector]
     elif resource == 'nodes':
         os_img = get_path(obj, 'status', 'nodeInfo', 'osImage', default='<none>')
         kernel = get_path(obj, 'status', 'nodeInfo', 'kernelVersion', default='<none>')
         runtime = get_path(obj, 'status', 'nodeInfo', 'containerRuntimeVersion', default='<none>')
         info = [os_img, kernel, runtime]
-    elif resource == 'deployments':
-        containers = get_path(obj, 'spec', 'template', 'spec', 'containers', default=[])
-        images = ",".join([c.get('image', '') for c in containers if isinstance(c, dict)])
-        selector_dict = get_path(obj, 'spec', 'selector', 'matchLabels', default={})
-        selector = ",".join([f"{k}={v}" for k, v in selector_dict.items()]) if isinstance(selector_dict, dict) and selector_dict else "<none>"
-        info = [selector]
-    elif resource == 'virtualmachineinstances':
-        node = get_path(obj, 'status', 'nodeName', default='<none>')
-        interfaces = get_path(obj, 'status', 'interfaces', default=[])
-        ip = '<none>'
-        if isinstance(interfaces, list) and len(interfaces) > 0:
-            ip = interfaces[0].get('ipAddress', '<none>')
-        info = [ip, node]
     return info
 
 def matches_selector(obj, selector):
@@ -222,12 +197,15 @@ def matches_selector(obj, selector):
     for part in parts:
         if '=' in part:
             k, v = part.split('=', 1)
-            if labels.get(k) != v:
-                return False
+            if labels.get(k) != v: return False
     return True
 
+# ==============================================================================
+# MAIN LOGIC
+# ==============================================================================
+
 def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time_limit, selector, all_namespaces):
-    state = {} # (resource, namespace, name) -> object
+    state = {} 
     target_resources_set = set(resources_to_fetch)
     valid_events = []
     
@@ -235,23 +213,15 @@ def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time
         with open(log_file, 'r') as f:
             for line in f:
                 if not line.strip(): continue
-                try:
-                    entry = json.loads(line)
+                try: entry = json.loads(line)
                 except: continue
                 
-                # Time check
                 ts = entry.get('requestReceivedTimestamp')
-                if time_limit and ts and ts > time_limit:
-                    continue
+                if time_limit and ts and ts > time_limit: continue
                 
                 verb = entry.get('verb')
-                if verb not in ['create', 'update', 'patch', 'delete']:
-                    continue
-                
-                # Skip failed requests
-                response_status = entry.get('responseStatus', {})
-                if response_status.get('status') == 'Failure':
-                    continue
+                if verb not in ['create', 'update', 'patch', 'delete']: continue
+                if entry.get('responseStatus', {}).get('status') == 'Failure': continue
                 
                 obj_ref = entry.get('objectRef', {})
                 resource = obj_ref.get('resource')
@@ -259,30 +229,20 @@ def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time
                 name = obj_ref.get('name')
                 
                 if not resource or not name: continue
+                if resource not in target_resources_set: continue
                 
-                if resource not in target_resources_set:
-                    continue
-                
-                # Namespace check
-                cluster_scoped = is_cluster_scoped(resource)
-                if not cluster_scoped:
+                is_global = resource in CLUSTER_SCOPED
+                if not is_global:
                     if not all_namespaces:
-                        if target_ns:
-                            if ns != target_ns: continue
-                        else:
-                            if ns != 'default': continue
+                        if target_ns and ns != target_ns: continue
+                        if not target_ns and ns != 'default': continue
                 
-                # Name check
-                if target_name and name != target_name:
-                    continue
-                
+                if target_name and name != target_name: continue
                 valid_events.append(entry)
 
     except FileNotFoundError:
-        print(f"Error: File '{log_file}' not found.")
-        sys.exit(1)
+        print(f"Error: File '{log_file}' not found."); sys.exit(1)
 
-    # Sort events by timestamp to handle out-of-order logs
     valid_events.sort(key=lambda x: x.get('requestReceivedTimestamp', ''))
 
     for entry in valid_events:
@@ -296,115 +256,65 @@ def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time
         key = (resource, ns, name)
         
         if verb == 'delete':
-            if key in state:
-                del state[key]
+            state.pop(key, None)
         else:
-            # create, update, patch
             raw_obj = entry.get('responseObject') or entry.get('requestObject')
             obj = safe_parse_json(raw_obj)
             
-            # Handle redacted/missing bodies
             if not obj:
-                allow_redacted = resource in ['secrets', 'routes', 'oauthaccesstokens', 'oauthauthorizetokens', 'nodes']
-                if allow_redacted:
-                        # Construct minimal object
-                        obj = {
-                            'kind': resource, 
-                            'metadata': {
-                                'name': name,
-                                'namespace': ns,
-                                'creationTimestamp': ts,
-                                'labels': {}
-                            },
-                            'spec': {},
-                            'status': {}
-                        }
-                else:
-                    continue 
+                if resource in REDACTED_RESOURCES:
+                    obj = {'kind': resource, 'metadata': {'name': name, 'namespace': ns, 'creationTimestamp': ts, 'labels': {}}, 'spec': {}, 'status': {}}
+                else: continue 
             
-            # Preserve creationTimestamp if missing in new event
             if key in state:
                 old_created = get_path(state[key], 'metadata', 'creationTimestamp')
-                new_created = get_path(obj, 'metadata', 'creationTimestamp')
-                
-                if old_created and not new_created:
+                if old_created and not get_path(obj, 'metadata', 'creationTimestamp'):
                     if 'metadata' not in obj: obj['metadata'] = {}
-                    if isinstance(obj['metadata'], dict):
-                        obj['metadata']['creationTimestamp'] = old_created
+                    obj['metadata']['creationTimestamp'] = old_created
 
-            # Preserve Pod IP if missing in new event (mimic DuckDB 'latest_ips' logic)
-            if resource == 'pods' and key in state:
-                old_ip = extract_pod_ip(state[key])
-                new_ip = extract_pod_ip(obj)
-                if old_ip != '<none>' and new_ip == '<none>':
-                    if 'status' not in obj: obj['status'] = {}
-                    if isinstance(obj['status'], str):
-                        obj['status'] = safe_parse_json(obj['status'])
-                    
-                    if isinstance(obj['status'], dict):
+                if resource == 'pods':
+                    old_ip = extract_pod_ip(state[key])
+                    new_ip = extract_pod_ip(obj)
+                    if old_ip != '<none>' and new_ip == '<none>':
+                        if 'status' not in obj: obj['status'] = {}
+                        if isinstance(obj['status'], str): obj['status'] = safe_parse_json(obj['status'])
                         obj['status']['podIP'] = old_ip
-
             state[key] = obj
 
-    # Convert state to results list
     results = []
     for (res, ns, name), obj in state.items():
-        if not matches_selector(obj, selector):
-            continue
-        results.append((ns, name, obj, res))
-        
+        if matches_selector(obj, selector):
+            results.append((ns, name, obj, res))
     results.sort(key=lambda x: (x[0] or "", x[1]))
     return results
 
 def main():
     parser = setup_args()
     args, unknown = parser.parse_known_args()
-    
-    # Handle interleaved arguments (e.g. get -n foo pods)
     for u in unknown:
-        if u.startswith("-"):
-            print(f"Error: unrecognized argument {u}")
-            sys.exit(1)
+        if u.startswith("-"): print(f"Error: unrecognized argument {u}"); sys.exit(1)
         args.args.append(u)
     
-    if not args.args or len(args.args) < 1:
-        parser.print_help()
-        sys.exit(1)
-
-    command = args.args[0]
-    if command != "get":
-        print(f"Error: Unknown command '{command}'. Only 'get' is supported.")
-        sys.exit(1)
-
-    if len(args.args) < 2:
-        print("Error: You must specify a resource type (e.g. pods).")
-        sys.exit(1)
+    if not args.args: parser.print_help(); sys.exit(1)
+    if args.args[0] != "get": print(f"Error: Only 'get' is supported."); sys.exit(1)
+    if len(args.args) < 2: print("Error: Specify resource."); sys.exit(1)
 
     resource_input = args.args[1]
     name_input = args.args[2] if len(args.args) > 2 else None
-
-    if not os.path.exists(args.auditlog_file):
-        print(f"Error: File '{args.auditlog_file}' not found."); sys.exit(1)
-
+    if not os.path.exists(args.auditlog_file): print(f"Error: File '{args.auditlog_file}' not found."); sys.exit(1)
     args.time = normalize_time(args.time)
 
-    req_res = map_resource(resource_input)
+    req_res = RESOURCE_ALIASES.get(resource_input.lower(), resource_input.lower())
     if req_res == 'all':
-        resources_to_fetch = [
-            'nodes', 'pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs',
-            'routes', 'ingresses', 'networkpolicies', 'virtualmachines', 'virtualmachineinstances',
-            'roles', 'rolebindings', 'clusterroles', 'clusterrolebindings'
-        ]
+        resources_to_fetch = ['nodes', 'pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs', 'routes', 'ingresses', 'networkpolicies', 'virtualmachines', 'virtualmachineinstances']
     else:
         resources_to_fetch = [req_res]
 
     all_results = process_audit_log(args.auditlog_file, resources_to_fetch, args.namespace, name_input, args.time, args.selector, args.all_namespaces)
     
-    # Group by resource
     results_by_resource = {r: [] for r in resources_to_fetch}
     for ns, name, obj, res in all_results:
-        if res in results_by_resource:
-            results_by_resource[res].append((ns, name, obj))
+        if res in results_by_resource: results_by_resource[res].append((ns, name, obj))
 
     for resource in resources_to_fetch:
         results = results_by_resource.get(resource, [])
@@ -413,46 +323,45 @@ def main():
         if len(resources_to_fetch) > 1: print(f"\n--- {resource.upper()} ---")
 
         if args.output == "yaml":
-            for ns, name, obj in results:
-                payload = safe_parse_json(obj)
-                print("---")
-                print(yaml.dump(payload))
+            for _, _, obj in results: print("---"); print(yaml.dump(safe_parse_json(obj)))
         elif args.output == "json":
-            for ns, name, obj in results: 
-                print(json.dumps(obj))
-        else: # Table/Wide
-            cluster_scoped = is_cluster_scoped(resource)
-            rows_to_print = []
+            for _, _, obj in results: print(json.dumps(obj))
+        else:
+            is_cluster_scoped = resource in CLUSTER_SCOPED
             
+            # --- HEADER LOGIC ---
             headers = ["NAMESPACE", "NAME", "AGE"]
-            if cluster_scoped: headers = ["NAME", "AGE"]
+            if is_cluster_scoped: headers = ["NAME", "AGE"]
             
+            # Inject STATUS only for Pods
+            if resource == 'pods':
+                headers.insert(2 if not is_cluster_scoped else 1, "STATUS")
+
             if args.output == "wide":
                 if resource == 'pods': headers.extend(["IP", "NODE"])
                 elif resource == 'services': headers.extend(["TYPE", "CLUSTER-IP", "SELECTOR"])
-                elif resource == 'nodes': headers.extend(["OS-IMAGE", "KERNEL-VERSION", "CONTAINER-RUNTIME"])
-                elif resource == 'deployments': headers.extend(["SELECTOR"])
-                elif resource == 'virtualmachineinstances': headers.extend(["IP", "NODE"])
-
+                elif resource == 'nodes': headers.extend(["OS-IMAGE", "KERNEL-VERSION", "RUNTIME"])
             if args.show_labels: headers.append("LABELS")
 
+            rows_to_print = []
             for ns, name, obj in results:
-                ns_val = ns if ns else "-"
-                name_val = name
-                if len(resources_to_fetch) > 1: display_name = f"{map_resource(resource)}/{name_val}"
-                else: display_name = name_val
-
                 payload = safe_parse_json(obj)
                 created = get_path(payload, 'metadata', 'creationTimestamp')
                 age = calculate_age(created, args.time)
+                display_name = name
                 
-                if cluster_scoped: row_data = [display_name, age]
-                else: row_data = [ns_val, display_name, age]
+                # --- ROW LOGIC ---
+                row = []
+                if is_cluster_scoped:
+                    row = [display_name, age]
+                    if resource == 'pods': row.insert(1, extract_status(payload))
+                else:
+                    row = [ns if ns else "-", display_name, age]
+                    if resource == 'pods': row.insert(2, extract_status(payload))
                 
-                if args.output == "wide": row_data.extend(extract_wide_info(resource, payload))
-                if args.show_labels: row_data.append(extract_labels(payload))
-                
-                rows_to_print.append(row_data)
+                if args.output == "wide": row.extend(extract_wide_info(resource, payload))
+                if args.show_labels: row.append(extract_labels(payload))
+                rows_to_print.append(row)
 
             widths = [len(h) for h in headers]
             for row in rows_to_print:
@@ -460,9 +369,8 @@ def main():
                     if i < len(widths): widths[i] = max(widths[i], len(str(val)))
 
             header_fmt = "  ".join([f"{{:<{w}}}" for w in widths])
-            if args.output in ["table", "wide"]:
-                print(header_fmt.format(*headers))
-                for row in rows_to_print: print(header_fmt.format(*row))
+            print(header_fmt.format(*headers))
+            for row in rows_to_print: print(header_fmt.format(*row))
 
 if __name__ == "__main__":
     main()
