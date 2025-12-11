@@ -16,15 +16,28 @@ spec:
       kubernetesInputSpec:
         apiVersion: v1
         resource: pods
+    - name: namespaces
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: namespaces
   expression: |
     pods.items.all(pod,
-      !pod.spec.volumes.exists(vol,
-        has(vol.hostPath) &&
-        (
-          vol.hostPath.path.startsWith("/etc/kubernetes") ||
-          vol.hostPath.path.startsWith("/var/lib/etcd") ||
-          vol.hostPath.path.contains("docker.sock") ||
-          vol.hostPath.path.contains("crio.sock")
-        )
+      (
+        !has(pod.metadata.namespace) ||
+        !namespaces.items.exists(ns,
+          ns.metadata.name == pod.metadata.namespace &&
+          has(ns.metadata.labels) &&
+          ns.metadata.labels.exists(k, k == 'custom.security/enforce') &&
+          ns.metadata.labels['custom.security/enforce'] == 'true'
+        ) ||
+        (!pod.spec.volumes.exists(vol,
+          has(vol.hostPath) &&
+          (
+            vol.hostPath.path.startsWith("/etc/kubernetes") ||
+            vol.hostPath.path.startsWith("/var/lib/etcd") ||
+            vol.hostPath.path.contains("docker.sock") ||
+            vol.hostPath.path.contains("crio.sock")
+          )
+        ))
       )
     )

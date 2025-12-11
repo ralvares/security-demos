@@ -16,14 +16,23 @@ spec:
       kubernetesInputSpec:
         apiVersion: v1
         resource: pods
+    - name: namespaces
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: namespaces
   expression: |
     pods.items.all(pod,
-      pod.metadata.namespace in [
-        'central-dba-prod',
-        'openshift-monitoring'
-      ] ||
-      pod.spec.containers.all(container,
-        !['postgres','mysql','mariadb','mongo','redis']
-          .exists(db, container.image.contains(db))
+      (
+        !has(pod.metadata.namespace) ||
+        !namespaces.items.exists(ns,
+          ns.metadata.name == pod.metadata.namespace &&
+          has(ns.metadata.labels) &&
+          ns.metadata.labels.exists(k, k == 'custom.security/database') &&
+          ns.metadata.labels['custom.security/database'] == 'true'
+        ) ||
+        pod.spec.containers.all(container,
+          !['postgres','mysql','mariadb','mongo','redis']
+            .exists(db, container.image.contains(db))
+        )
       )
     )

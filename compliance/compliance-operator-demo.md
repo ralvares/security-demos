@@ -22,93 +22,147 @@ cd security-demos/compliance/manifests
 
 -----
 
-## 2\. How to Run a Scan
+## 2. Demo Flow: Apply Rules, Label Namespaces, and Observe Failures
 
-We use **Kustomize** to apply the configuration for each scenario. Each folder contains the necessary *CustomRule*, *TailoredProfile*, and *ScanSettingBinding*.
+This demo shows how CustomRules behave before and after labeling namespaces for enforcement. We'll apply the rules first (no enforcement yet), check that they pass, then label namespaces to trigger failures, and rerun the scans.
 
-### Scenario A: RBAC Audit
+### Step 1: Apply the Rules (No Enforcement Yet)
 
-**Goal:** strict auditing of the `cluster-admin` role.
-
-  * **The Logic:**
-    The rule inspects all `ClusterRoleBindings`. It filters for the `cluster-admin` role and verifies that the bound Subjects (Users, Groups, or ServiceAccounts) match a hardcoded "Allow List" (e.g., `kubeadmin`, `system:masters`).
-  * **Execute:**
-    ```bash
-    oc apply -k rbac
-    ```
-
-### Scenario B: Network Policy Enforcement
-
-**Goal:** Ensure strictly secure network defaults in namespaces labeled with `compliance/enforce-networkpolicies=true`.
-
-  * **The Logic:**
-    1.  **Disallow Allow-All:** Scans for any NetworkPolicy in labeled namespaces that effectively opens all traffic (`podSelector: {}` with empty ingress/egress rules).
-    2.  **Require Deny-All:** Verifies that a "Deny All" policy exists in every labeled namespace to ensure a default-deny posture.
-  * **Execute:**
-    ```bash
-    oc apply -k network-policy
-    ```
-
-### Other Available Scenarios
-
-You can run these additional checks using the same pattern:
-
-  * **Pod Security:** Checks for privileged containers or root user usage.
-    ```bash
-    oc apply -k pod-security
-    ```
-  * **Image Supply Chain:** Checks image registries or signatures.
-    ```bash
-    oc apply -k image-supply-chain
-    ```
-
------
-
-## 3\. Verifying Results
-
-Once you apply a manifest (e.g., `oc apply -k rbac`), the Compliance Operator automatically schedules the scan.
-
-### 1\. Check Scan Progress
-
-Wait for the suite to reach the `DONE` phase.
+Apply the use case manifests. Since no namespaces are labeled `custom.security/enforce=true`, the rules will pass (no resources to check).
 
 ```bash
-oc get compliancesuite -n openshift-compliance
+# Apply all use cases (RBAC, Network Policy, Pod Security, Image Supply Chain)
+oc apply -k rbac
+oc apply -k network-policy
+oc apply -k pod-security
+oc apply -k image-supply-chain
 ```
 
-### 2\. Review Pass/Fail Status
+### Step 2: Check Initial Results (Should Pass)
 
-List the results to see which specific rules succeeded or failed.
+The Compliance Operator will run scans. Since no namespaces are enforced, all rules should pass.
 
 ```bash
+# Wait for scans to complete
+oc get compliancesuite -n openshift-compliance
+
+# Check results
 oc get compliancecheckresults -n openshift-compliance
 ```
 
-**Example Output:**
+**Expected Output:** All results should show `PASS` (e.g., `rbac-checks-cluster-admin-allow-list PASS high`).
 
 ```text
-NAME                                                                          STATUS   SEVERITY
-custom-security-scan-cluster-admin-allow-list                                 FAIL     high
-networkpolicy-security-scan-netpol-disallow-allow-all-in-labeled-namespaces   PASS     high
-networkpolicy-security-scan-netpol-require-deny-all-in-labeled-namespaces     FAIL     high
+NAME                                                              STATUS   SEVERITY
+image-supply-chain-checks-allowed-registries-pod-images           PASS     medium
+image-supply-chain-checks-disallow-shadow-databases               PASS     high
+networkpolicy-security-checks-netpol-disallow-allow-all-labeled   PASS     high
+networkpolicy-security-checks-netpol-require-deny-all-labeled     PASS     high
+rbac-checks-cluster-admin-allow-list                              PASS     high
+sensitive-pod-security-checks-detect-privileged-pods              PASS     high
+sensitive-pod-security-checks-detect-sensitive-hostpath-mounts    PASS     high
+sensitive-pod-security-checks-detect-token-automount              PASS     medium
 ```
 
-### 3\. Debugging a Failure
+### Step 3: Label Namespaces for Enforcement
 
-If a check fails, inspect the result object to see the specific rationale or error details provided by the rule description.
+Label the demo namespaces (`payments` and `frontend`) to enable enforcement. This activates the rules for resources in those namespaces.
 
 ```bash
-# syntax: oc get compliancecheckresult <scan-name> -n openshift-compliance -o yaml
-oc get compliancecheckresult custom-security-scan-cluster-admin-allow-list -n openshift-compliance -o yaml
+oc label namespace payments custom.security/enforce=true --overwrite
+oc label namespace frontend custom.security/enforce=true --overwrite
 ```
 
------
+Note: The pod automount rule supports a pod- or deployment-level allow label `custom.security/automount=true`.
+You can either label individual pods or the owning Deployment to exempt them from the automount check.
 
-## 4\. Reset / Cleanup
+```bash
+# Label the Deployments in the frontend namespace so their pods are exempt
+oc label deployment webapp -n frontend custom.security/automount=true --overwrite
+oc label deployment blog -n frontend custom.security/automount=true --overwrite
 
-To remove a specific scan and its rules, use `delete -k`:
+# Or label a specific pod directly (if needed)
+# oc label pod <pod-name> -n frontend custom.security/automount=true --overwrite
+```
+
+### Step 4: Force a Rerun (Delete ComplianceScans)
+
+Delete the existing scans to force the Compliance Operator to re-evaluate with the new labels.
+
+```bash
+# Delete scans for each use case (adjust names if different in your cluster)
+oc delete compliancescan rbac-checks -n openshift-compliance
+oc delete compliancescan networkpolicy-security-checks -n openshift-compliance
+oc delete compliancescan sensitive-pod-security-checks -n openshift-compliance
+oc delete compliancescan image-supply-chain-checks -n openshift-compliance
+```
+
+### Step 5: Check Results After Labeling (Should Fail)
+
+The scans will rerun. Now that namespaces are labeled, the rules will evaluate resources and fail due to violations.
+
+```bash
+# Wait for reruns to complete
+oc get compliancesuite -n openshift-compliance
+
+# Check results
+oc get compliancecheckresults -n openshift-compliance
+```
+
+**Expected Output:** Several results should now show `FAIL` (e.g., `sensitive-pod-security-checks-detect-privileged-pods FAIL high`).
+
+### Understanding the Failures
+
+With namespaces labeled, the rules detect real issues in the demo cluster:
+
+- **Pod Security Failures:** The `visa-processor` ServiceAccount in `payments` namespace has pods with:
+  - Privileged containers (`detect-privileged-pods` fails).
+  - Service account token automount enabled (`detect-token-automount` fails).
+  - Additionally, `visa-processor` is bound to `cluster-admin` (RBAC failure), but this is cluster-scoped.
+
+- **Network Policy Failures:** Neither `payments` nor `frontend` namespaces have any NetworkPolicies, so:
+  - `netpol-require-deny-all-in-labeled-namespaces` fails (no deny-all policy).
+  - `netpol-disallow-allow-all-in-labeled-namespaces` passes (no allow-all policies to detect).
+
+- **Image Supply Chain Failures:** Pods in labeled namespaces may use images from unapproved registries (not `quay.io/` or `registry.redhat.io/`).
+
+- **RBAC Failures:** Cluster-scoped checks (like `cluster-admin-allow-list`) fail if unauthorized subjects are bound to `cluster-admin` (e.g., `visa-processor` ServiceAccount).
+
+To debug a specific failure, inspect the result:
+
+```bash
+oc get compliancecheckresult <result-name> -n openshift-compliance -o yaml
+```
+
+For example, to find which pods are privileged:
+
+```bash
+for ns in payments frontend; do
+  echo "Namespace: $ns"
+  oc get pods -n "$ns" -o json | jq -r '.items[] | select(.spec.containers[]?.securityContext.privileged == true) | "\(.metadata.name) has privileged container"'
+done
+```
+
+### Step 6: Reset / Cleanup
+
+To remove scans and rules:
 
 ```bash
 oc delete -k rbac
 oc delete -k network-policy
+oc delete -k pod-security
+oc delete -k image-supply-chain
+
+# Remove labels
+oc label namespace payments custom.security/enforce- || true
+oc label namespace frontend custom.security/enforce- || true
 ```
+
+-----
+
+## 3\. Additional Notes
+
+- **RBAC Checks:** Cluster-scoped (no namespace labels needed).
+- **Namespace Labels:** Use `custom.security/enforce=true` to enable enforcement. Rules ignore unlabeled namespaces.
+- **Forcing Reruns:** Always delete the `ComplianceScan` or `ComplianceCheckResult` to trigger re-evaluation after changes.
+- **Customizing Rules:** Edit the YAMLs in [`compliance/manifests`](compliance/manifests ) to adjust allow-lists, labels, or expressions.

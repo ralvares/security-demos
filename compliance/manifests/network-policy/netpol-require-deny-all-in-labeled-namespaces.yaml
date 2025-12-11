@@ -5,7 +5,7 @@ metadata:
   namespace: openshift-compliance
 spec:
   title: Require deny-all NetworkPolicy in labeled namespaces
-  description: Ensures namespaces with compliance/enforce-networkpolicies=true have a deny-all NetworkPolicy.
+  description: Ensures namespaces with custom.security/enforce=true have a deny-all NetworkPolicy.
   failureReason: One or more enforced namespaces lack a deny-all NetworkPolicy.
   severity: high
   id: netpol_require_deny_all_labeled
@@ -24,8 +24,8 @@ spec:
     namespaces.items.all(ns,
       !(
         has(ns.metadata.labels) &&
-        ns.metadata.labels.exists(k, k == 'compliance/enforce-networkpolicies') &&
-        ns.metadata.labels['compliance/enforce-networkpolicies'] == 'true'
+        ns.metadata.labels.exists(k, k == 'custom.security/enforce') &&
+        ns.metadata.labels['custom.security/enforce'] == 'true'
       ) ||
       netpols.items.exists(np,
         np.metadata.namespace == ns.metadata.name &&

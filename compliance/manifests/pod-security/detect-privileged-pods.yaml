@@ -16,16 +16,27 @@ spec:
       kubernetesInputSpec:
         apiVersion: v1
         resource: pods
+    - name: namespaces
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: namespaces
   expression: |
     pods.items.all(pod,
       (
-        !has(pod.spec.hostPID) || pod.spec.hostPID != true
-      ) &&
-      (
-        !pod.spec.containers.exists(c,
-          has(c.securityContext) &&
-          has(c.securityContext.privileged) &&
-          c.securityContext.privileged == true
+        !has(pod.metadata.namespace) ||
+        !namespaces.items.exists(ns,
+          ns.metadata.name == pod.metadata.namespace &&
+          has(ns.metadata.labels) &&
+          ns.metadata.labels.exists(k, k == 'custom.security/enforce') &&
+          ns.metadata.labels['custom.security/enforce'] == 'true'
+        ) ||
+        (
+          (!has(pod.spec.hostPID) || pod.spec.hostPID != true) &&
+          (!pod.spec.containers.exists(c,
+            has(c.securityContext) &&
+            has(c.securityContext.privileged) &&
+            c.securityContext.privileged == true
+          ))
         )
       )
     )

@@ -17,21 +17,55 @@ spec:
         apiVersion: rbac.authorization.k8s.io/v1
         resource: clusterrolebindings
   expression: |
-    crbs.items.filter(crb, crb.metadata.name == 'cluster-admin')[0]
-      .subjects.all(subject,
+    // Ensure every ClusterRoleBinding that grants the 'cluster-admin' role
+    // contains only allowed subjects. The expression evaluates to true
+    // when all subjects bound to cluster-admin are on the allow-list.
+    crbs.items.all(crb,
+      // If this binding is not for cluster-admin, ignore it (pass)
+      crb.roleRef.name != 'cluster-admin' ||
+      // For cluster-admin bindings, all subjects must match the allow-list
+      crb.subjects.all(subject,
         (subject.kind == 'User' && subject.name in [
           'kubeadmin',
           'system:admin',
-          'alice@my-company.com'
+          'alice@my-company.com',
+          'admin'
         ]) ||
         (subject.kind == 'Group' && subject.name in [
           'system:masters',
-          'ocp-sre-team'
+          'ocp-sre-team',
+          'system:cluster-admins'
         ]) ||
         (subject.kind == 'ServiceAccount' &&
           has(subject.namespace) &&
           (subject.namespace + '/' + subject.name) in [
-            'openshift-monitoring/prometheus-k8s'
+            'openshift-monitoring/prometheus-k8s',
+            'openshift-network-operator/cluster-network-operator',
+            'openshift-cluster-storage-operator/cluster-storage-operator',
+            'openshift-cluster-version/default',
+            'openshift-machine-config-operator/machine-config-operator',
+            'openshift-kube-storage-version-migrator/kube-storage-version-migrator-sa',
+            'openshift-oauth-apiserver/oauth-apiserver-sa',
+            'openshift-apiserver/openshift-apiserver-sa',
+            'openshift-authentication/oauth-openshift',
+            'openshift-authentication-operator/authentication-operator',
+            'openshift-kube-scheduler-operator/openshift-kube-scheduler-operator',
+            'openshift-etcd-operator/etcd-operator',
+            'openshift-kube-apiserver-operator/kube-apiserver-operator',
+            'openshift-kube-apiserver/localhost-recovery-client',
+            'openshift-kube-controller-manager-operator/kube-controller-manager-operator',
+            'openshift-kube-controller-manager/localhost-recovery-client',
+            'openshift-kube-scheduler/localhost-recovery-client',
+            'openshift-kube-storage-version-migrator-operator/kube-storage-version-migrator-operator',
+            'openshift-apiserver-operator/openshift-apiserver-operator',
+            'openshift-config-operator/openshift-config-operator',
+            'openshift-controller-manager-operator/openshift-controller-manager-operator',
+            'openshift-etcd/installer-sa',
+            'openshift-kube-apiserver/installer-sa',
+            'openshift-kube-controller-manager/installer-sa',
+            'openshift-kube-scheduler/installer-sa',
+            'openshift-service-ca-operator/service-ca-operator'
           ]
         )
       )
+    )
