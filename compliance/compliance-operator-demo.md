@@ -73,16 +73,12 @@ oc label namespace payments custom.security/enforce=true --overwrite
 oc label namespace frontend custom.security/enforce=true --overwrite
 ```
 
-Note: The pod automount rule supports a pod- or deployment-level allow label `custom.security/automount=true`.
-You can either label individual pods or the owning Deployment to exempt them from the automount check.
+Note: The pod automount rule now uses a namespace-level allow label `custom.security/automount=true`.
+Labeling the `frontend` namespace exempts all pods in that namespace (for example, `webapp` and `blog`).
 
 ```bash
-# Label the Deployments in the frontend namespace so their pods are exempt
-oc label deployment webapp -n frontend custom.security/automount=true --overwrite
-oc label deployment blog -n frontend custom.security/automount=true --overwrite
-
-# Or label a specific pod directly (if needed)
-# oc label pod <pod-name> -n frontend custom.security/automount=true --overwrite
+# Label the frontend namespace to exempt its pods from the automount check
+oc label namespace frontend custom.security/automount=true --overwrite
 ```
 
 ### Step 4: Force a Rerun (Delete ComplianceScans)
