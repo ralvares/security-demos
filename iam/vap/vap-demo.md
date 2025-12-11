@@ -17,36 +17,17 @@
 
 Apply these namespace manifests (or create them inline):
 
+For the demo we create example Namespaces that relax the cluster PodSecurity admission
+to `privileged` so tests that need `hostPath` or privileged containers can run.
+
+The example manifests are in `iam/vap/examples/`. Apply them with:
+
 ```bash
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: platform-ops
-  labels:
-    custom.security/enforce: "true" # enforce policies here
-    custom.security/automount: "true" # platform exemption for automount demo
-EOF
-
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: finance-app
-  labels:
-    custom.security/enforce: "true"
-    custom.security/database: "true" # allowed DB namespace
-EOF
-
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: dev-team
-  labels:
-    custom.security/enforce: "true"
-EOF
+kubectl apply -f iam/vap/examples/
 ```
+
+Note: these `pod-security.kubernetes.io/*` labels increase risk and are for demo/test
+only. Remove or set back to `restricted` after testing.
 
 **2) Deploy the VAP manifests**
 
@@ -72,8 +53,8 @@ spec:
   securityContext:
     runAsNonRoot: true
   containers:
-  - name: nginx
-    image: quay.io/nginx:latest
+  - name: httpd
+    image: registry.redhat.io/ubi8/httpd-24
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -127,7 +108,7 @@ spec:
     runAsNonRoot: true
   containers:
   - name: postgres
-    image: postgres:14
+    image: quay.io/hummingbird/postgresql:latest
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -153,7 +134,7 @@ spec:
     runAsNonRoot: true
   containers:
   - name: postgres
-    image: postgres:14
+    image: quay.io/hummingbird/postgresql:latest
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -166,27 +147,94 @@ EOF
 
 Expected: Denied with message about unapproved database images.
 
-**5) Test NetworkPolicy requirement**
+**5) Test NetworkPolicy — `block-risky-netpol` only**
 
-Try creating a simple pod in a namespace without deny-all NetworkPolicy (e.g., `dev-team`). If a deny-all policy is missing and the namespace is labeled `custom.security/enforce=true`, pod creation should be denied.
+We focus this demo on the `block-risky-netpol` policy which rejects NetworkPolicies that
+effectively allow all traffic to all pods via either an empty rule (`{}`) or an ipBlock
+of `0.0.0.0/0`.
 
-Create a deny-all NetworkPolicy in `dev-team` to satisfy the policy:
+Apply the network-policy manifests (includes `block-risky-netpol`) if you haven't:
+
+```bash
+kubectl apply -k iam/vap/manifests/network-policy/
+```
+
+Run the following test cases (expected results shown):
+
+1) Empty rule (BLOCKED)
 
 ```bash
 cat <<EOF | kubectl -n dev-team apply -f -
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: deny-all
+  name: fail-empty-rule
 spec:
   podSelector: {}
-  policyTypes:
-  - Ingress
-  - Egress
+  policyTypes: ["Ingress"]
+  ingress:
+  - {}
 EOF
 ```
 
-Then re-try creating a test Pod; it should succeed.
+Expected: Denied by `block-risky-netpol` (Security Violation)
+
+2) 0.0.0.0/0 CIDR (BLOCKED)
+
+```bash
+cat <<EOF | kubectl -n dev-team apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: fail-cidr-zero
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+EOF
+```
+
+Expected: Denied by `block-risky-netpol` (Security Violation)
+
+3) Valid deny-all (PASS)
+
+```bash
+cat <<EOF | kubectl -n dev-team apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pass-deny-all
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+  ingress: []
+EOF
+```
+
+Expected: Created
+
+4) Valid specific CIDR (PASS)
+
+```bash
+cat <<EOF | kubectl -n dev-team apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pass-specific-cidr
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 10.0.0.0/8
+EOF
+```
+
+Expected: Created
 
 **6) Test Pod security checks (privileged, hostPath, automount)**
 
@@ -200,8 +248,8 @@ metadata:
   name: privileged-pod
 spec:
   containers:
-  - name: busy
-    image: busybox
+  - name: core-runtime
+    image: quay.io/hummingbird/core-runtime
     securityContext:
       privileged: true
       allowPrivilegeEscalation: true
@@ -225,8 +273,8 @@ spec:
   securityContext:
     runAsNonRoot: true
   containers:
-  - name: busy
-    image: busybox
+  - name: core-runtime
+    image: quay.io/hummingbird/core-runtime
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -260,8 +308,8 @@ spec:
   securityContext:
     runAsNonRoot: true
   containers:
-  - name: busy
-    image: busybox
+  - name: core-runtime
+    image: quay.io/hummingbird/core-runtime
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -283,8 +331,8 @@ spec:
   securityContext:
     runAsNonRoot: true
   containers:
-  - name: busy
-    image: busybox
+  - name: core-runtime
+    image: quay.io/hummingbird/core-runtime
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:

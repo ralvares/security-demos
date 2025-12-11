@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-ops
+  labels:
+    custom.security/enforce: "true"
+    custom.security/automount: "true"
+    pod-security.kubernetes.io/enforce: "privileged"
+    pod-security.kubernetes.io/enforce-version: "latest"

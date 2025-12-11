@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: finance-app
+  labels:
+    custom.security/enforce: "true"
+    custom.security/database: "true"
+    pod-security.kubernetes.io/enforce: "privileged"
+    pod-security.kubernetes.io/enforce-version: "latest"
