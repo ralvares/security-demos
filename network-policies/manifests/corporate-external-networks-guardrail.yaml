@@ -13,7 +13,7 @@ spec:
       action: Allow
       to:
         - networks:
-            - 192.168.20.0/24
+            - 95.216.68.119/32    # corporate-vpn-1.corp.example.com
       ports:
         - portNumber:
             protocol: TCP
