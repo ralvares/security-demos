@@ -248,6 +248,11 @@ def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time
                 if verb not in ['create', 'update', 'patch', 'delete']:
                     continue
                 
+                # Skip failed requests
+                response_status = entry.get('responseStatus', {})
+                if response_status.get('status') == 'Failure':
+                    continue
+                
                 obj_ref = entry.get('objectRef', {})
                 resource = obj_ref.get('resource')
                 ns = obj_ref.get('namespace')
