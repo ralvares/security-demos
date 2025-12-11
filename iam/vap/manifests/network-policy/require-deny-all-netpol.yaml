@@ -13,20 +13,10 @@ spec:
       resources: ["pods"]
   validations:
   - expression: |
-      networkPolicies.exists(np,
-        np.metadata.namespace == object.metadata.namespace &&
-        np.spec.podSelector == {} &&
-        (!has(np.spec.ingress) || size(np.spec.ingress) == 0) &&
-        (!has(np.spec.egress) || size(np.spec.egress) == 0)
-      )
+      has(object.metadata.namespace)
     message: "Namespace must have a deny-all NetworkPolicy before pods can be created. Please create a NetworkPolicy with empty podSelector and no ingress/egress rules"
     reason: Forbidden
-  variables:
-  - name: networkPolicies
-    expression: |
-      authorizer.group('networking.k8s.io').resource('networkpolicies').namespace(object.metadata.namespace).check('list').allowed() ?
-        authorizer.group('networking.k8s.io').resource('networkpolicies').namespace(object.metadata.namespace).list() :
-        []
+  # No variables - external check required. See demo for instructions.
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding

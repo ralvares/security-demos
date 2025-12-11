@@ -69,9 +69,18 @@ kind: Pod
 metadata:
   name: good-registry
 spec:
+  securityContext:
+    runAsNonRoot: true
   containers:
   - name: nginx
     image: quay.io/nginx:latest
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
 EOF
 ```
 
@@ -86,9 +95,18 @@ kind: Pod
 metadata:
   name: bad-registry
 spec:
+  securityContext:
+    runAsNonRoot: true
   containers:
   - name: nginx
     image: nginx:latest
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
 EOF
 ```
 
@@ -105,9 +123,18 @@ kind: Pod
 metadata:
   name: allowed-db
 spec:
+  securityContext:
+    runAsNonRoot: true
   containers:
   - name: postgres
     image: postgres:14
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
 EOF
 ```
 
@@ -122,9 +149,18 @@ kind: Pod
 metadata:
   name: shadow-db
 spec:
+  securityContext:
+    runAsNonRoot: true
   containers:
   - name: postgres
     image: postgres:14
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
 EOF
 ```
 
@@ -168,6 +204,9 @@ spec:
     image: busybox
     securityContext:
       privileged: true
+      allowPrivilegeEscalation: true
+      capabilities:
+        add: ["ALL"]
     command: ["sleep", "3600"]
 EOF
 ```
@@ -183,9 +222,18 @@ kind: Pod
 metadata:
   name: hostpath-pod
 spec:
+  securityContext:
+    runAsNonRoot: true
   containers:
   - name: busy
     image: busybox
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
     command: ["sleep", "3600"]
   volumes:
   - name: host
@@ -209,9 +257,18 @@ kind: Pod
 metadata:
   name: platform-pod
 spec:
+  securityContext:
+    runAsNonRoot: true
   containers:
   - name: busy
     image: busybox
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
     command: ["sleep","3600"]
 EOF
 
@@ -223,9 +280,18 @@ metadata:
   name: dev-pod
 spec:
   automountServiceAccountToken: true
+  securityContext:
+    runAsNonRoot: true
   containers:
   - name: busy
     image: busybox
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
     command: ["sleep","3600"]
 EOF
 ```

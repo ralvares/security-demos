@@ -13,20 +13,13 @@ spec:
       resources: ["pods"]
   validations:
   - expression: |
-      namespaces.exists(ns, ns.metadata.name == object.metadata.namespace && 
-        has(ns.metadata.labels) && 
-        'custom.security/database' in ns.metadata.labels && 
-        ns.metadata.labels['custom.security/database'] == 'true') ||
       object.spec.containers.all(container,
         !['postgres','mysql','mariadb','mongo','redis']
           .exists(db, container.image.contains(db))
       )
     message: "Pod is running disallowed database images in unapproved namespace. Database pods must only run in namespaces labeled custom.security/database=true"
     reason: Forbidden
-  variables:
-  - name: namespaces
-    expression: |
-      namespaceObject.all()
+  # No variables required - binding selects appropriate namespaces
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding
@@ -40,4 +33,7 @@ spec:
       matchExpressions:
       - key: custom.security/enforce
         operator: In
+        values: ["true"]
+      - key: custom.security/database
+        operator: NotIn
         values: ["true"]

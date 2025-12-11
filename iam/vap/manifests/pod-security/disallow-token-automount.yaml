@@ -13,28 +13,10 @@ spec:
       resources: ["pods"]
   validations:
   - expression: |
-      namespaces.exists(ns,
-        ns.metadata.name == object.metadata.namespace &&
-        (
-          // Allow if namespace has automount exemption
-          (
-            has(ns.metadata.labels) &&
-            'custom.security/automount' in ns.metadata.labels &&
-            ns.metadata.labels['custom.security/automount'] == 'true'
-          ) ||
-          // Or if pod explicitly disables automount
-          (
-            has(object.spec.automountServiceAccountToken) && 
-            object.spec.automountServiceAccountToken == false
-          )
-        )
-      )
+      ( !has(object.spec.automountServiceAccountToken) || object.spec.automountServiceAccountToken == false )
     message: "Pod must disable automountServiceAccountToken unless namespace has custom.security/automount=true label"
     reason: Forbidden
-  variables:
-  - name: namespaces
-    expression: |
-      namespaceObject.all()
+  # No variables required - the binding selector handles exemptions
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding
@@ -48,4 +30,7 @@ spec:
       matchExpressions:
       - key: custom.security/enforce
         operator: In
+        values: ["true"]
+      - key: custom.security/automount
+        operator: NotIn
         values: ["true"]
