@@ -7,7 +7,7 @@ This directory contains a complete toolkit and investigation guide for performin
 *   **`forensics.sh`**: A Bash library containing specialized functions to query, filter, and analyze audit logs. It turns raw JSON logs into human-readable forensic artifacts.
 *   **`audit-log-Investigation.md`**: A comprehensive, step-by-step tutorial that walks through a simulated breach of a "Visa Payment" application. It uses the library to hunt for the attacker.
 *   **`kubectl-timemachine-instructions.md`**: Instructions for using the kubectl-timemachine plugin.
-*   **`audit.log.tar.gz`**: A sample audit log file containing the evidence of the simulated attack. Use this if you don't have a live cluster to investigate.
+*   **`logs/audit.log.tar.gz`**: A sample audit log file containing the evidence of the simulated attack. Use this if you don't have a live cluster to investigate.
 
 ## Getting Started
 
@@ -20,7 +20,7 @@ This directory contains a complete toolkit and investigation guide for performin
 
 1.  **Extract the sample logs:**
     ```bash
-    tar -xzvf audit.tar.gz
+    tar -xzvf logs/audit.tar.gz
     ```
 
 2.  **Load the forensic library:**
