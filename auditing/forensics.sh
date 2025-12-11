@@ -633,7 +633,7 @@ audit_shrink() {
  -e '/tokenreviews|namespaces\/openshift\/|rhacs-operator|operators.coreos.com|image.openshift.io/d' \
  -e '/"namespace": *"default|"namespace": *"kube-system|"namespace": *"openshift-cnv|"namespace": *"stackrox|"namespace": *"netobserv/d' \
  -e '/"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"apiGroup": *"operator.openshift.io"/d' \
- -e '/"username": *"system:kube-*|"username": *"system:serviceaccount:kube-system|"verb": *"watch"|"status": *"Failure"/d' \
+ -e '/"username": *"system:kube-*|"username": *"system:serviceaccount:kube-system|"verb": *"watch"/d' \
  -e '/system:serviceaccounts:stackrox/d' \
  -e '/system:serviceaccount:openshift-apiserver-operator:openshift-apiserver-operator/d' \
  -e '/system:serviceaccount:openshift-apiserver:openshift-apiserver-sa/d' \

@@ -1,40 +1,51 @@
-We have to encode the URL so space = %20 , + = %2B
 
+# ACS API Examples
 
-List all Images
+> **Note:** Encode URLs as needed: space = `%20`, plus = `%2B`
 
+## List all Images
+
+```bash
 curl -k -s \
     -X GET \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${ROX_API_TOKEN}" \
     https://$ROX_ENDPOINT/v1/images | jq
+```
 
-List all deployments
+## List all Deployments
 
+```bash
 curl -k -s \
     -X GET \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${ROX_API_TOKEN}" \
     https://$ROX_ENDPOINT/v1/deployments | jq
+```
 
-List all deployments with the component log4j
+## List Deployments with Component log4j
 
+```bash
 curl -k -s \
     -X GET \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${ROX_API_TOKEN}" \
-    https://$ROX_ENDPOINT/v1/deployments\?query\=Component:log4j | jq
+    "https://$ROX_ENDPOINT/v1/deployments?query=Component:log4j" | jq
+```
 
-List all deployments in a namespace ( eg: payments)
+## List Deployments in a Namespace (e.g., payments)
 
+```bash
 curl -k -s \
     -X GET \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${ROX_API_TOKEN}" \
-    https://$ROX_ENDPOINT/v1/deployments?query=Namespace:payments
+    "https://$ROX_ENDPOINT/v1/deployments?query=Namespace:payments"
+```
 
-List all deployments with the name visa-processor
+## List Deployments with Name visa-processor
 
+```bash
 curl -k -s \
     -X GET \
     -H "Content-Type: application/json" \
