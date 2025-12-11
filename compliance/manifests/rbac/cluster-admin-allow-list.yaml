@@ -1,0 +1,37 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: CustomRule
+metadata:
+  name: cluster-admin-allow-list
+  namespace: openshift-compliance
+spec:
+  title: Audit cluster-admin access against an allow-list
+  description: Audits subjects bound to the 'cluster-admin' role against a pre-defined allow-list.
+  failureReason: Found subject(s) bound to 'cluster-admin' that are NOT on the allow-list.
+  severity: high
+  id: cluster_admin_allow_list
+  checkType: Platform
+  scannerType: CEL
+  inputs:
+    - name: crbs
+      kubernetesInputSpec:
+        apiVersion: rbac.authorization.k8s.io/v1
+        resource: clusterrolebindings
+  expression: |
+    crbs.items.filter(crb, crb.metadata.name == 'cluster-admin')[0]
+      .subjects.all(subject,
+        (subject.kind == 'User' && subject.name in [
+          'kubeadmin',
+          'system:admin',
+          'alice@my-company.com'
+        ]) ||
+        (subject.kind == 'Group' && subject.name in [
+          'system:masters',
+          'ocp-sre-team'
+        ]) ||
+        (subject.kind == 'ServiceAccount' &&
+          has(subject.namespace) &&
+          (subject.namespace + '/' + subject.name) in [
+            'openshift-monitoring/prometheus-k8s'
+          ]
+        )
+      )

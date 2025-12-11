@@ -1,0 +1,31 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: CustomRule
+metadata:
+  name: detect-privileged-pods
+  namespace: openshift-compliance
+spec:
+  title: Detect Privileged Pods & HostPID
+  description: Detect pods created with privileged containers or hostPID enabled.
+  failureReason: Pod created with privileged container or hostPID.
+  severity: high
+  id: detect_privileged_pods
+  checkType: Platform
+  scannerType: CEL
+  inputs:
+    - name: pods
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: pods
+  expression: |
+    pods.items.all(pod,
+      (
+        !has(pod.spec.hostPID) || pod.spec.hostPID != true
+      ) &&
+      (
+        !pod.spec.containers.exists(c,
+          has(c.securityContext) &&
+          has(c.securityContext.privileged) &&
+          c.securityContext.privileged == true
+        )
+      )
+    )

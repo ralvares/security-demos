@@ -1,0 +1,29 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: CustomRule
+metadata:
+  name: allowed-registries-configured
+  namespace: openshift-compliance
+spec:
+  title: Allowed registries are configured
+  description: Ensures trusted registries are defined in the cluster image config.
+  failureReason: Required trusted registry missing from allowedRegistries.
+  severity: medium
+  id: allowed_registries_configured
+  checkType: Platform
+  scannerType: CEL
+  inputs:
+    - name: imageConfigs
+      kubernetesInputSpec:
+        apiVersion: config.openshift.io/v1
+        resource: images
+  expression: |
+    imageConfigs.items.exists(
+      img, img.metadata.name == 'cluster' &&
+      has(img.spec.registrySources) &&
+      img.spec.registrySources != null &&
+      has(img.spec.registrySources.allowedRegistries) &&
+      img.spec.registrySources.allowedRegistries != null &&
+      type(img.spec.registrySources.allowedRegistries) == list &&
+      'my-trusted-registry.internal.example.com'
+        in img.spec.registrySources.allowedRegistries
+    )

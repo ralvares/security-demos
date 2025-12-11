@@ -1,0 +1,15 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: TailoredProfile
+metadata:
+  name: image-supply-chain-checks
+  namespace: openshift-compliance
+spec:
+  title: Image Supply Chain Checks
+  description: Custom checks for image provenance and shadow database detection.
+  enableRules:
+    - name: allowed-registries-configured
+      kind: CustomRule
+      rationale: Ensure only trusted registries are used
+    - name: disallow-shadow-databases
+      kind: CustomRule
+      rationale: Prevent unapproved database workloads

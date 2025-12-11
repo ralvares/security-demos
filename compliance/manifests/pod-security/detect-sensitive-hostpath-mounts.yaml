@@ -1,0 +1,30 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: CustomRule
+metadata:
+  name: detect-sensitive-hostpath-mounts
+  namespace: openshift-compliance
+spec:
+  title: Detect Sensitive HostPath Mounts
+  description: Detect pods mounting sensitive host paths like /etc/kubernetes, /var/lib/etcd, docker.sock, or crio.sock.
+  failureReason: Pod mounts a sensitive host path.
+  severity: high
+  id: detect_sensitive_hostpath_mounts
+  checkType: Platform
+  scannerType: CEL
+  inputs:
+    - name: pods
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: pods
+  expression: |
+    pods.items.all(pod,
+      !pod.spec.volumes.exists(vol,
+        has(vol.hostPath) &&
+        (
+          vol.hostPath.path.startsWith("/etc/kubernetes") ||
+          vol.hostPath.path.startsWith("/var/lib/etcd") ||
+          vol.hostPath.path.contains("docker.sock") ||
+          vol.hostPath.path.contains("crio.sock")
+        )
+      )
+    )

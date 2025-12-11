@@ -1,0 +1,25 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: CustomRule
+metadata:
+  name: detect-token-automount
+  namespace: openshift-compliance
+spec:
+  title: Detect ServiceAccount Token Automount
+  description: Detect pods with serviceAccount token automount enabled (default or explicit true).
+  failureReason: Pod has serviceAccount token automount enabled.
+  severity: medium
+  id: detect_token_automount
+  checkType: Platform
+  scannerType: CEL
+  inputs:
+    - name: pods
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: pods
+  expression: |
+    pods.items.all(pod,
+      !(
+        (has(pod.spec.automountServiceAccountToken) && pod.spec.automountServiceAccountToken == true) ||
+        (!has(pod.spec.automountServiceAccountToken) && pod.spec.serviceAccountName != "")
+      )
+    )
