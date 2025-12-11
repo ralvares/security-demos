@@ -178,6 +178,13 @@ spec:
 3.  **Scan:** Bind the profile to a `ScanSetting` and let it run.
 4.  **Report:** Review the results via `oc get compliancecheckresults`.
 
+
 ### Summary
 
 By combining the **10 Essential Controls** with the **Compliance Operator**, you move from "Compliance as a barrier" to "Compliance as code." You verify the foundation with native controls, and you prove the specific, unique requirements of your organization with CustomRules—all in one automated workflow.
+
+---
+
+## Further Reading & Demos
+
+- [Compliance Operator CustomRule Demo](./compliance-operator-demo.md)
