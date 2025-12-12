@@ -44,6 +44,22 @@ REDACTED_RESOURCES = {
     'oauthauthorizetokens', 'nodes'
 }
 
+# --- HISTORY MODE CONFIGURATION (Only used when --history is passed) ---
+HTTP_STATUS_MAP = {
+    101: "Stream", 200: "OK", 201: "Created", 202: "Accepted", 204: "No Content",
+    304: "Not Modified", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden",
+    404: "Not Found", 409: "Conflict", 422: "Invalid", 429: "Throttled",
+    500: "Server Error", 503: "Unavailable", 504: "Timeout"
+}
+
+NOISY_USERS = [
+    'system:node:', 'system:kube-scheduler', 'system:apiserver', 'system:kube-controller-manager',
+    'system:multus', 'openshift-sdn', 'openshift-multus', 'openshift-machine-config-operator',
+    ':deployment-controller', ':replicaset-controller', ':statefulset-controller',
+    ':daemonset-controller', ':job-controller', ':cronjob-controller',
+    ':horizontal-pod-autoscaler', ':generic-garbage-collector'
+]
+
 # ==============================================================================
 # CORE FUNCTIONS
 # ==============================================================================
@@ -62,6 +78,9 @@ def setup_args():
     parser.add_argument("-l", "--selector", help="Selector (label query) to filter on")
     parser.add_argument("--show-labels", action="store_true", help="Show all labels as the last column")
     
+    # NEW FLAG
+    parser.add_argument("--history", action="store_true", help="Trace the full lineage (User -> Deployment -> Pod)")
+
     parser.add_argument("args", nargs="*", help="Command and Resource")
     
     return parser
@@ -201,6 +220,145 @@ def matches_selector(obj, selector):
     return True
 
 # ==============================================================================
+# LINEAGE & HISTORY LOGIC (ONLY USED FOR --history)
+# ==============================================================================
+
+def is_noisy_user(username):
+    for noise in NOISY_USERS:
+        if noise in username: return True
+    return False
+
+def build_ownership_map(log_file):
+    """Scans the log to build a map of who owns whom."""
+    ownership = {}
+    try:
+        with open(log_file, 'r') as f:
+            for line in f:
+                if not line.strip(): continue
+                try: entry = json.loads(line)
+                except: continue
+                
+                verb = entry.get('verb')
+                if verb not in ['create', 'update', 'patch']: continue
+                
+                obj_ref = entry.get('objectRef', {})
+                res = obj_ref.get('resource')
+                ns = obj_ref.get('namespace')
+                name = obj_ref.get('name')
+                if not res or not name: continue
+
+                # Parse body to find ownerReferences
+                raw_obj = entry.get('responseObject') or entry.get('requestObject')
+                obj = safe_parse_json(raw_obj)
+                
+                owner_refs = get_path(obj, 'metadata', 'ownerReferences')
+                if owner_refs and isinstance(owner_refs, list) and len(owner_refs) > 0:
+                    owner = owner_refs[0]
+                    owner_kind = owner.get('kind', '').lower() + 's' 
+                    # Fix plurals
+                    if owner_kind == 'replicasetss': owner_kind = 'replicasets'
+                    if owner_kind == 'deployments': owner_kind = 'deployments'
+                    
+                    key = (res, ns, name)
+                    ownership[key] = (owner_kind, owner.get('name'))
+    except FileNotFoundError: pass
+    return ownership
+
+def print_lineage_history(log_file, start_res, namespace, start_name, time_limit):
+    # 1. Build Ownership Map
+    print("--- 🔍 Analyzing Lineage (this may take a moment) ---")
+    ownership_map = build_ownership_map(log_file)
+    
+    # 2. Trace Ancestors
+    relevant_objects = set()
+    curr_res, curr_name = start_res, start_name
+    
+    while True:
+        key = (curr_res, namespace, curr_name)
+        relevant_objects.add(key)
+        
+        parent = ownership_map.get(key)
+        if not parent: break
+        
+        curr_res, curr_name = parent
+        if curr_res in CLUSTER_SCOPED: 
+            relevant_objects.add((curr_res, None, curr_name))
+            break
+    
+    # 3. Fetch Events
+    history = []
+    try:
+        with open(log_file, 'r') as f:
+            for line in f:
+                if not line.strip(): continue
+                try: entry = json.loads(line)
+                except: continue
+                
+                ts = entry.get('requestReceivedTimestamp')
+                if time_limit and ts and ts > time_limit: continue
+                
+                verb = entry.get('verb')
+                if verb not in ['create', 'update', 'patch', 'delete']: continue
+
+                obj_ref = entry.get('objectRef', {})
+                res = obj_ref.get('resource')
+                ns = obj_ref.get('namespace')
+                name = obj_ref.get('name')
+                
+                # Filter lineage
+                if (res, ns, name) not in relevant_objects: continue
+
+                user = entry.get('user', {}).get('username', 'unknown')
+                
+                # --- APPLY NOISE FILTER (Only for history) ---
+                if is_noisy_user(user): continue
+
+                code = entry.get('responseStatus', {}).get('code', 0)
+                reason = entry.get('responseStatus', {}).get('reason', '')
+                sub = obj_ref.get('subresource')
+                
+                # Formatting
+                display_name = f"{RESOURCE_ALIASES.get(res, res)}/{name}"
+                if sub: display_name += f"/{sub}"
+                
+                if user.startswith('system:serviceaccount:'): user = f"sa:{user.split(':')[-1]}"
+                
+                # --- STATUS TRANSLATION ---
+                code_str = HTTP_STATUS_MAP.get(code, str(code))
+                if code == 101 and sub:
+                    if sub == 'exec': code_str = "Exec"
+                    elif sub == 'portforward': code_str = "Port-Forward"
+                    elif sub == 'attach': code_str = "Attach"
+
+                history.append({
+                    'ts': ts,
+                    'verb': verb.upper(),
+                    'object': display_name,
+                    'user': user,
+                    'code': code_str,
+                    'reason': reason
+                })
+
+    except FileNotFoundError:
+        print(f"Error: File '{log_file}' not found."); sys.exit(1)
+
+    history.sort(key=lambda x: x.get('ts', ''))
+    
+    print(f"\n--- HISTORY & LINEAGE: {start_res}/{start_name} ---")
+    headers = ["TIMESTAMP", "VERB", "OBJECT", "USER", "STATUS"]
+    widths = [27, 8, 45, 30, 12]
+    
+    header_fmt = "  ".join([f"{{:<{w}}}" for w in widths])
+    print(header_fmt.format(*headers))
+    
+    for h in history:
+        obj_str = h['object']
+        if len(obj_str) > 43: obj_str = "..." + obj_str[-40:]
+        
+        row = [h['ts'], h['verb'], obj_str, h['user'][:28], h['code']]
+        print(header_fmt.format(*row))
+
+# ==============================================================================
 # MAIN LOGIC
 # ==============================================================================
 
@@ -301,10 +459,25 @@ def main():
 
     resource_input = args.args[1]
     name_input = args.args[2] if len(args.args) > 2 else None
+    
     if not os.path.exists(args.auditlog_file): print(f"Error: File '{args.auditlog_file}' not found."); sys.exit(1)
     args.time = normalize_time(args.time)
 
     req_res = RESOURCE_ALIASES.get(resource_input.lower(), resource_input.lower())
+    
+    # --- HISTORY MODE ---
+    if args.history:
+        if not name_input:
+            print("Error: --history requires a specific object name (e.g., 'get pod mypod --history').")
+            sys.exit(1)
+        if req_res == 'all':
+            print("Error: --history cannot be used with 'all'. Specify a single resource type.")
+            sys.exit(1)
+            
+        print_lineage_history(args.auditlog_file, req_res, args.namespace, name_input, args.time)
+        sys.exit(0)
+    # --------------------
+
     if req_res == 'all':
         resources_to_fetch = ['nodes', 'pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs', 'routes', 'ingresses', 'networkpolicies', 'virtualmachines', 'virtualmachineinstances']
     else:
