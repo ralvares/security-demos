@@ -41,6 +41,7 @@ oc timemachine get <resource> [name] [flags]
 - `-o, --output <format>`: Output format. Supported values: `table` (default), `yaml`, `json`, `wide`.
 - `-l, --selector <selector>`: Filter by label selector (e.g., `app=visa,tier=backend`).
 - `--show-labels`: Show all labels as the last column in the output.
+- `--history`: Trace the full lineage of a resource (e.g., Pod -> ReplicaSet -> Deployment) and show a merged event history.
 
 ## Examples
 
@@ -91,6 +92,24 @@ oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get pods -n payme
 Display labels alongside resource information:
 ```bash
 oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get pods --show-labels
+```
+
+### 9. Trace Resource History & Lineage
+Recursively trace the ownership of a resource (e.g., Pod -> ReplicaSet -> Deployment) and view a merged timeline of all events. This is useful for understanding the lifecycle of a workload.
+
+```bash
+oc timemachine --auditlog-file=logs/timemachine-demo-audit.log get pods -n payments-v2 visa-processor --history
+```
+
+*Output:*
+```text
+--- 🔍 Analyzing Lineage (this may take a moment) ---
+
+--- HISTORY & LINEAGE: pods/visa-processor ---
+TIMESTAMP                    VERB      OBJECT                                         USER                            STATUS      
+2025-12-09T12:57:37.324537Z  CREATE    pods/visa-processor                            sa:visa-processor               Created     
+2025-12-09T12:57:46.770676Z  CREATE    pods/visa-processor/exec                       sa:visa-processor               Exec        
+2025-12-09T12:57:46.770676Z  CREATE    pods/visa-processor/exec                       sa:visa-processor               Exec        
 ```
 
 ## Supported Resources
