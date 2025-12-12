@@ -57,7 +57,7 @@ NOISY_USERS = [
     'system:multus', 'openshift-sdn', 'openshift-multus', 'openshift-machine-config-operator',
     ':deployment-controller', ':replicaset-controller', ':statefulset-controller',
     ':daemonset-controller', ':job-controller', ':cronjob-controller',
-    ':horizontal-pod-autoscaler', ':generic-garbage-collector'
+    ':horizontal-pod-autoscaler', ':generic-garbage-collector', 'system:ovn-node'
 ]
 
 # ==============================================================================
