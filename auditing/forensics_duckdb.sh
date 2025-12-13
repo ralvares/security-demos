@@ -616,105 +616,155 @@ audit_detect_bruteforce() {
 }
 
 # ==============================================================================
-# 20. UTILITY: Shrink (Optimized & Cross-Platform)
+# UTILITY: Super Shrink (Forensic Evidence Only)
 # ==============================================================================
 audit_shrink() {
     local INPUT_FILE="${1:-audit.log}"
-    local BASE_NAME="${INPUT_FILE##*/}"
 
-    if [[ ! -f "$INPUT_FILE" ]]; then echo -e "${RED}Error:${NC} File $INPUT_FILE not found"; return 1; fi
-
-    echo -e "${BLUE}--- Shrinking $INPUT_FILE (In-Place using sed) ---${NC}"
-    echo "Original size: $(du -h "$INPUT_FILE" | cut -f1)"
-
-    # 1. Clean the cache (Critical: File content is changing, so the old DB is invalid)
-    echo -e "${YELLOW}--- Cleaning cache artifacts... ---${NC}"
-    rm -fv ".${BASE_NAME}.duckdb" ".${BASE_NAME}.sig" ".${BASE_NAME}.wal"
-
-    # 2. Define Filters
-    # We combine the patterns into one variable for cleanliness
-    local PATTERNS='/tokenreviews|namespaces\/openshift\/|rhacs-operator|operators.coreos.com|image.openshift.io/d;
-        /"namespace": *"default|"namespace": *"kube-system|"namespace": *"openshift-cnv|"namespace": *"stackrox|"namespace": *"netobserv/d;
-        /"resource": *"endpoints"|"resource": *"endpointslices"|"resource": *"leases"|"namespace": *"openshift-|"apiGroup": *"operator.openshift.io"/d;
-        /"username": *"system:kube-*|"username": *"system:serviceaccount:kube-system|"verb": *"watch"/d;
-        /system:serviceaccounts:stackrox/d;
-        /system:serviceaccount:openshift-apiserver-operator:openshift-apiserver-operator/d;
-        /system:serviceaccount:openshift-apiserver:openshift-apiserver-sa/d;
-        /system:serviceaccount:openshift-authentication-operator:authentication-operator/d;
-        /system:serviceaccount:openshift-authentication:oauth-openshift/d;
-        /system:serviceaccount:openshift-catalogd:catalogd-controller-manager/d;
-        /system:serviceaccount:openshift-cloud-controller-manager-operator:cluster-cloud-controller-manager/d;
-        /system:serviceaccount:openshift-cluster-machine-approver:machine-approver-sa/d;
-        /system:serviceaccount:openshift-cluster-olm-operator:cluster-olm-operator/d;
-        /system:serviceaccount:openshift-cluster-samples-operator:cluster-samples-operator/d;
-        /system:serviceaccount:openshift-cluster-storage-operator:cluster-storage-operator/d;
-        /system:serviceaccount:openshift-cluster-storage-operator:csi-snapshot-controller-operator/d;
-        /system:serviceaccount:openshift-cluster-version:default/d;
-        /system:serviceaccount:openshift-cnv:bridge-marker/d;
-        /system:serviceaccount:openshift-cnv:cdi-apiserver/d;
-        /system:serviceaccount:openshift-cnv:cdi-operator/d;
-        /system:serviceaccount:openshift-cnv:cdi-sa/d;
-        /system:serviceaccount:openshift-cnv:cluster-network-addons-operator/d;
-        /system:serviceaccount:openshift-cnv:kubemacpool-sa/d;
-        /system:serviceaccount:openshift-cnv:kubevirt-apiserver/d;
-        /system:serviceaccount:openshift-cnv:kubevirt-controller/d;
-        /system:serviceaccount:openshift-cnv:kubevirt-handler/d;
-        /system:serviceaccount:openshift-cnv:kubevirt-ipam-controller-manager/d;
-        /system:serviceaccount:openshift-cnv:kubevirt-operator/d;
-        /system:serviceaccount:openshift-console-operator:console-operator/d;
-        /system:serviceaccount:openshift-controller-manager-operator:openshift-controller-manager-operator/d;
-        /system:serviceaccount:openshift-dns-operator:dns-operator/d;
-        /system:serviceaccount:openshift-etcd-operator:etcd-operator/d;
-        /system:serviceaccount:openshift-image-registry:cluster-image-registry-operator/d;
-        /system:serviceaccount:openshift-infra:default-rolebindings-controller/d;
-        /system:serviceaccount:openshift-infra:namespace-security-allocation-controller/d;
-        /system:serviceaccount:openshift-infra:podsecurity-admission-label-syncer-controller/d;
-        /system:serviceaccount:openshift-infra:serviceaccount-controller/d;
-        /system:serviceaccount:openshift-infra:serviceaccount-pull-secrets-controller/d;
-        /system:serviceaccount:openshift-infra:unidling-controller/d;
-        /system:serviceaccount:openshift-ingress-operator:ingress-operator/d;
-        /system:serviceaccount:openshift-insights:operator/d;
-        /system:serviceaccount:openshift-kube-apiserver-operator:kube-apiserver-operator/d;
-        /system:serviceaccount:openshift-kube-controller-manager-operator:kube-controller-manager-operator/d;
-        /system:serviceaccount:openshift-kube-scheduler-operator:openshift-kube-scheduler-operator/d;
-        /system:serviceaccount:openshift-kube-storage-version-migrator-operator:kube-storage-version-migrator-operator/d;
-        /system:serviceaccount:openshift-machine-api:cluster-autoscaler-operator/d;
-        /system:serviceaccount:openshift-machine-api:machine-api-operator/d;
-        /system:serviceaccount:openshift-machine-config-operator:machine-config-controller/d;
-        /system:serviceaccount:openshift-machine-config-operator:machine-config-daemon/d;
-        /system:serviceaccount:openshift-machine-config-operator:machine-config-operator/d;
-        /system:serviceaccount:openshift-marketplace:marketplace-operator/d;
-        /system:serviceaccount:openshift-monitoring:alertmanager-main/d;
-        /system:serviceaccount:openshift-monitoring:cluster-monitoring-operator/d;
-        /system:serviceaccount:openshift-monitoring:metrics-server/d;
-        /system:serviceaccount:openshift-monitoring:prometheus-k8s/d;
-        /system:serviceaccount:openshift-monitoring:prometheus-operator/d;
-        /system:serviceaccount:openshift-monitoring:thanos-querier/d;
-        /system:serviceaccount:openshift-netobserv-operator:netobserv-controller-manager/d;
-        /system:serviceaccount:openshift-network-operator:cluster-network-operator/d;
-        /system:serviceaccount:openshift-oauth-apiserver:oauth-apiserver-sa/d;
-        /system:serviceaccount:openshift-operator-controller:operator-controller-controller-manager/d;
-        /system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount/d;
-        /system:serviceaccount:openshift-operators:openshift-pipelines-operator/d;
-        /system:serviceaccount:openshift-pipelines:tekton-resource-pruner/d;
-        /system:serviceaccount:openshift-pipelines:tekton-triggers-core-interceptors/d;
-        /system:serviceaccount:openshift-service-ca-operator:service-ca-operator/d;
-        /system:serviceaccount:openshift-service-ca:service-ca/d'
-
-    # 3. Apply Sed (Handle MacOS vs Linux syntax differences)
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # MacOS requires an empty string argument for -i
-        sed -i '' -E "$PATTERNS" "$INPUT_FILE"
-    else
-        # Linux (GNU sed) does not
-        sed -i -E "$PATTERNS" "$INPUT_FILE"
+    if [ ! -f "$INPUT_FILE" ]; then
+        echo "Error: File $INPUT_FILE not found."
+        return 1
     fi
 
-    echo "Shrunk size:   $(du -h "$INPUT_FILE" | cut -f1)"
+    echo "--- Shrinking $INPUT_FILE (Platform Component Removal) ---"
+    echo "Original size: $(du -h "$INPUT_FILE" | cut -f1)"
 
-    # 4. Rebuild the cache immediately (Pre-warm)
-    echo -e "${BLUE}--- Rebuilding cache for the cleaner file... ---${NC}"
-    run_sql "$INPUT_FILE" "SELECT count(*) AS total_events FROM logs"
+    local TMP_FILE="${INPUT_FILE}.tmp"
+    local PATTERN_FILE="audit_patterns.sed"
+
+    # ----------------------------------------------------------------------
+    # STEP 1: GENERATE PATTERN FILE (Heredoc Strategy)
+    # This avoids "Argument list too long" and "Unterminated regex" errors.
+    # ----------------------------------------------------------------------
+    cat <<EOF > "$PATTERN_FILE"
+# --- High Volume Verbs & Resources ---
+/tokenreviews/d
+/verb": *"watch"/d
+/verb": *"get"/d
+/verb": *"list"/d
+/"resource": *"endpoints"/d
+/"resource": *"endpointslices"/d
+/"resource": *"leases"/d
+/"resource": *"events"/d
+
+# --- System Namespaces ---
+/"namespace": *"kube-system"/d
+/"namespace": *"openshift-cnv"/d
+/"namespace": *"stackrox"/d
+/"namespace": *"netobserv"/d
+/namespaces\/openshift\//d
+/"namespace": *"openshift-/d
+
+# --- Operator Groups & APIs ---
+/rhacs-operator/d
+/operators.coreos.com/d
+/image.openshift.io/d
+/"apiGroup": *"operator.openshift.io"/d
+
+# --- System Users ---
+/"username": *"system:kube-/d
+/"username": *"system:serviceaccount:kube-system/d
+
+# --- Specific OpenShift Service Accounts (Batch 1) ---
+/system:serviceaccounts:stackrox/d
+/system:serviceaccount:openshift-apiserver-operator:openshift-apiserver-operator/d
+/system:serviceaccount:openshift-apiserver:openshift-apiserver-sa/d
+/system:serviceaccount:openshift-authentication-operator:authentication-operator/d
+/system:serviceaccount:openshift-authentication:oauth-openshift/d
+/system:serviceaccount:openshift-catalogd:catalogd-controller-manager/d
+/system:serviceaccount:openshift-cloud-controller-manager-operator:cluster-cloud-controller-manager/d
+/system:serviceaccount:openshift-cluster-machine-approver:machine-approver-sa/d
+/system:serviceaccount:openshift-cluster-olm-operator:cluster-olm-operator/d
+/system:serviceaccount:openshift-cluster-samples-operator:cluster-samples-operator/d
+/system:serviceaccount:openshift-cluster-storage-operator:cluster-storage-operator/d
+/system:serviceaccount:openshift-cluster-storage-operator:csi-snapshot-controller-operator/d
+/system:serviceaccount:openshift-cluster-version:default/d
+
+# --- Specific OpenShift Service Accounts (Batch 2) ---
+/system:serviceaccount:openshift-cnv:bridge-marker/d
+/system:serviceaccount:openshift-cnv:cdi-apiserver/d
+/system:serviceaccount:openshift-cnv:cdi-operator/d
+/system:serviceaccount:openshift-cnv:cdi-sa/d
+/system:serviceaccount:openshift-cnv:cluster-network-addons-operator/d
+/system:serviceaccount:openshift-cnv:kubemacpool-sa/d
+/system:serviceaccount:openshift-cnv:kubevirt-apiserver/d
+/system:serviceaccount:openshift-cnv:kubevirt-controller/d
+/system:serviceaccount:openshift-cnv:kubevirt-handler/d
+/system:serviceaccount:openshift-cnv:kubevirt-ipam-controller-manager/d
+/system:serviceaccount:openshift-cnv:kubevirt-operator/d
+/system:serviceaccount:openshift-console-operator:console-operator/d
+/system:serviceaccount:openshift-controller-manager-operator:openshift-controller-manager-operator/d
+/system:serviceaccount:openshift-dns-operator:dns-operator/d
+/system:serviceaccount:openshift-etcd-operator:etcd-operator/d
+/system:serviceaccount:openshift-image-registry:cluster-image-registry-operator/d
+/system:serviceaccount:openshift-infra:default-rolebindings-controller/d
+/system:serviceaccount:openshift-infra:namespace-security-allocation-controller/d
+/system:serviceaccount:openshift-infra:podsecurity-admission-label-syncer-controller/d
+/system:serviceaccount:openshift-infra:serviceaccount-controller/d
+/system:serviceaccount:openshift-infra:serviceaccount-pull-secrets-controller/d
+/system:serviceaccount:openshift-infra:unidling-controller/d
+
+# --- Specific OpenShift Service Accounts (Batch 3) ---
+/system:serviceaccount:openshift-ingress-operator:ingress-operator/d
+/system:serviceaccount:openshift-insights:operator/d
+/system:serviceaccount:openshift-kube-apiserver-operator:kube-apiserver-operator/d
+/system:serviceaccount:openshift-kube-controller-manager-operator:kube-controller-manager-operator/d
+/system:serviceaccount:openshift-kube-scheduler-operator:openshift-kube-scheduler-operator/d
+/system:serviceaccount:openshift-kube-storage-version-migrator-operator:kube-storage-version-migrator-operator/d
+/system:serviceaccount:openshift-machine-api:cluster-autoscaler-operator/d
+/system:serviceaccount:openshift-machine-api:machine-api-operator/d
+/system:serviceaccount:openshift-machine-config-operator:machine-config-controller/d
+/system:serviceaccount:openshift-machine-config-operator:machine-config-daemon/d
+/system:serviceaccount:openshift-machine-config-operator:machine-config-operator/d
+/system:serviceaccount:openshift-marketplace:marketplace-operator/d
+/system:serviceaccount:openshift-monitoring:alertmanager-main/d
+/system:serviceaccount:openshift-monitoring:cluster-monitoring-operator/d
+/system:serviceaccount:openshift-monitoring:metrics-server/d
+/system:serviceaccount:openshift-monitoring:prometheus-k8s/d
+/system:serviceaccount:openshift-monitoring:prometheus-operator/d
+/system:serviceaccount:openshift-monitoring:thanos-querier/d
+/system:serviceaccount:openshift-netobserv-operator:netobserv-controller-manager/d
+/system:serviceaccount:openshift-network-operator:cluster-network-operator/d
+/system:serviceaccount:openshift-oauth-apiserver:oauth-apiserver-sa/d
+/system:serviceaccount:openshift-operator-controller:operator-controller-controller-manager/d
+/system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount/d
+/system:serviceaccount:openshift-operators:openshift-pipelines-operator/d
+/system:serviceaccount:openshift-pipelines:tekton-resource-pruner/d
+/system:serviceaccount:openshift-pipelines:tekton-triggers-core-interceptors/d
+/system:serviceaccount:openshift-service-ca-operator:service-ca-operator/d
+/system:serviceaccount:openshift-service-ca:service-ca/d
+
+# --- User Agents & Catch-Alls ---
+/userAgent": *"kube-probe/d
+/userAgent": *"Prometheus/d
+/userAgent": *"cluster-autoscaler/d
+/userAgent": *"OpenShift-State-Metrics/d
+/userAgent": *"Go-http-client/d
+/username": *"system:serviceaccount:openshift-/d
+/username": *"system:serviceaccount:cluster-image-registry/d
+EOF
+
+    # ----------------------------------------------------------------------
+    # STEP 2: APPLY FILTERS WITH GUARDRAILS
+    # ----------------------------------------------------------------------
+    
+    # 1. GUARDRAIL: Extract Critical Evidence FIRST (Brute Force, Secrets, Exec)
+    #    We save these lines so they are immune to the delete patterns.
+    grep -E '("code":401)|("code":403)|("resource":"secrets")|("resource":"configmaps")|("resource":"routes")|("subresource":"exec")|("impersonatedUser")' "$INPUT_FILE" > "$TMP_FILE"
+
+    # 2. SEPARATE: Get everything else (the candidates for deletion)
+    #    We create a temporary working file for the noise.
+    grep -v -E '("code":401)|("code":403)|("resource":"secrets")|("resource":"configmaps")|("resource":"routes")|("subresource":"exec")|("impersonatedUser")' "$INPUT_FILE" > "${TMP_FILE}.working"
+
+    # 3. PURGE: Run sed using the file we generated.
+    #    This works cleanly on both MacOS and Linux.
+    sed -f "$PATTERN_FILE" "${TMP_FILE}.working" >> "$TMP_FILE"
+
+    # 4. FINALIZE: Move result back and clean up
+    mv "$TMP_FILE" "$INPUT_FILE"
+    rm "${TMP_FILE}.working" "$PATTERN_FILE"
+
+    echo "Shrunk size:   $(du -h "$INPUT_FILE" | cut -f1)"
 }
 
 audit_help() {
