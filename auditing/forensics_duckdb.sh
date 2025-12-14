@@ -615,103 +615,6 @@ audit_detect_bruteforce() {
     "
 }
 
-# ==============================================================================
-# UTILITY: Super Shrink (Forensic & History Optimized)
-# ==============================================================================
-audit_shrink() {
-    local INPUT_FILE="${1:-audit.log}"
-
-    if [ ! -f "$INPUT_FILE" ]; then
-        echo "Error: File $INPUT_FILE not found."
-        return 1
-    fi
-
-    echo "--- Shrinking $INPUT_FILE (Platform Component Removal) ---"
-    echo "Original size: $(du -h "$INPUT_FILE" | cut -f1)"
-
-    local TMP_FILE="${INPUT_FILE}.tmp"
-    local PATTERN_FILE="audit_patterns.sed"
-
-    # ----------------------------------------------------------------------
-    # STEP 1: GENERATE PATTERN FILE
-    # ----------------------------------------------------------------------
-    cat <<EOF > "$PATTERN_FILE"
-# --- Unconditional Deletes (System Noise) ---
-/tokenreviews/d
-/"userAgent": *"kube-apiserver/d
-/"username": *"system:apiserver"/d
-/"resource": *"endpoints"/d
-/"resource": *"endpointslices"/d
-/"resource": *"leases"/d
-/"resource": *"events"/d
-/.well-known/d
-/metrics/d
-/healthz/d
-/readyz/d
-
-# --- [WHITELIST] Critical Preservations ---
-# Keep Router & Prometheus specifically (as requested)
-/"username": *"system:serviceaccount:openshift-ingress:router"/b
-
-# --- User Agents & Catch-Alls ---
-/userAgent": *"kube-probe/d
-/userAgent": *"cluster-autoscaler/d
-/userAgent": *"OpenShift-State-Metrics/d
-/username": *"system:serviceaccount:openshift-/d
-/username": *"system:serviceaccount:cluster-image-registry/d
-/username": *"system:kube-/d
-/groups": *"system:masters"/d
-
-# --- System Namespaces ---
-/"namespace": *"kube-system"/d
-/"namespace": *"openshift-cnv"/d
-/"namespace": *"stackrox"/d
-/"namespace": *"netobserv"/d
-/namespaces\/openshift\//d
-/"namespace": *"openshift-[^\"]*"/d
-
-# --- Operator Groups & APIs ---
-/rhacs-operator/d
-/operators.coreos.com/d
-/image.openshift.io/d
-/"apiGroup": *"operator.openshift.io"/d
-
-# --- High Volume Verbs (Smart Conditional) ---
-# If it is a WATCH, GET, or LIST...
-/verb": *"watch"/ {
-  # Keep sensitive resources (Harvesting)
-  /"resource": *"secrets"/b
-  /"resource": *"configmaps"/b
-  # Keep Failures (Brute Force)
-  /"code":401/b
-  /"code":403/b
-  # DELETE everything else (including 200 OK success)
-  d
-}
-/verb": *"get"/ {
-  /"resource": *"secrets"/b
-  /"resource": *"configmaps"/b
-  /"resource": *"namespaces"/b
-  /"code":401/b
-  /"code":403/b
-  d
-}
-/verb": *"list"/ {
-  /"resource": *"secrets"/b
-  /"resource": *"configmaps"/b
-   /"resource": *"namespaces"/b
-  /"code":401/b
-  /"code":403/b
-  d
-}
-
-# --- System Users ---
-/"username": *"system:kube-/d
-/"username": *"system:serviceaccount:kube-system/d
-/"username": *"system:anonymous"/d
-/"username": *"system:node"/d
-EOF
-
 
 audit_help() {
     echo -e "${GREEN}OpenShift Forensic Library (DuckDB Edition) - Complete${NC}"
@@ -742,8 +645,6 @@ audit_help() {
     echo "  audit_detect_bruteforce          [file]               - Find top sources of 401s"
     echo "  audit_track_user_activity        [file] <user>        - Full event timeline for a user"
     echo "  audit_track_ip_activity          [file] <ip>          - Full event timeline for an IP"
-    echo "  audit_shrink                     <file>               - Create smaller log file (remove system noise)"
-    echo "  audit_clean_cache                                     - Clear database caches"
     echo ""
 }
 

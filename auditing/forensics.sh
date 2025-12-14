@@ -606,11 +606,18 @@ audit_detect_sensitive_mounts() {
 audit_detect_bruteforce() {
     local LOG_FILE="${1:-audit.log}"
     
-    echo "--- [18] Hunting for Brute Force (Top 401 Unauthorized Sources) ---"
-    echo "COUNT SOURCE_IP"
+    # 401 = Failed Authentication (Traditional Brute Force)
+    echo "--- uthentication Brute Force (401 Unauthorized) ---"
     jq -r 'select(.responseStatus.code == 401) | .sourceIPs[0]' "$LOG_FILE" | sort | uniq -c | sort -nr | head -n 10
-}
 
+    echo ""
+
+    # 403 = Authorization Scanning (RBAC Enumeration)
+    echo "--- Permission Scanning / Enumeration (403 Forbidden) ---"
+    # We exclude "system:serviceaccount..." usually to reduce noise from misconfigured internal apps, 
+    # but for pure threat hunting, look at everything.
+    jq -r 'select(.responseStatus.code == 403) | .sourceIPs[0]' "$LOG_FILE" | sort | uniq -c | sort -nr | head -n 10
+}
 
 # ==============================================================================
 # UTILITY: Super Shrink (Forensic & History Optimized)
