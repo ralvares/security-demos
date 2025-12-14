@@ -682,7 +682,6 @@ audit_shrink() {
   # Keep Failures (Brute Force)
   /"code":401/b
   /"code":403/b
-  # DELETE everything else (including 200 OK success)
   d
 }
 /verb": *"get"/ {
