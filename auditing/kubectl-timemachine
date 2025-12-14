@@ -156,6 +156,13 @@ def extract_status(obj):
     if metadata.get('deletionTimestamp'): return "Terminating"
     
     status = obj.get('status', {})
+
+    # --- FIX START ---
+    # In some audit logs (especially partial/redacted ones), status can be a string like "Success"
+    if not isinstance(status, dict):
+        return str(status)
+    # --- FIX END ---
+    
     phase = status.get('phase', 'Unknown')
     
     container_statuses = status.get('containerStatuses', [])
@@ -479,7 +486,7 @@ def main():
     # --------------------
 
     if req_res == 'all':
-        resources_to_fetch = ['nodes', 'pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs', 'routes', 'ingresses', 'networkpolicies', 'virtualmachines', 'virtualmachineinstances']
+        resources_to_fetch = ['nodes', 'pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs', 'routes', 'ingresses', 'networkpolicies', 'virtualmachines', 'virtualmachineinstances','secrets', 'configmaps', 'namespaces', 'persistentvolumes', 'persistentvolumeclaims', 'serviceaccounts','clusterroles', 'clusterrolebindings','roles', 'rolebindings']
     else:
         resources_to_fetch = [req_res]
 
