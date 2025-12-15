@@ -45,7 +45,7 @@ REDACTED_RESOURCES = {
     'oauthauthorizetokens', 'nodes'
 }
 
-# --- HISTORY CONFIGURATION ---
+# --- HISTORY MODE CONFIGURATION ---
 HTTP_STATUS_MAP = {
     101: "Stream", 200: "OK", 201: "Created", 202: "Accepted", 204: "No Content",
     304: "Not Modified", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden",
@@ -58,7 +58,7 @@ NOISY_USERS = [
     'system:multus', 'openshift-sdn', 'openshift-multus', 'openshift-machine-config-operator',
     ':deployment-controller', ':replicaset-controller', ':statefulset-controller',
     ':daemonset-controller', ':job-controller', ':cronjob-controller',
-    ':horizontal-pod-autoscaler', ':generic-garbage-collector'
+    ':horizontal-pod-autoscaler', ':generic-garbage-collector', 'system:ovn-node'
 ]
 
 # ==============================================================================
@@ -215,23 +215,32 @@ def is_noisy_user(username):
 def extract_state_signature(obj):
     """
     Deep Forensic State Extractor.
-    Captures: Workload Specs, Security, Network Hijacking, Hidden Execution, and Persistence.
+    Captures: Metadata, Workload Specs, Security, Network, and Persistence.
     """
     sig = {}
     if not obj: return sig
     
+    metadata = obj.get('metadata', {})
     kind = obj.get('kind', '')
     spec = obj.get('spec', {})
+
+    # --- 0. Metadata ---
+    if metadata.get('labels'):
+        sig['labels'] = str(metadata.get('labels'))
+
+    if metadata.get('annotations'):
+        anns = metadata.get('annotations', {}).copy()
+        for k in ['kubectl.kubernetes.io/last-applied-configuration', 'deployment.kubernetes.io/revision']:
+            anns.pop(k, None)
+        if anns: sig['annotations'] = str(anns)
     
-    # 1. Workloads
+    # --- 1. Workloads ---
     pod_spec = spec if kind == 'Pod' else spec.get('template', {}).get('spec', {})
     if pod_spec:
-        # Lateral Movement
+        # Lateral Movement & Network
         if pod_spec.get('nodeName'): sig['node_pinned'] = pod_spec.get('nodeName')
         if pod_spec.get('nodeSelector'): sig['node_selector'] = str(pod_spec.get('nodeSelector'))
         if pod_spec.get('serviceAccountName'): sig['sa'] = pod_spec.get('serviceAccountName')
-        
-        # Network Hijacking
         if pod_spec.get('hostAliases'): sig['host_aliases'] = str(pod_spec.get('hostAliases'))
         if pod_spec.get('dnsPolicy') and pod_spec.get('dnsPolicy') != 'ClusterFirst':
             sig['dns_policy'] = pod_spec.get('dnsPolicy')
@@ -243,23 +252,20 @@ def extract_state_signature(obj):
         if pod_spec.get('hostIPC'): host_acc.append('HostIPC')
         if host_acc: sig['host_access'] = str(host_acc)
 
-        # Containers & Hidden Execution
+        # Containers
         containers = pod_spec.get('containers', [])
         init_containers = pod_spec.get('initContainers', [])
         all_containers = containers + init_containers
         
         if all_containers:
-            # Images
             images = [c.get('image', '') for c in all_containers if isinstance(c, dict)]
             if any(images): sig['images'] = images
             
-            # Commands & Args
             cmds = [c.get('command') for c in all_containers if isinstance(c, dict) and c.get('command')]
             if cmds: sig['commands'] = str(cmds)
             args = [c.get('args') for c in all_containers if isinstance(c, dict) and c.get('args')]
             if args: sig['args'] = str(args)
             
-            # Lifecycle Hooks (Persistence/Hiding)
             hooks = []
             for c in all_containers:
                 if isinstance(c, dict):
@@ -268,7 +274,6 @@ def extract_state_signature(obj):
                     if get_path(lc, 'preStop', 'exec', 'command'): hooks.append(f"{c['name']}:preStop")
             if hooks: sig['hooks'] = str(hooks)
 
-            # Security Context
             sec_ctx = []
             for c in all_containers:
                 if isinstance(c, dict) and c.get('securityContext'):
@@ -279,14 +284,12 @@ def extract_state_signature(obj):
                     if sc.get('capabilities'): sec_ctx.append(f"{c['name']}:caps={sc['capabilities']}")
             if sec_ctx: sig['security'] = str(sec_ctx)
 
-            # Env Names (Injecting Secrets)
             envs = []
             for c in all_containers:
                 if isinstance(c, dict) and c.get('env'):
                     envs.append([e.get('name') for e in c.get('env', [])])
             if envs: sig['env_vars'] = str(envs)
 
-        # Host Mounts
         host_paths = []
         for v in pod_spec.get('volumes', []):
             if v.get('hostPath'): host_paths.append(f"{v['name']}->{v['hostPath'].get('path')}")
@@ -371,11 +374,11 @@ def print_lineage_history(log_file, start_res, namespace, start_name, time_limit
     relevant_objects = set()
     curr_res, curr_name = start_res, start_name
     
-    # Trace Ancestry (With Cycle Detection)
+    # Trace Ancestry
     visited = set()
     while True:
         key = (curr_res, namespace, curr_name)
-        if key in visited: break # Cycle detected
+        if key in visited: break
         visited.add(key)
         relevant_objects.add(key)
         
@@ -420,27 +423,38 @@ def print_lineage_history(log_file, start_res, namespace, start_name, time_limit
                 raw_obj = entry.get('responseObject') or entry.get('requestObject')
                 obj = safe_parse_json(raw_obj)
 
+                show_event = False
+
                 if verb == 'delete':
                     code_str = "DELETED"
                     if obj_key in object_state_cache: del object_state_cache[obj_key]
+                    show_event = True
+                
                 elif verb == 'create':
                     new_state = extract_state_signature(obj)
                     object_state_cache[obj_key] = new_state
                     details = format_diff({}, new_state)
+                    show_event = True
+                    
                 elif verb in ['update', 'patch']:
                     if sub:
-                        if code == 101 and sub in ['exec', 'portforward', 'attach']: code_str = sub.capitalize()
+                        if code == 101 and sub in ['exec', 'portforward', 'attach']: 
+                            code_str = sub.capitalize()
+                            show_event = True
                     else:
                         old_state = object_state_cache.get(obj_key, {})
                         new_state = extract_state_signature(obj)
+                        
                         if old_state != new_state:
                             details = format_diff(old_state, new_state)
                             object_state_cache[obj_key] = new_state
-
-                history.append({
-                    'timestamp': ts, 'verb': verb.upper(), 'object': display_name, 
-                    'user': user, 'status': code_str, 'details': details
-                })
+                            show_event = True
+                        
+                if show_event:
+                    history.append({
+                        'timestamp': ts, 'verb': verb.upper(), 'object': display_name, 
+                        'user': user, 'status': code_str, 'details': details
+                    })
     except Exception as e:
         if output_fmt != 'json': print(f"Error parsing log: {e}")
 
@@ -450,30 +464,19 @@ def print_lineage_history(log_file, start_res, namespace, start_name, time_limit
     if output_fmt == 'json':
         print(json.dumps(history, indent=2))
     else:
-        # Table Output
         print(f"\n--- HISTORY & LINEAGE: {start_res}/{start_name} ---")
-        
-        # Calculate dynamic widths based on terminal size or content
         term_width = shutil.get_terminal_size().columns
         max_obj_len = max([len(h['object']) for h in history]) if history else 45
-        max_obj_len = min(max_obj_len, 60) # Cap it
+        max_obj_len = min(max_obj_len, 60)
         
-        # Headers & Formatting
         headers = ["TIMESTAMP", "VERB", "OBJECT", "USER", "STATUS", "DETAILS"]
-        # Ts(27) + Verb(8) + Status(12) = 47 chars fixed. User(30) + Obj(Var) + Details(Rest)
-        
-        print("{:<27}  {:<8}  {:<{obj_w}}  {:<30}  {:<12}  {:<40}".format(
-            *headers, obj_w=max_obj_len
-        ))
+        print("{:<27}  {:<8}  {:<{obj_w}}  {:<30}  {:<12}  {:<40}".format(*headers, obj_w=max_obj_len))
         
         for h in history:
             obj = h['object']
-            # Truncate object name if too long for table
             if len(obj) > max_obj_len: obj = "..." + obj[-(max_obj_len-3):]
-            
             print("{:<27}  {:<8}  {:<{obj_w}}  {:<30}  {:<12}  {:<40}".format(
-                h['timestamp'], h['verb'], obj, h['user'][:28], h['status'], h['details'],
-                obj_w=max_obj_len
+                h['timestamp'], h['verb'], obj, h['user'][:28], h['status'], h['details'], obj_w=max_obj_len
             ))
 
 # ==============================================================================
@@ -619,7 +622,7 @@ def main():
         if args.output == "yaml":
             for _, _, obj in results: print("---"); print(yaml.dump(safe_parse_json(obj)))
         elif args.output == "json":
-            for _, _, obj in results: print(json.dumps(obj,indent=2))
+            for _, _, obj in results: print(json.dumps(obj, indent=2))
         else:
             is_cluster_scoped = resource in CLUSTER_SCOPED
             headers = ["NAMESPACE", "NAME", "AGE"]

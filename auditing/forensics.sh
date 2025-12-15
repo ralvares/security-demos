@@ -640,7 +640,20 @@ audit_shrink() {
     # STEP 1: GENERATE PATTERN FILE
     # ----------------------------------------------------------------------
     cat <<EOF > "$PATTERN_FILE"
+# Deletes "create namespace openshift-*" events where "namespace" field is missing
+/"resource": *"namespaces","name": *"openshift-/d
+/"resource": *"namespaces","name": *"kube-/d
+/"resource": *"namespaces","name": *"stackrox/d
+#/"namespace":"openshift-/d
+#/"namespace":"kube-/d
+#/"namespace":"stackrox/d
+
 # --- Unconditional Deletes (System Noise) ---
+/"userAgent": *"microshift/ {
+    /"containerStatuses"/b
+    d
+}
+
 /tokenreviews/d
 /"userAgent": *"kube-apiserver/d
 /"username": *"system:apiserver"/d
@@ -653,9 +666,66 @@ audit_shrink() {
 /healthz/d
 /readyz/d
 
+/"requestURI": *"\/apis\/apiextensions.k8s.io/d
+/"requestURI": *"\/apis\/apiregistration.k8s.io/d
+/"userAgent": *"crd-agent/d
+/"userAgent": *".*scc-agent/d
+/"userAgent": *".*rbac-agent/d
+/"userAgent": *".*microshift-agent/d
+/"userAgent": *"core-agent/d
+
+/"resource": *"selfsubjectaccessreviews"/ {
+    /"username": *"system:node"/d
+    /"username": *"system:serviceaccount:openshift/d
+    /"username": *"system:serviceaccount:kube-system/d
+    /"username": *"system:serviceaccount:stackrox/d
+}
+/"resource": *"subjectaccessreviews"/ {
+    /"username": *"system:node"/d
+    /"username": *"system:serviceaccount:openshift/d
+    /"username": *"system:serviceaccount:kube-system/d
+    /"username": *"system:serviceaccount:stackrox/d
+}
+/"resource": *"tokenreviews"/ {
+    /"username": *"system:apiserver"/d
+    /"username": *"system:node"/d
+}
+
+
+# --- Node Status Heartbeats ---
+# If resource is "nodes" AND subresource is "status", delete it
+/"resource": *"nodes"/ {
+  /"subresource": *"status"/d
+}
+# CSI Node plumbing
+/"resource": *"csinodes"/d
+/"resource": *"csidrivers"/d
+
+# --- API Plumbing (FlowSchema) ---
+/"apiGroup": *"flowcontrol.apiserver.k8s.io"/d
+/"resource": *"flowschemas"/d
+/"resource": *"prioritylevelconfigurations"/d
+
+# --- Discovery & Webhooks ---
+/"resource": *"componentstatuses"/d
+/"resource": *"mutatingwebhookconfigurations"/d
+/"resource": *"validatingwebhookconfigurations"/d
+# Discovery paths often hit non-resource URLs
+/"requestURI": *"\/\?timeout="/d
+
+# --- Coordination ---
+/"apiGroup": *"coordination.k8s.io"/d
+
 # --- [WHITELIST] Critical Preservations ---
 # Keep Router & Prometheus specifically (as requested)
-/"username": *"system:serviceaccount:openshift-ingress:router"/b
+# --- [7] Router Smart Filter (Drop Reads, Keep Writes) ---
+/"username": *"system:serviceaccount:openshift-ingress:router"/ {
+    /verb": *"watch"/d
+    /verb": *"get"/d
+    /verb": *"list"/d
+    # If it is NOT a read (e.g. create/patch), skip remaining delete rules to save it.
+    b
+}
 
 # --- User Agents & Catch-Alls ---
 /userAgent": *"kube-probe/d
