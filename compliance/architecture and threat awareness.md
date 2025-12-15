@@ -55,7 +55,7 @@ A security architecture is only as good as the understanding of the threats it i
 
 A secure environment requires continuous vigilance:
 
-* **Audit Logging:** OpenShift automatically generates detailed **audit logs** for the API server. These logs must be collected, stored centrally (e.g., using the EFK stack - Elasticsearch, Fluentd, Kibana/OpenSearch), and monitored for suspicious activity.
+* **Audit Logging:** OpenShift automatically generates detailed **audit logs** for the API server. These logs must be collected, stored centrally, and monitored for suspicious activity.
 * **Runtime Security:** Tools like Red Hat Advanced Cluster Security (**RHACS**) provide runtime detection and response for anomalous container behavior, even for zero-day attacks.
 * **Compliance Operator:** OpenShift provides an operator to automate checking and reporting against compliance benchmarks (like CIS).
 
