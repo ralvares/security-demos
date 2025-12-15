@@ -7,6 +7,7 @@ labels:
       app.kubernetes.io/part-of: vap-examples
       app.kubernetes.io/managed-by: kustomize
       custom.security/enforce: "true"
+      #pod-security.kubernetes.io/enforce: "baseline"
       pod-security.kubernetes.io/enforce: "privileged"
       pod-security.kubernetes.io/enforce-version: "latest"
 
