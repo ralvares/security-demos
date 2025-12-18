@@ -14,23 +14,6 @@
       "system:serviceaccounts:payments",
       "system:authenticated"
     ],
-    "extra": {
-      "authentication.kubernetes.io/credential-id": [
-        "JTI=a2b87c24-8ad3-4cac-b77f-0a896de31caa"
-      ],
-      "authentication.kubernetes.io/node-name": [
-        "master-1"
-      ],
-      "authentication.kubernetes.io/node-uid": [
-        "81534ad0-b24b-41be-b83a-37f81ccfe792"
-      ],
-      "authentication.kubernetes.io/pod-name": [
-        "visa-processor-7d57964dc8-bvzff"
-      ],
-      "authentication.kubernetes.io/pod-uid": [
-        "2ce0196d-a7c6-434d-9992-d4588d52139b"
-      ]
-    }
   },
   "sourceIPs": [
     "192.168.50.11"
