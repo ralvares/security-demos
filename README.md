@@ -10,7 +10,7 @@ Welcome to our demo environment, where we showcase our comprehensive approach to
 
 ```
 git clone https://github.com/ralvares/security-demos
-cd manifests
+cd demo_app/manifests
 oc apply -k .
 ```
 
@@ -120,7 +120,7 @@ To mitigate the security risks outlined in the previous conversation, I would re
 Follow how simple is to create network policies using roxctl generate netpol 
 ```
 git clone https://github.com/ralvares/security-demos
-cd security-demos/manifests
+cd security-demos/demo_app/manifests
 roxctl netpol generate --dnspor=5353 . | oc apply -f -
 ```
 
@@ -133,7 +133,7 @@ The scripts are designed to demo a few security use cases, meaning the target ar
 - **01_expoit_asset-cache_get_visa_token.sh** will use asset-cache as a steping stone to access the visa-processe service account token.
 
 ```
-Security Demo -> cd attack
+Security Demo -> cd demo_app/attack
 Security Demo -> ./01_expoit_asset-cache_get_visa_token.sh http://asset-cache-frontend.apps.<CLUSTER.DOMAIN>/                
 ☺ - Target asset-cache-84bc5779ff-lsq2n Exploited
 ☺ - Next Phase: Lateral Movement ...
