@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  creationTimestamp: "2025-10-24T06:48:59Z"
+  name: system:openshift:scc:privileged
+  namespace: netobserv
+  resourceVersion: "42656"
+  uid: 9c747e2e-550e-4881-80e3-6ed985d5f35d
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
+subjects:
+- kind: ServiceAccount
+  name: loki-sa
+  namespace: netobserv

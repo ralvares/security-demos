@@ -1,0 +1,9 @@
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - serviceaccount.yaml
+  - configmap.yaml
+  - loki.yaml
+  - service.yaml
+  - privileged-scc.yaml
+  - netobserv-operator.yaml
