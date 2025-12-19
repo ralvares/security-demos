@@ -58,5 +58,3 @@ A secure environment requires continuous vigilance:
 * **Audit Logging:** OpenShift automatically generates detailed **audit logs** for the API server. These logs must be collected, stored centrally, and monitored for suspicious activity.
 * **Runtime Security:** Tools like Red Hat Advanced Cluster Security (**RHACS**) provide runtime detection and response for anomalous container behavior, even for zero-day attacks.
 * **Compliance Operator:** OpenShift provides an operator to automate checking and reporting against compliance benchmarks (like CIS).
-
-Would you like to focus on a specific area, such as **how to implement an SCC** or **image vulnerability scanning**?
