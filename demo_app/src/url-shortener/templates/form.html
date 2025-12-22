@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Redirect</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        input { width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #0066cc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; width: 100%; }
+        button:hover { background: #0052a3; }
+        .error { color: #d32f2f; font-size: 0.9rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Passcode Required</h2>
+        <p>The link <b>{{ id }}</b> is protected.</p>
+        {% if error %}<div class="error">Invalid passcode. Please try again.</div>{% endif %}
+        <form method="POST">
+            <input type="password" name="passcode" placeholder="Enter Passcode" required autofocus>
+            <button type="submit">Unlock & Redirect</button>
+        </form>
+    </div>
+</body>
+</html>

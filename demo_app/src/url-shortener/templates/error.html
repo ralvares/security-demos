@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title>Link {{ type }}</title></head>
+<body style="font-family: sans-serif; background: #fafafa; padding: 50px;">
+    <div style="background: #fff; border-top: 4px solid #d32f2f; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h1>Status: {{ type }}</h1>
+        <p>{{ msg | safe }}</p> 
+        <div style="margin-top: 20px; font-size: 0.8rem; color: #999;">
+            Trace ID: {{ type|lower }}-err-01
+        </div>
+    </div>
+</body>
+</html>
