@@ -5,5 +5,6 @@ resources:
 - namespace.yaml
 - asset-cache 
 - webapp
-- blog 
+- blog
+- url-shortener
 - rbac.yaml
