@@ -102,8 +102,8 @@ spec:
           cpu: 100m
           memory: 50Mi
       scaling:
-        autoScaling: Enabled
-        maxReplicas: 2
+        autoScaling: Disabled
+        maxReplicas: 1
         minReplicas: 1
         replicas: 1
     scannerComponent: Enabled
