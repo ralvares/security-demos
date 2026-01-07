@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-cluster-crs
+  namespace: stackrox
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      serviceAccountName: create-cluster-init
+      restartPolicy: OnFailure
+      containers:
+        - name: create-crs
+          image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: central-htpasswd
+                  key: password
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e 
+
+              # 1. Guard Clause: Skip if secrets exist
+              if oc get secret admission-control-tls -n stackrox &> /dev/null; then
+                echo "Secrets already exist. Exiting."
+                exit 0
+              fi
+
+              # 2. Wait for Central
+              echo "Waiting for Central API..."
+              until curl -k -s --head --fail https://central.stackrox.svc:443 > /dev/null; do
+                sleep 5
+              done
+
+              # 3. Generate Cluster Init Bundle
+              # Added a timestamp to the name to avoid "bundle already exists" errors
+              BUNDLE_NAME="production-$(date +%s)"
+              echo "Generating Cluster Init Bundle: $BUNDLE_NAME"
+              
+              RESPONSE=$(curl -k -u "admin:$PASSWORD" \
+                -X POST "https://central.stackrox.svc:443/v1/cluster-init/init-bundles" \
+                -d "{\"name\": \"$BUNDLE_NAME\"}")
+
+              # 4. Extract Bundle using Python (since jq is missing)
+              echo "Extracting bundle..."
+              echo "$RESPONSE" | python3 -c "import sys, json, base64; print(json.load(sys.stdin)['kubectlBundle'])" | base64 -d > /tmp/bundle.yaml
+
+              if [ ! -s /tmp/bundle.yaml ]; then
+                echo "Error: Failed to extract bundle. Response: $RESPONSE"
+                exit 1
+              fi
+
+              # 5. Apply and Trigger Reconcile
+              echo "Applying Bundle..."
+              oc apply -f /tmp/bundle.yaml -n stackrox
+
+              echo "Patching SecuredCluster..."
+              oc patch securedcluster stackrox-secured-cluster-services -n stackrox --type=merge \
+                -p "{\"metadata\":{\"annotations\":{\"automation.stackrox.io/crs-applied\":\"$(date +%s)\"}}}"
+              
+              echo "Done!"

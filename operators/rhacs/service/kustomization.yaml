@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: stackrox
+
+resources:
+  - namespace.yaml              # Creates the 'stackrox' namespace
+  - create-cluster-crs-sa.yaml  # RBAC for the Job
+  - central.yaml                # The Central CR
+  - create-cluster-crs-job.yaml # The NEW CRS-based Job
+  - secured-cluster.yaml        # The SecuredCluster CR
