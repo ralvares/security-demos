@@ -13,11 +13,13 @@ oc apply -k operator/
 
 # 2. Wait for the CSV
 echo "Waiting for Operator CSV to reach 'Succeeded' phase..."
+# We use printf to avoid newline clutter during the wait loop
 until oc get csv -n rhacs-operator -l operators.coreos.com/rhacs-operator.rhacs-operator -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q "Succeeded"; do
     printf "."
     sleep 5
 done
-echo -e "\n✅ Operator is Succeeded."
+echo ""
+echo "✅ Operator is Succeeded."
 
 # 3. Ensure CRDs are established
 echo "Ensuring CRDs are established..."
@@ -32,22 +34,30 @@ echo "----------------------------------------------------"
 echo "📡 Monitoring CRS Automation Job..."
 echo "----------------------------------------------------"
 
-# 5. Wait for the Job to exist before logging
+# 5. Wait for the Job to exist
 echo "Waiting for Job 'create-cluster-crs' to be created..."
 until oc get job create-cluster-crs -n stackrox &>/dev/null; do
     printf "."
     sleep 2
 done
-echo -e "\nJob found. Streaming logs:"
+echo ""
 
-# Stream logs (this will block until the job finishes or you Ctrl+C)
-oc logs -f job/create-cluster-crs -n stackrox
+# 6. Stream logs with retry logic (FIXED)
+echo "Job found. Attempting to attach to logs..."
 
-echo -e "\n----------------------------------------------------"
+# We loop 'oc logs' inside 'until'. 
+# Because it is a loop condition, 'set -e' will NOT exit the script if it fails.
+# Once it succeeds, it streams logs until the job finishes, then breaks the loop.
+until oc logs -f job/create-cluster-crs -n stackrox; do
+    echo "⏳ Pod is initializing... retrying in 3s..."
+    sleep 3
+done
+
+echo "----------------------------------------------------"
 echo "🔐 RHACS ACCESS CREDENTIALS"
 echo "----------------------------------------------------"
 
-# 6. Fetch Route and Password
+# 7. Fetch Route and Password
 CENTRAL_URL=$(oc get route central -n stackrox -o jsonpath='{.spec.host}')
 ADMIN_PASSWORD=$(oc get secret central-htpasswd -n stackrox -o jsonpath='{.data.password}' | base64 -d)
 
