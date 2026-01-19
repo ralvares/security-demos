@@ -19,6 +19,7 @@ nav:
   - Modules:
     - Module 1 - Architecture, Threats & Security Strategy: 
         - OpenShift Security Architecture & Threat Awareness: 'compliance/architecture and threat awareness.md'
+        - The 10 Essential Controls: A Unified Kubernetes Security Playbook: 'compliance/README.md'
         - The 8 Pillars of a Secure Container Platform: 'compliance/the 8 pillars of a secure container platform.md'
         - The Risk-Driven Business Conversation: 'compliance/The Risk-Driven Business Conversation.md'
     - Module 2 - Secure Multi-Tenancy & Project Governance: 
