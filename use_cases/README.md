@@ -10,7 +10,7 @@ This repository provides a comprehensive walkthrough for implementing enterprise
 
 Before implementing controls, we must understand the architecture we are defending and the threats we face. This module sets the strategic baseline for the entire platform.
 
-* **Architecture:** [OpenShift Security Architecture](compliance/architecture%20and%20threat%20awareness.md)
+* **Architecture & Threat Awareness:** [OpenShift Security Architecture & Threat Awareness](compliance/architecture%20and%20threat%20awareness.md)
 * **Strategy:** [The 8 Pillars of a Secure Container Platform](compliance/the%208%20pillars%20of%20a%20secure%20container%20platform.md)
 * **Business Context:** [The Risk-Driven Business Conversation](compliance/The%20Risk-Driven%20Business%20Conversation.md)
 * **Goal:** Understand the "Why" and "What" of container security to effectively implement the "How".
