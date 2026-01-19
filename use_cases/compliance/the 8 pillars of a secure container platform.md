@@ -1,7 +1,3 @@
-This version reflects the technical reality of the platform: it provides the **capabilities** and **tooling** for you to define your security posture, rather than a "one-size-fits-all" pre-set configuration.
-
----
-
 ## The 8 Strategic Pillars of a Secure Container Platform
 
 A resilient platform does more than just run apps; it governs how those apps live and behave. These pillars map directly to **NIST SP 800-190** standards to reduce the impact of modern cyber threats.
