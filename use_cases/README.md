@@ -1,4 +1,4 @@
-# OpenShift Zero-Trust and Governance: Master Demo Guide
+# OpenShift Security Use Cases
 
 This repository provides a comprehensive walkthrough for implementing enterprise-grade security on OpenShift. To present a logical and high-impact story, follow these modules in the order listed below.
 
