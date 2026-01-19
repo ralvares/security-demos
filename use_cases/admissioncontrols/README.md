@@ -18,7 +18,7 @@ Authentication is the process of verifying a user's or device's identity. It ens
 Authorization determines what a verified identity is allowed to do or access within the system. This step occurs only after successful authentication.
 
 *   **RBAC**: Role-Based Access Control is the primary method for handling authorization in Kubernetes/OpenShift.
-*   For a deep dive into RBAC, please refer to the [RBAC Session](./rbac/README.md).
+*   For a deep dive into RBAC, please refer to the [RBAC Session](../rbac/rbac-intro.md).
 
 ## Admission Control
 

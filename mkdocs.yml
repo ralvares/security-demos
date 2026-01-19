@@ -1,0 +1,61 @@
+site_name: OpenShift Security - Demos
+site_url: https://example.com/security
+repo_name: ralvares/security-demos
+repo_url: https://github.com/ralvares/security-demos
+docs_dir: use_cases
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+  palette: 
+    scheme: default # White/Light mode
+    primary: red
+    accent: red
+
+# This maps your folder structure to the navigation bar
+nav:
+  - Home: 'README.md'
+  - Module 1 - Architecture, Threats & Security Strategy: 
+      - OpenShift Security Architecture & Threat Awareness: 'compliance/architecture and threat awareness.md'
+      - The 8 Pillars of a Secure Container Platform: 'compliance/the 8 pillars of a secure container platform.md'
+      - The Risk-Driven Business Conversation: 'compliance/The Risk-Driven Business Conversation.md'
+  - Module 2 - Secure Multi-Tenancy & Project Governance: 
+      - Multi-Tenancy: 'rbac/multi-tenancy.md'
+      - Automated Project Provisioning: 'rbac/project-demo.md'
+  - Module 3 - Identity and Access Management: 
+      - RBAC Fundamentals: 'rbac/rbac-intro.md'
+      - Granular Custom Roles: 'rbac/custom-roles.md'
+  - Module 4 - Admission Control & Enforcement: 
+      - IAM and Admission Control Overview: 'admissioncontrols/README.md'
+      - Resource Quotas: 'admissioncontrols/quota.md'
+      - Cluster-Wide Quotas: 'admissioncontrols/ClusterResourceQuota.md'
+      - LimitRanges: 'admissioncontrols/limits.md'
+      - Security Context Constraints (SCC): 'admissioncontrols/scc.md'
+      - Validating Admission Policy (VAP) Overview: 'admissioncontrols/vap/README.md'
+      - Validating Admission  Demo: 'admissioncontrols/vap/vap-demo.md'
+  - Module 5 - Network Security & Isolation: 
+      - Network Policies Intro: 'networking/README.md'
+      - Network Policies - Demo: 'networking/networkpolicies/protecting-the-network-using-networkpolicies.md'
+      - Admin Network Policies Intro: 'networking/networkpolicies/adminnetworkpolicies.md'
+      - AdminNetworkPolicies - Demo: 'networking/networkpolicies/anp-demo.md'
+  - Module 6 - Compliance: 
+      - The 10 Essential Controls: 'compliance/README.md'
+      - Compliance Operator Demo: 'compliance/compliance-operator-demo.md'
+      - Compliance Operator Variables: 'compliance/compliance-operator-variables.md'
+  - Module 7 - Incident Response & Forensics: 
+      - Mastering Audit Logs: 'auditing/audit-log-Investigation.md'
+      - OpenShift Audit Log Forensics Demo: 'auditing/README.md'
+      - Kubectl Timemachine: 'auditing/kubectl-timemachine-instructions.md'
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true 
+  - admonition
