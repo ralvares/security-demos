@@ -75,10 +75,10 @@ Utilize native Kubernetes features to enforce corporate standards without requir
 
 Secure data in transit and prevent lateral movement between application tiers such as frontend, backend, and payments.
 
-* **Overview:** [Network Policies Overview](networking/README.md)
-* **Demo:** [Protecting the Network](networking/networkpolicies/protecting-the-network-using-networkpolicies.md)
-* **Advanced Demo:** [AdminNetworkPolicies (ANP)](networking/networkpolicies/anp-demo.md)
-* **Reference:** [Admin Network Policies Reference](networking/networkpolicies/adminnetworkpolicies.md)
+* **NetworkPolicies Intro:** [Network Policies Intro](networking/README.md)
+* **NetworkPolicies - Demo:** [Protecting the Network](networking/networkpolicies/protecting-the-network-using-networkpolicies.md)
+* **AdminNetworkPolicies - Demo:** [AdminNetworkPolicies (ANP)](networking/networkpolicies/anp-demo.md)
+* **AdminNetworkPolicies Reference:** [Admin Network Policies Reference](networking/networkpolicies/adminnetworkpolicies.md)
 * **Goal:** Use AdminNetworkPolicies to enforce global rules that remain immutable even if project owners attempt to override them.
 
 ---

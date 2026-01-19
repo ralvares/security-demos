@@ -2,6 +2,16 @@
 
 This guide applies Network Policies to enforce **Zero Trust** between critical application tiers (`frontend`, `payments`) to block the lateral movement attack path: `asset-cache` $\rightarrow$ `visa-processor`.
 
+## Prerequisites
+
+To run this demo, ensure the application stack is deployed:
+
+```bash
+git clone https://github.com/ralvares/security-demos
+cd security-demos/demo_app/manifests
+oc apply -k .
+```
+
 ## Application Scope & Labels
 
 Your application spans three namespaces: `frontend`, `backend`, and `payments`. We are applying strict isolation to the perimeter (`frontend`) and the critical zone (`payments`).
@@ -301,3 +311,35 @@ spec:
     - protocol: UDP
       port: 5353 # Common port for KubeDNS
 ```
+
+## Verification & Testing
+
+Verify that the Network Policies effectively block lateral movement while allowing legitimate traffic.
+
+### 1. Test Blocked Access (Lateral Movement Attempt)
+
+Attempt to access the restricted `visa-processor` service from the compromised `asset-cache` pod in the `frontend` namespace.
+
+```bash
+# Get the asset-cache pod name
+ASSET_POD=$(oc get pod -n frontend -l app=asset-cache -o jsonpath='{.items[0].metadata.name}')
+
+# Attempt connection (Should FAIL/TIMEOUT)
+oc exec -n frontend $ASSET_POD -- curl -s --connect-timeout 5 http://visa-processor-service.payments.svc:8080 >/dev/null && echo "CONNECTION ALLOWED" || echo "CONNECTION BLOCKED"
+```
+
+**Expected Result:** `CONNECTION BLOCKED`
+
+### 2. Test Allowed Access (Legitimate Traffic)
+
+Verify that the `gateway` component in the `payments` namespace can still communicate with `visa-processor`.
+
+```bash
+# Get the gateway pod name
+GATEWAY_POD=$(oc get pod -n payments -l app=gateway -o jsonpath='{.items[0].metadata.name}')
+
+# Attempt connection (Should SUCCEED)
+oc exec -n payments $GATEWAY_POD -- curl -s --connect-timeout 5 http://visa-processor-service.payments.svc:8080 >/dev/null && echo "CONNECTION ALLOWED" || echo "CONNECTION BLOCKED"
+```
+
+**Expected Result:** `CONNECTION ALLOWED`
