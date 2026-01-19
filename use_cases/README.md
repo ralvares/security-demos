@@ -1,6 +1,6 @@
 # OpenShift Security Use Cases
 
-This repository provides a comprehensive walkthrough for implementing enterprise-grade security on OpenShift. To present a logical and high-impact story, follow these modules in the order listed below.
+This repository provides a comprehensive walkthrough for implementing enterprise-grade security on OpenShift. To present a logical and high-impact story, the modules follow a **Defense-in-Depth** approach, layering defenses from infrastructure to runtime.
 
 ---
 
@@ -49,8 +49,8 @@ Show what happens when applications attempt to exceed their resource limits or b
 Utilize native Kubernetes features to enforce corporate standards without requiring external agents.
 
 * **Overview:** [Validating Admission Policy (VAP) Overview](admissioncontrols/vap/README.md)
-* **Validating Admission Demo:** [Validating Admission Policies](admissioncontrols/vap/vap-demo.md)
-* **Validating Admission Manifests:** [Supply Chain and Pod Security](admissioncontrols/vap/manifests/)
+* **Demo:** [Validating Admission Policies](admissioncontrols/vap/vap-demo.md)
+* **Manifests:** [Supply Chain and Pod Security](admissioncontrols/vap/manifests/)
 * **RHACS Policy:** [ACS Policy-as-Code](acs-policy-as-code/README.md)
 * **Goal:** Block pods from unauthorized registries and prevent risky configurations using native API-driven policies.
 
@@ -62,10 +62,10 @@ Utilize native Kubernetes features to enforce corporate standards without requir
 
 Secure data in transit and prevent lateral movement between application tiers such as frontend, backend, and payments.
 
-* **Overview:** [Network Policies Overview](networking/README.md)
-* **Network Policy - Demo:** [Protecting the Network](networking/networkpolicies/protecting-the-network-using-networkpolicies.md)
+* **Network Policies - Overview:** [Network Policies Overview](networking/README.md)
+* **Network Policies - Demo:** [Protecting the Network](networking/networkpolicies/protecting-the-network-using-networkpolicies.md)
 * **Admin Network Policies - Demo:** [AdminNetworkPolicies (ANP)](networking/networkpolicies/anp-demo.md)
-* **Admin Network Policies Reference:** [Admin Network Policies Reference](networking/networkpolicies/adminnetworkpolicies.md)
+* **Admin Network Policies - Reference:** [Admin Network Policies Reference](networking/networkpolicies/adminnetworkpolicies.md)
 * **Goal:** Use AdminNetworkPolicies to enforce global rules that remain immutable even if project owners attempt to override them.
 
 ---
