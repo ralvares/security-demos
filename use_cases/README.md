@@ -12,7 +12,7 @@ Before users onboard, we define the infrastructure standards. This module demons
 
 * **Overview:** [Multi-Tenancy Strategy](rbac/multi-tenancy.md)
 * **Hands-on Demo:** [Automated Project Provisioning](rbac/project-demo.md)
-* **Key Concepts:** Custom Project Templates, Namespace isolation, and automated guardrail injection via the CLI.
+* **Goal:** Automatically provision isolated namespaces with embedded security guardrails using Custom Project Templates.
 
 ---
 
