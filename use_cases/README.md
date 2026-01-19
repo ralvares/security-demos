@@ -80,8 +80,6 @@ Verify that the cluster remains compliant over its entire lifecycle and detect r
 * **Compliance Scan:** [Compliance Operator Demo](compliance/compliance-operator-demo.md)
 * **Configuration:** [Compliance Operator Variables](compliance/compliance-operator-variables.md)
 * **Concepts:** [Architecture and Threat Awareness](compliance/architecture%20and%20threat%20awareness.md)
-* **Deep Dive:** [The 8 Pillars of a Secure Container Platform](compliance/the%208%20pillars%20of%20a%20secure%20container%20platform.md)
-* **Business Context:** [The Risk-Driven Business Conversation](compliance/The%20Risk-Driven%20Business%20Conversation.md)
 * **Goal:** Scan against NIST/PCI-DSS standards and detect runtime vulnerabilities like Log4shell.
 
 ---
