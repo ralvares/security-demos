@@ -49,8 +49,8 @@ Show what happens when applications attempt to exceed their resource limits or b
 Utilize native Kubernetes features to enforce corporate standards without requiring external agents.
 
 * **Overview:** [Validating Admission Policy (VAP) Overview](admissioncontrols/vap/README.md)
-* **VAP Demo:** [Validating Admission Policies](admissioncontrols/vap/vap-demo.md)
-* **Policy Manifests:** [Supply Chain and Pod Security](admissioncontrols/vap/manifests/)
+* **Validating Admission Demo:** [Validating Admission Policies](admissioncontrols/vap/vap-demo.md)
+* **Validating Admission Manifests:** [Supply Chain and Pod Security](admissioncontrols/vap/manifests/)
 * **RHACS Policy:** [ACS Policy-as-Code](acs-policy-as-code/README.md)
 * **Goal:** Block pods from unauthorized registries and prevent risky configurations using native API-driven policies.
 
@@ -63,9 +63,9 @@ Utilize native Kubernetes features to enforce corporate standards without requir
 Secure data in transit and prevent lateral movement between application tiers such as frontend, backend, and payments.
 
 * **Overview:** [Network Policies Overview](networking/README.md)
-* **Core Guide:** [Protecting the Network](networking/networkpolicies/protecting-the-network-using-networkpolicies.md)
-* **Advanced Networking:** [AdminNetworkPolicies (ANP)](networking/networkpolicies/anp-demo.md)
-* **Reference:** [Admin Network Policies Reference](networking/networkpolicies/adminnetworkpolicies.md)
+* **Network Policy - Demo:** [Protecting the Network](networking/networkpolicies/protecting-the-network-using-networkpolicies.md)
+* **Admin Network Policies - Demo:** [AdminNetworkPolicies (ANP)](networking/networkpolicies/anp-demo.md)
+* **Admin Network Policies Reference:** [Admin Network Policies Reference](networking/networkpolicies/adminnetworkpolicies.md)
 * **Goal:** Use AdminNetworkPolicies to enforce global rules that remain immutable even if project owners attempt to override them.
 
 ---
