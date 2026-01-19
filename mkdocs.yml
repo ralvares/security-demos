@@ -5,7 +5,7 @@ repo_url: https://github.com/ralvares/security-demos
 docs_dir: use_cases
 
 theme:
-  name: gitbook
+  name: github
 
 # This maps your folder structure to the navigation bar
 nav:

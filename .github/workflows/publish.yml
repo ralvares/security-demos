@@ -18,9 +18,9 @@ jobs:
       - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV 
       - uses: actions/cache@v4
         with:
-          key: mkdocs-gitbook-${{ env.cache_id }}
+          key: mkdocs-github-${{ env.cache_id }}
           path: .cache
           restore-keys: |
-            mkdocs-gitbook-
-      - run: pip install mkdocs mkdocs-gitbook pymdown-extensions 
+            mkdocs-github-
+      - run: pip install mkdocs mkdocs-github pymdown-extensions 
       - run: mkdocs gh-deploy --force
