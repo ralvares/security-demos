@@ -44,8 +44,7 @@ nav:
       - Compliance Operator Demo: 'compliance/compliance-operator-demo.md'
       - Compliance Operator Variables: 'compliance/compliance-operator-variables.md'
   - Module 7 - Incident Response & Forensics: 
-      - Mastering Audit Logs: 'auditing/audit-log-Investigation.md'
-      - OpenShift Audit Log Forensics Demo: 'auditing/README.md'
+      - Mastering Audit Logs & Forensics: 'auditing/audit-log-Investigation.md'
       - Kubectl Timemachine: 'auditing/kubectl-timemachine-instructions.md'
 
 markdown_extensions:
