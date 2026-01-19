@@ -22,5 +22,5 @@ jobs:
           path: .cache
           restore-keys: |
             mkdocs-gitbook-
-      - run: pip install mkdocs mkdocs-gitbook 
+      - run: pip install mkdocs mkdocs-gitbook pymdown-extensions 
       - run: mkdocs gh-deploy --force
