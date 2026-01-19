@@ -5,13 +5,7 @@ repo_url: https://github.com/ralvares/security-demos
 docs_dir: use_cases
 
 theme:
-  name: material
-  features:
-    - content.code.copy
-  palette: 
-    scheme: default # White/Light mode
-    primary: red
-    accent: red
+  name: gitbook
 
 # This maps your folder structure to the navigation bar
 nav:
