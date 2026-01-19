@@ -10,7 +10,7 @@ This repository provides a comprehensive walkthrough for implementing enterprise
 
 Before users onboard, we define the infrastructure standards. This module demonstrates how to automate the provisioning of secured environments so that security is a default property of the platform.
 
-* **Overview:** [Multi-Tenancy Strategy](rbac/multi-tenancy.md)
+* **Overview:** [Multi-Tenancy](rbac/multi-tenancy.md)
 * **Hands-on Demo:** [Automated Project Provisioning](rbac/project-demo.md)
 * **Goal:** Automatically provision isolated namespaces with embedded security guardrails using Custom Project Templates.
 
