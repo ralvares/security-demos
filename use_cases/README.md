@@ -4,7 +4,7 @@ This repository provides a comprehensive walkthrough for implementing enterprise
 
 ---
 
-## Module 1: The Hardened Project Factory
+## Module 1: Secure Multi-Tenancy & Project Governance
 
 **Focus:** Multi-tenancy and Day-0 Governance
 
@@ -16,7 +16,7 @@ Before users onboard, we define the infrastructure standards. This module demons
 
 ---
 
-## Module 2: Identity and Human RBAC
+## Module 2: Identity and Access Management
 
 **Focus:** Authentication and Least Privilege
 
@@ -28,7 +28,7 @@ Once the projects exist, we define who can enter them and what they are permitte
 
 ---
 
-## Module 3: Active Admission Control
+## Module 3: Admission Control & Enforcement
 
 **Focus:** Resource Guardrails and Pod Security
 
@@ -42,7 +42,7 @@ Show what happens when applications attempt to exceed their resource limits or b
 
 ---
 
-## Module 4: Policy as Code (Modern Governance)
+## Module 4: Policy as Code & Supply Chain Security
 
 **Focus:** Declarative validation and Image Supply Chain
 
@@ -51,11 +51,12 @@ Utilize native Kubernetes features to enforce corporate standards without requir
 * **Overview:** [Validating Admission Policy (VAP) Overview](admissioncontrols/vap/README.md)
 * **VAP Demo:** [Validating Admission Policies](admissioncontrols/vap/vap-demo.md)
 * **Policy Manifests:** [Supply Chain and Pod Security](admissioncontrols/vap/manifests/)
+* **RHACS Policy:** [ACS Policy-as-Code](acs-policy-as-code/README.md)
 * **Goal:** Block pods from unauthorized registries and prevent risky configurations using native API-driven policies.
 
 ---
 
-## Module 5: Network Zero-Trust
+## Module 5: Network Security & Isolation
 
 **Focus:** Microservice Isolation
 
@@ -69,7 +70,7 @@ Secure data in transit and prevent lateral movement between application tiers su
 
 ---
 
-## Module 6: Compliance and Detection
+## Module 6: Compliance & Threat Detection
 
 **Focus:** Continuous Monitoring and Vulnerability Management
 
@@ -81,12 +82,11 @@ Verify that the cluster remains compliant over its entire lifecycle and detect r
 * **Concepts:** [Architecture and Threat Awareness](compliance/architecture%20and%20threat%20awareness.md)
 * **Deep Dive:** [The 8 Pillars of a Secure Container Platform](compliance/the%208%20pillars%20of%20a%20secure%20container%20platform.md)
 * **Business Context:** [The Risk-Driven Business Conversation](compliance/The%20Risk-Driven%20Business%20Conversation.md)
-* **Runtime Policy:** [ACS Policy-as-Code](acs-policy-as-code/README.md)
 * **Goal:** Scan against NIST/PCI-DSS standards and detect runtime vulnerabilities like Log4shell.
 
 ---
 
-## Module 7: Forensics and Investigation
+## Module 7: Incident Response & Forensics
 
 **Focus:** Post-Mortem Analysis
 
@@ -94,9 +94,7 @@ The final stage covers how to react and investigate when a security event occurs
 
 * **Overview:** [OpenShift Audit Log Forensics Overview](auditing/README.md)
 * **Audit Investigation:** [Mastering Audit Logs](auditing/audit-log-Investigation.md)
-* **API Forensics:** [API Server Audit Guide](auditing/apiserver.md)
 * **Visualizing History:** [Kubectl Timemachine](auditing/kubectl-timemachine-instructions.md)
-* **Testing:** [DuckDB Tests](auditing/duckdb-tests.md)
 * **Goal:** Use forensic tools to search through audit logs and identify the specific actors behind unauthorized access or privilege escalation.
 
 ---
