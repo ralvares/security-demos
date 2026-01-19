@@ -42,7 +42,6 @@ nav:
         - Admin Network Policies Intro: 'networking/networkpolicies/adminnetworkpolicies.md'
         - AdminNetworkPolicies - Demo: 'networking/networkpolicies/anp-demo.md'
     - Module 6 - Compliance: 
-        - The 10 Essential Controls: 'compliance/README.md'
         - Compliance Operator Demo: 'compliance/compliance-operator-demo.md'
         - Compliance Operator Variables: 'compliance/compliance-operator-variables.md'
     - Module 7 - Incident Response & Forensics: 
