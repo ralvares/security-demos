@@ -41,6 +41,8 @@ nav:
     - Module 7 - Incident Response & Forensics: 
         - Mastering Audit Logs & Forensics: 'auditing/audit-log-Investigation.md'
         - Kubectl Timemachine: 'auditing/kubectl-timemachine-instructions.md'
+    - Module 8 - Sovereign:
+        - Sovereign Cloud Overview: 'sovereign.md'
 
 markdown_extensions:
   - pymdownx.highlight:
