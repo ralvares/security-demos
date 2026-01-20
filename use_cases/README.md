@@ -11,6 +11,7 @@ This repository provides a comprehensive walkthrough for implementing enterprise
 Before implementing controls, we must understand the architecture we are defending and the threats we face. This module sets the strategic baseline for the entire platform.
 
 * **Architecture & Threat Awareness:** [OpenShift Security Architecture & Threat Awareness](compliance/architecture%20and%20threat%20awareness.md)
+* **Essential Controls:** [The 10 Essential Controls - A Unified Kubernetes Security Playbook](compliance/README.md)
 * **Strategy:** [The 8 Pillars of a Secure Container Platform](compliance/the%208%20pillars%20of%20a%20secure%20container%20platform.md)
 * **Business Context:** [The Risk-Driven Business Conversation](compliance/The%20Risk-Driven%20Business%20Conversation.md)
 * **Goal:** Understand the "Why" and "What" of container security to effectively implement the "How".
@@ -48,62 +49,49 @@ Once the projects exist, we define who can enter them and what they are permitte
 Show what happens when applications attempt to exceed their resource limits or bypass pod-level security constraints.
 
 * **Overview:** [IAM and Admission Control Overview](admissioncontrols/README.md)
-* **Quotas** [Resource Quotas](admissioncontrols/quota.md) and [Cluster-Wide Quotas](admissioncontrols/ClusterResourceQuota.md)
-* **Limits:** [LimitRanges](admissioncontrols/limits.md) (Container rightsizing)
-* **Security Context Constraints:** [Security Context Constraints (SCC)](admissioncontrols/scc.md) (Blocking Root access)
+* **Quotas:** [Resource Quotas](admissioncontrols/quota.md)
+* **Cluster-Wide Quotas:** [Cluster-Wide Quotas](admissioncontrols/ClusterResourceQuota.md)
+* **Limits:** [LimitRanges](admissioncontrols/limits.md)
+* **Security Context Constraints:** [Security Context Constraints (SCC)](admissioncontrols/scc.md)
+* **Validating Admission Policy:** [Validating Admission Policy (VAP) Overview](admissioncontrols/vap/README.md)
+* **VAP Demo:** [Validating Admission Demo](admissioncontrols/vap/vap-demo.md)
 * **Goal:** Prove the cluster's ability to self-enforce security by blocking privileged pods and automatically rightsizing deployments.
 
 ---
 
-## Module 5: Policy as Code & Supply Chain Security
-
-**Focus:** Declarative validation and Image Supply Chain
-
-Utilize native Kubernetes features to enforce corporate standards without requiring external agents.
-
-* **Overview:** [Validating Admission Policy (VAP) Overview](admissioncontrols/vap/README.md)
-* **Demo:** [Validating Admission Policies](admissioncontrols/vap/vap-demo.md)
-* **Manifests:** [Supply Chain and Pod Security](admissioncontrols/vap/manifests/)
-* **RHACS Policy:** [ACS Policy-as-Code](acs-policy-as-code/README.md)
-* **Goal:** Block pods from unauthorized registries and prevent risky configurations using native API-driven policies.
-
----
-
-## Module 6: Network Security & Isolation
+## Module 5: Network Security & Isolation
 
 **Focus:** Microservice Isolation
 
 Secure data in transit and prevent lateral movement between application tiers such as frontend, backend, and payments.
 
 * **NetworkPolicies Intro:** [Network Policies Intro](networking/README.md)
-* **NetworkPolicies - Demo:** [Protecting the Network](networking/networkpolicies/protecting-the-network-using-networkpolicies.md)
-* **AdminNetworkPolicies - Demo:** [AdminNetworkPolicies (ANP)](networking/networkpolicies/anp-demo.md)
-* **AdminNetworkPolicies Reference:** [Admin Network Policies Reference](networking/networkpolicies/adminnetworkpolicies.md)
+* **NetworkPolicies - Demo:** [Network Policies - Demo](networking/networkpolicies/protecting-the-network-using-networkpolicies.md)
+* **AdminNetworkPolicies Intro:** [Admin Network Policies Intro](networking/networkpolicies/adminnetworkpolicies.md)
+* **AdminNetworkPolicies - Demo:** [AdminNetworkPolicies - Demo](networking/networkpolicies/anp-demo.md)
 * **Goal:** Use AdminNetworkPolicies to enforce global rules that remain immutable even if project owners attempt to override them.
 
 ---
 
-## Module 7: Compliance
+## Module 6: Compliance
 
 **Focus:** Continuous Monitoring and Vulnerability Management
 
 Verify that the cluster remains compliant over its entire lifecycle.
 
-* **Overview:** [The 10 Essential Controls](compliance/README.md)
 * **Compliance Scan:** [Compliance Operator Demo](compliance/compliance-operator-demo.md)
 * **Configuration:** [Compliance Operator Variables](compliance/compliance-operator-variables.md)
 * **Goal:** Scan against NIST/PCI-DSS standards and ensure continuous compliance posture.
 
 ---
 
-## Module 8: Incident Response & Forensics
+## Module 7: Incident Response & Forensics
 
 **Focus:** Post-Mortem Analysis
 
 The final stage covers how to react and investigate when a security event occurs.
 
-* **Overview:** [OpenShift Audit Log Forensics Overview](auditing/README.md)
-* **Audit Investigation:** [Mastering Audit Logs](auditing/audit-log-Investigation.md)
+* **Audit Investigation:** [Mastering Audit Logs & Forensics](auditing/audit-log-Investigation.md)
 * **Visualizing History:** [Kubectl Timemachine](auditing/kubectl-timemachine-instructions.md)
 * **Goal:** Use forensic tools to search through audit logs and identify the specific actors behind unauthorized access or privilege escalation.
 
