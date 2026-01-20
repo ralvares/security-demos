@@ -1,5 +1,5 @@
-site_name: OpenShift Security - Demos
-site_url: https://example.com/security
+site_name: kubernetes/OpenShift Security & Demo and More.
+site_url: https://ralvares.github.io/security-demos/
 repo_name: ralvares/security-demos
 repo_url: https://github.com/ralvares/security-demos
 docs_dir: use_cases
