@@ -5,7 +5,7 @@ repo_url: https://github.com/ralvares/security-demos
 docs_dir: use_cases
 
 theme:
-  name: github
+  name: material
 
 # This maps your folder structure to the navigation bar
 nav:
@@ -53,3 +53,4 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true 
   - admonition
+
