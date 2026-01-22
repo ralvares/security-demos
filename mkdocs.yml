@@ -10,6 +10,8 @@ theme:
 # This maps your folder structure to the navigation bar
 nav:
   - Home: 'README.md'
+  - RHACS:
+    - Demo App: 'demo_app.md'
   - Modules:
     - Module 1 - Architecture, Threats & Security Strategy: 
         - OpenShift Security Architecture & Threat Awareness: 'compliance/architecture and threat awareness.md'
