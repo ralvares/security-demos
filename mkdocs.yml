@@ -33,10 +33,10 @@ nav:
         - Validating Admission Policy (VAP) Overview: 'admissioncontrols/vap/README.md'
         - Validating Admission  Demo: 'admissioncontrols/vap/vap-demo.md'
     - Module 5 - Network Security & Isolation: 
-        - Network Policies Intro: 'networking/README.md'
+        - Network Policies - Intro: 'networking/README.md'
         - Network Policies - Demo: 'networking/networkpolicies/protecting-the-network-using-networkpolicies.md'
         - Admin Network Policies Intro: 'networking/networkpolicies/adminnetworkpolicies.md'
-        - AdminNetworkPolicies - Demo: 'networking/networkpolicies/anp-demo.md'
+        - Admin Network Policies - Demo: 'networking/networkpolicies/anp-demo.md'
     - Module 6 - Compliance: 
         - Compliance Operator Demo: 'compliance/compliance-operator-demo.md'
         - Compliance Operator Variables: 'compliance/compliance-operator-variables.md'
