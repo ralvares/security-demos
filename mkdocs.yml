@@ -39,8 +39,8 @@ nav:
         - Admin Network Policies Intro: 'networking/networkpolicies/adminnetworkpolicies.md'
         - Admin Network Policies - Demo: 'networking/networkpolicies/anp-demo.md'
     - Module 6 - Compliance: 
-        - Compliance Operator Demo: 'compliance/compliance-operator-demo.md'
-        - Compliance Operator Variables: 'compliance/compliance-operator-variables.md'
+        - Compliance Operator - Custom Rules - Demo: 'compliance/compliance-operator-demo.md'
+        - Compliance Operator Custom Rules - Variables: 'compliance/compliance-operator-variables.md'
     - Module 7 - Incident Response & Forensics: 
         - Mastering Audit Logs & Forensics: 'auditing/audit-log-Investigation.md'
         - Kubectl Timemachine: 'auditing/kubectl-timemachine-instructions.md'
