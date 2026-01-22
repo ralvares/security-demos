@@ -14,10 +14,6 @@ cd demo_app/manifests
 oc apply -k .
 ```
 
-## RHACS/Stackrox
-
-TBD
-
 ## Demo Diagram
 
 ```mermaid
