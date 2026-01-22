@@ -1,6 +1,6 @@
 # Total Cluster Takeover via Over-Privileged Misconfiguration
 
-When security controls—specifically **Security Context Constraints (SCCs)** and **Pod Security Admissions (PSAs)** are not strictly enforced, a single misconfiguration can be catastrophic. If a developer or a service account is granted the ability to deploy privileged containers on control plane nodes, the entire cluster’s security model can be dismantled in seconds.
+When security controls specifically **Security Context Constraints (SCCs)** and **Pod Security Admissions (PSAs)** are not strictly enforced, a single misconfiguration can be catastrophic. If a developer or a service account is granted the ability to deploy privileged containers on control plane nodes, the entire cluster’s security model can be dismantled in seconds.
 
 Below is a demonstration of how a "privileged" SCC can be leveraged to create a **Shadow API**, leading to a total cluster takeover while completely bypassing standard auditing logs.
 
