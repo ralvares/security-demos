@@ -30,6 +30,7 @@ nav:
         - Cluster-Wide Quotas: 'admissioncontrols/ClusterResourceQuota.md'
         - LimitRanges: 'admissioncontrols/limits.md'
         - Security Context Constraints (SCC): 'admissioncontrols/scc.md'
+        - The Real Danger of Privileged Containers: 'admissioncontrols/ShadowAPI.md'
         - Validating Admission Policy (VAP) Overview: 'admissioncontrols/vap/README.md'
         - Validating Admission  Demo: 'admissioncontrols/vap/vap-demo.md'
     - Module 5 - Network Security & Isolation: 
