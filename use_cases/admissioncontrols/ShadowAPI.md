@@ -212,3 +212,56 @@ oc delete namespace demo-kube
 oc adm policy remove-scc-from-user privileged -z default -n demo-kube
 
 ```
+
+---
+
+### Attack Flow Visualization
+
+```mermaid
+graph TD
+    subgraph "Exploitation Entrypoint"
+        User["Developer / Restricted User"]
+        Access["Namespace Access<br/>(demo-kube)"]
+        SA["ServiceAccount with Privileged SCC<br/>(Already Assigned by Admin)"]
+        
+        User --> Access
+        Access --> SA
+    end
+
+    subgraph "The Pivot (Escape Path)"
+        PrivPod["Deployment of Privileged Pod"]
+        MasterNode["Control Plane Node Affinity"]
+        
+        SA -- "1. Use 'privileged' SCC" --> PrivPod
+        PrivPod -- "2. Schedule on Master" --> MasterNode
+    end
+
+    subgraph "The Breach (Master Node Host)"
+        HostCerts["/etc/kubernetes/static-pod-resources<br/>(Etcd & SA Keys)"]
+        Etcd[("Live Etcd Database")]
+        
+        PrivPod -- "3. Mount Host Volume" --> HostCerts
+        PrivPod -- "4. Connect to Local Etcd" --> Etcd
+    end
+
+    subgraph "The Shadow API (Backdoor)"
+        ShadowAPI["kube-apiserver<br/>(AlwaysAllow Mode)"]
+        Service["Shadow Service<br/>(Cluster Internal)"]
+        
+        PrivPod -- "5. Run Secondary API" --> ShadowAPI
+        ShadowAPI -- "6. Disable RBAC/Audit" --> Service
+    end
+
+    subgraph "Total Takeover"
+        ClientPod["Shadow Client (oc)"]
+        ClientPod -- "7. Admin Command via Service" --> Service
+        Service -- "8. Unrestricted Etcd Access" --> Etcd
+    end
+
+    %% Styling
+    style SA fill:#fff3cd,stroke:#856404,stroke-width:2px
+    style PrivPod fill:#f8d7da,stroke:#721c24,stroke-width:2px,stroke-dasharray: 5 5
+    style ShadowAPI fill:#f00,color:#fff,stroke-width:2px
+    style Etcd fill:#e2e3e5,stroke:#383d41,stroke-width:3px
+    style ClientPod fill:#004085,color:#fff
+```
