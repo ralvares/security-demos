@@ -110,7 +110,7 @@ To mitigate the security risks outlined in the previous conversation, I would re
 
 - configure the container to listen on a higher port, such as port 8080, so that it does not require root access. Running containers as non-root users is generally considered a best practice for security.
 
-- Apply network policies to enforce network segmentation within the Kubernetes cluster. This can help prevent lateral movement by attackers who gain access to one part of the system.
+- [Apply network policies to enforce network segmentation within the Kubernetes cluster. This can help prevent lateral movement by attackers who gain access to one part of the system.](https://ralvares.github.io/security-demos/networking/networkpolicies/protecting-the-network-using-networkpolicies/)
 
 ### Generating Network Policies using roxctl
 Follow how simple is to create network policies using roxctl generate netpol 
