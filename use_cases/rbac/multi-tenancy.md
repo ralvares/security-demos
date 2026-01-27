@@ -1,10 +1,8 @@
-This guide explores how OpenShift manages **Multi-tenancy** and **Resource Governance** through its unique concept of **Projects**.
-
----
-
 # Multi-tenancy on OpenShift: Projects vs. Namespaces
 
 In an enterprise environment, a single cluster often hosts hundreds of applications across dozens of departments. **Multi-tenancy** is the strategy of allowing these "tenants" to share the same infrastructure safely. In OpenShift, the **Project** is the primary mechanism for enforcing this isolation.
+
+However, true multi-tenancy requires looking beyond just the software layer. When hosting diverse applications, we must consider **Data Classification**. Running a highly sensitive "Restricted" application on the same worker node (and the same Kernel) as a "Public" application introduces a risk of "container breakout" attacks. To mitigate this, enterprise designs often use **Node Selectors** and **Taints/Tolerations** to create dedicated pools of hardware based on the application's sensitivity, ensuring that different classifications never share the same physical memory or CPU cycles.
 
 ## 1. Project vs. Namespace: What’s the difference?
 
@@ -24,9 +22,13 @@ If you are coming from standard Kubernetes, you are familiar with **Namespaces**
 
 Multi-tenancy requires more than just a separate "folder" for your resources; it requires a hardened boundary that prevents cross-tenant interference.
 
-### Administrative Isolation
+### Administrative Isolation & Separation of Duties
 
-OpenShift uses the Project boundary to scope RBAC. A user with `admin` rights in the `frontend` project has zero visibility into the `payments` project. This ensures that even accidental actions are physically constrained to the user's specific project.
+OpenShift uses the Project boundary to scope RBAC and enforce a strict **Separation of Duties (SoD)**. This ensures that responsibilities are divided among different individuals to prevent fraud and error:
+
+* **Project Admin vs. Cluster Admin:** A Project Admin can manage their own team's deployments, services, and secrets but has no permission to modify cluster-wide configurations, storage classes, or nodes.
+* **Developer vs. Operator:** By using specific Roles (e.g., `edit` vs. `view`), you can ensure that developers can write code but cannot modify the underlying Project quotas or network policies.
+* **Visibility:** A user with `admin` rights in the `frontend` project has zero visibility into the `payments` project. Even accidental actions are physically constrained to the user's specific project.
 
 ### Network Isolation (The "Deny-All" Standard)
 
@@ -55,3 +57,5 @@ While Quotas govern the whole project, **LimitRanges** govern individual pods. T
 
 * **Defaults:** If a developer forgets to define memory limits, OpenShift automatically injects the default values defined in the LimitRange.
 * **Enforcement:** Prevents a developer from deploying a single pod that is so large it consumes the entire Project's quota.
+
+Would you like me to expand on the technical implementation of **Taints and Tolerations** to show exactly how to isolate those node pools for different data classifications?
