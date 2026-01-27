@@ -20,7 +20,9 @@ This is an additional security layer enforced by the kernel, based on **Labels**
 **"The API Gatekeeper & Policy Engine"**
 
 While DAC and MAC are the enforcement mechanisms in the Linux Kernel, SCC is the higher-level admission controller that configures them. It governs *what* a pod is allowed to request before it ever reaches a node.
+
 - **Role:** It authorizes (or denies) sensitive requests at the API level. This includes:
+
     - **Identity:** Which UIDs and SELinux labels can be used?
     - **Capabilities:** Can the pod request powerful Linux capabilities (e.g., `NET_ADMIN`, `SYS_TIME`)?
     - **Host Access:** Can the pod mount host directories or use the host network?
