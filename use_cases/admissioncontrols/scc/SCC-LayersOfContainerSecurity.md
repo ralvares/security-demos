@@ -31,6 +31,7 @@ While DAC and MAC are the enforcement mechanisms in the Linux Kernel, SCC is the
 In this lab, we will simulate a multi-tenant breakout scenario on a shared node. We will attempt to access a sensitive "Crown Jewels" file owned by Tenant A (UID 1000, MCS `c1,c1`) using various attack vectors.
 
 We will prove that:
+
 1.  **MAC Wins:** Matching UIDs (`1000`) is not enough if SELinux categories differ (**Blocked by Kernel**).
 2.  **DAC Wins:** Matching SELinux categories (`c1,c1`) is not enough if UIDs differ (**Blocked by Filesystem**).
 3.  **SCC Wins:** Spoofing access is impossible without a privileged Security Context Constraint (**Blocked by SCC**).
