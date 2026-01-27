@@ -323,7 +323,7 @@ EOF
 
 ---
 
-## Phase 7: The "Root" Myth — DAC vs MAC on Host (Namespace: tenant-b)
+## Phase 7: The "Root" Myth — Root User vs. SELinux Policy
 
 **Goal:** Demonstrate that running as **Root (UID 0)** inside a container does NOT grant valid Root permissions on the host filesystem if SELinux is enforcing.
 
@@ -353,8 +353,6 @@ spec:
       path: /
 EOF
 ```
-
-## Phase 8: The Showdown — Root User vs. SELinux Policy
 
 In this final phase, we act as an attacker who has successfully deployed a Pod as **Root (UID 0)** with the entire **Host Filesystem** mounted at `/host`. We will now attempt to leverage this position to compromise the node by modifying system files and stealing data from other tenants.
 
