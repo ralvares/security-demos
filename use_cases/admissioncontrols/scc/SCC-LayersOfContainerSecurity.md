@@ -1,4 +1,4 @@
-# Lab: Defense in Depth: Understanding the Protection Layers
+# Defense in Depth: Understanding the Protection Layers
 
 In a secure container platform, defense in depth is achieved through multiple independent layers of security. This lab demonstrates how OpenShift leverages Linux kernel primitives to enforce isolation.
 
@@ -18,8 +18,11 @@ This is an additional security layer enforced by the kernel, based on **Labels**
 
 ### 3. OpenShift Security Context Constraints (SCC)
 **"The API Gatekeeper"**
-SCCs serve as the admission controller that governs what security attributes a pod is *allowed* to request.
-- **Role:** It authorizes (or denies) a pod's request to use specific UIDs or SELinux labels before the pod is ever scheduled.
+SCCs act as the intelligent admission controller that governs *what* a pod is allowed to request. It is the bridge between the Kubernetes API and the underlying Linux kernel security features.
+- **Role:** It authorizes (or denies) sensitive requests before the pod is ever scheduled. This includes:
+    - **Identity:** Which UIDs and SELinux labels can be used?
+    - **Capabilities:** Can the pod drop or add Linux capabilities (e.g., `NET_ADMIN`)?
+    - **Host Access:** Can the pod mount host directories or use the host network?
 
 ### 4. The Demo Scenario
 In this lab, we will simulate a multi-tenant breakout scenario on a shared node. We will attempt to access a sensitive "Crown Jewels" file owned by Tenant A (UID 1000, MCS `c1,c1`) using various attack vectors.
