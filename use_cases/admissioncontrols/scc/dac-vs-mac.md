@@ -307,11 +307,10 @@ EOF
 
 ---
 
-# Conclusion: Why SCCs are Dangerous
+# Conclusion: Why SCCs are Powerful
 
+SCCs are the **Platform Trust Boundary** that turns Kubernetes into a secure, multi-tenant platform.
 
-Playing with SCCs is inherently dangerous because they represent the **Platform Trust Boundary**.
-
-1. **Identity Spoofing:** Granting an SCC with `RunAsAny` allows a pod to "impersonate" another tenant by matching their UID and SELinux label.
-2. **The Two-Key Lock:** OpenShift security relies on a two-key lock. The **SCC** prevents identity spoofing at the API level, and **SELinux** prevents data access at the Kernel level.
-3. **The Default Win:** By using **Restricted SCCs**, OpenShift ensures that even if a container is compromised, it cannot assume the identity needed to bypass the Kernel-level MAC (SELinux) barriers.
+1. **Prevention of Identity Spoofing:** Unlike standard Kubernetes, SCCs prevent a pod from "impersonating" another tenant by validating every UID and SELinux label request.
+2. **The Two-Key Lock:** OpenShift security relies on a two-key lock. The **SCC** prevents identity spoofing at the API level (Governance), and **SELinux** prevents data access at the Kernel level (Enforcement).
+3. **The Default Win:** By using **Restricted SCCs**, OpenShift ensures that even if a container is compromised, it cannot assume the identity needed to bypass the Kernel-level MAC barriers.
