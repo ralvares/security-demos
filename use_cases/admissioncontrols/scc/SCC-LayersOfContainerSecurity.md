@@ -17,11 +17,11 @@ This is an additional security layer enforced by the kernel, based on **Labels**
 - **Strength:** Even if a process runs as the correct UID, if the SELinux labels (MCS categories) don't match, the Kernel blocks access. This is the primary defense against container breakouts.
 
 ### 3. OpenShift Security Context Constraints (SCC)
-**"The API Gatekeeper"**
-SCCs act as the intelligent admission controller that governs *what* a pod is allowed to request. It is the bridge between the Kubernetes API and the underlying Linux kernel security features.
-- **Role:** It authorizes (or denies) sensitive requests before the pod is ever scheduled. This includes:
+**"The API Gatekeeper & Policy Engine"**
+While DAC and MAC are the enforcement mechanisms in the Linux Kernel, SCC is the higher-level admission controller that configures them. It governs *what* a pod is allowed to request before it ever reaches a node.
+- **Role:** It authorizes (or denies) sensitive requests at the API level. This includes:
     - **Identity:** Which UIDs and SELinux labels can be used?
-    - **Capabilities:** Can the pod drop or add Linux capabilities (e.g., `NET_ADMIN`)?
+    - **Capabilities:** Can the pod request powerful Linux capabilities (e.g., `NET_ADMIN`, `SYS_TIME`)?
     - **Host Access:** Can the pod mount host directories or use the host network?
 
 ### 4. The Demo Scenario
