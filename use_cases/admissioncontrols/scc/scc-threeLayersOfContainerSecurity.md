@@ -1,4 +1,4 @@
-# Understanding the Layers: DAC vs. MAC in OpenShift
+# Core Concepts: The Three Layers of Container Security
 
 In a secure container platform, defense in depth is achieved through multiple independent layers of security. This lab demonstrates how OpenShift leverages Linux kernel primitives to enforce isolation.
 
