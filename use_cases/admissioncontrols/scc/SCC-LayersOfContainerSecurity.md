@@ -1,6 +1,8 @@
-# Core Concepts: The Three Layers of Container Security
+# Lab: Defense in Depth: Understanding the Protection Layers
 
 In a secure container platform, defense in depth is achieved through multiple independent layers of security. This lab demonstrates how OpenShift leverages Linux kernel primitives to enforce isolation.
+
+## Core Concepts: The Three Layers
 
 ### 1. Discretionary Access Control (DAC)
 **"The User's Perspective"**
@@ -28,8 +30,6 @@ We will prove that:
 3.  **SCC Wins:** Spoofing access is impossible without a privileged Security Context Constraint (**Blocked by SCC**).
 
 ---
-
-# Lab: Defense in Depth: Understanding the Protection Layers
 
 ## Phase 1: Global Infrastructure Setup (Admin)
 

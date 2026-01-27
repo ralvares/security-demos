@@ -31,7 +31,7 @@ nav:
         - LimitRanges: 'admissioncontrols/limits.md'
         - Security Context Constraints (SCC):
             - SCC Fundamentals: 'admissioncontrols/scc.md'
-            - SCC Defense in Depth - DAC & MAC: 'admissioncontrols/scc/scc-threeLayersOfContainerSecurity.md'
+            - SCC Defense in Depth - DAC & MAC: 'admissioncontrols/scc/SCC-LayersOfContainerSecurity.md'
             - SCC Customization - Demo: 'admissioncontrols/scc/custom.md'
         - The Real Danger of Privileged Containers: 'admissioncontrols/ShadowAPI.md'
         - Validating Admission Policy (VAP) Overview: 'admissioncontrols/vap/README.md'
