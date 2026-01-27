@@ -5,14 +5,20 @@ In a secure container platform, defense in depth is achieved through multiple in
 ## Core Concepts: The Three Layers
 
 ### 1. Discretionary Access Control (DAC)
+
+
 **"The User's Perspective"**
+
 This is the standard Linux permission model (`rwx`, `chown`, `chmod`) based on **UID/GID**.
 - **Rule:** "Does User 1000 have permission to read this file owned by User 1000?"
 - **Weakness:** If a user exploits a process and gains the right UID, they can access the data.
 
 ### 2. Mandatory Access Control (MAC) via SELinux
+
 **"The System's Perspective"**
+
 This is an additional security layer enforced by the kernel, based on **Labels** (Contexts).
+
 - **Rule:** "Does a process with label `container_t:c1,c1` have permission to read a file labeled `container_file_t:c1,c1`?"
 - **Strength:** Even if a process runs as the correct UID, if the SELinux labels (MCS categories) don't match, the Kernel blocks access. This is the primary defense against container breakouts.
 
