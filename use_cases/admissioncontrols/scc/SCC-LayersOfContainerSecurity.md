@@ -51,9 +51,12 @@ We establish the node, the projects, and the security context foundations.
 ```bash
 # 1. Prepare the Node and Shared Host Directory
 # This establishes the shared landing zone for the breakout simulation.
+# We choose the first worker node as our target.
 oc label node compute-0 type=shared-compute --overwrite
 
-oc debug node/compute-0 -- chroot /host /bin/sh -c \
+NODE_NAME=$(oc get nodes -l type=shared-compute -o jsonpath='{.items[0].metadata.name}')
+
+oc debug node/$NODE_NAME -- chroot /host /bin/sh -c \
   "mkdir -p /mnt/shared-data && \
    chown 1000:1000 -R /mnt/shared-data && \
    chmod 700 -R /mnt/shared-data && \
@@ -317,6 +320,80 @@ EOF
 ```
 
 > **Explanation:** **REJECTED.** The Admission Controller sees the user trying to "lie" about their SELinux level and blocks the pod before the kernel even sees it. This applies to both the default `restricted` SCC and the `anyuid` SCC (which often defaults to `MustRunAs` for SELinux).
+
+---
+
+## Phase 7: The "Root" Myth — DAC vs MAC on Host (Namespace: tenant-b)
+
+**Goal:** Demonstrate that running as **Root (UID 0)** inside a container does NOT grant valid Root permissions on the host filesystem if SELinux is enforcing.
+
+```bash
+cat <<EOF | oc apply --as=user001 -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-root-fail
+  namespace: tenant-b
+spec:
+  nodeSelector:
+    type: shared-compute
+  serviceAccountName: demo-sa
+  securityContext:
+    runAsUser: 0
+  containers:
+  - name: main
+    image: registry.access.redhat.com/ubi9/ubi
+    command: ["sh", "-c", "sleep infinity"]
+    volumeMounts:
+    - name: host-root
+      mountPath: /host
+  volumes:
+  - name: host-root
+    hostPath:
+      path: /
+EOF
+```
+
+## Phase 8: The Showdown — Root User vs. SELinux Policy
+
+In this final phase, we act as an attacker who has successfully deployed a Pod as **Root (UID 0)** with the entire **Host Filesystem** mounted at `/host`. We will now attempt to leverage this position to compromise the node by modifying system files and stealing data from other tenants.
+
+```bash
+# 1. Verify we are UID 0 (Root)
+oc exec pod-root-fail --as=user001 -n tenant-b -- id
+# Output: uid=0(root) gid=0(root) groups=0(root)
+
+# 2. Verify we see the Host Filesystem
+oc exec pod-root-fail --as=user001 -n tenant-b -- ls -la /host/root/
+
+# 3. Attempt to exploit: Write a file to the host's /etc directory
+oc exec pod-root-fail --as=user001 -n tenant-b -- touch /host/tmp/hacked
+
+# 4. Attempted Confidentiality Breach: THE DYNAMIC HEIST
+# -------------------------------------------------------------------------
+# A. Create a "Hidden" file inside Pod-A (Tenant-A)
+oc exec pod-a -n tenant-a -- sh -c "echo 'password' > /tmp/tenant-a-secret.txt"
+
+# B. DYNAMIC DISCOVERY: Find the physical 'diff' path of Pod-A from Tenant-B
+# We talk to the CRI socket (mounted in our pod) to find the victim's disk location.
+# We first identify the node where the lab is running.
+NODE_NAME=$(oc get nodes -l type=shared-compute -o jsonpath='{.items[0].metadata.name}')
+
+VICTIM_DIFF=$(oc debug node/$NODE_NAME -q -- chroot /host /bin/sh -c "crictl inspect \$(crictl ps --label io.kubernetes.pod.name=pod-a -q)" 2>/dev/null | grep -oP '/var/lib/containers/storage/overlay/[a-z0-9]+/merged' | head -n 1 | sed 's/merged/diff/')
+
+# We check the file from the NODE (Admin Access - Should Work)
+oc debug node/$NODE_NAME -q -- cat /host/${VICTIM_DIFF}/tmp/tenant-a-secret.txt 2>/dev/null 
+
+# C. THE EXTRACTION: Read the file from the Host Root mount (Tenant Access - Should Fail)
+oc exec pod-root-fail --as=user001 -n tenant-b -- cat /host${VICTIM_DIFF}/tmp/tenant-a-secret.txt
+```
+
+> **Explanation:** **PERMISSION DENIED (FULL PROTECTION).**
+
+> *   **Host Admin (Successful):** The `oc debug node` command (Step B) succeeded because it runs as a **Privileged** container, which disables SELinux.
+> *   **Malicious Tenant (Blocked):** The `pod-root-fail` (Step C) **FAILED** to read the secret. Even though it is UID 0 and has `hostPath` access, the SELinux label `container_t` is blocked from reading the `container_var_lib_t` storage layer.
+>
+> **Conclusion:** SELinux successfully neutralizes the "Root" user. Even with `hostPath` and `runAsUser: 0`, the attacker cannot compromise the host OS vs other tenants.
 
 ---
 
