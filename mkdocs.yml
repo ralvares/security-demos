@@ -29,7 +29,10 @@ nav:
         - Resource Quotas: 'admissioncontrols/quota.md'
         - Cluster-Wide Quotas: 'admissioncontrols/ClusterResourceQuota.md'
         - LimitRanges: 'admissioncontrols/limits.md'
-        - Security Context Constraints (SCC): 'admissioncontrols/scc.md'
+        - Security Context Constraints (SCC):
+            - Introduction: 'admissioncontrols/scc.md'
+            - Defense in Depth (DAC vs MAC): 'admissioncontrols/scc/dac-vs-mac.md'
+            - Custom SCC Governance: 'admissioncontrols/scc/custom.md'
         - The Real Danger of Privileged Containers: 'admissioncontrols/ShadowAPI.md'
         - Validating Admission Policy (VAP) Overview: 'admissioncontrols/vap/README.md'
         - Validating Admission  Demo: 'admissioncontrols/vap/vap-demo.md'
