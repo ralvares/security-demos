@@ -57,5 +57,3 @@ While Quotas govern the whole project, **LimitRanges** govern individual pods. T
 
 * **Defaults:** If a developer forgets to define memory limits, OpenShift automatically injects the default values defined in the LimitRange.
 * **Enforcement:** Prevents a developer from deploying a single pod that is so large it consumes the entire Project's quota.
-
-Would you like me to expand on the technical implementation of **Taints and Tolerations** to show exactly how to isolate those node pools for different data classifications?
