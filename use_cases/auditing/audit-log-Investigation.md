@@ -32,19 +32,19 @@ Audit events are emitted as JSON objects. Under the **Default** profile, only me
 
 > **Note:** Request bodies for **Secret**, **Route**, and **OAuthClient** are *never* logged in any profile.
 
-## Part 1: The Immutable Truth (Revised)
+## Part 1: The Immutable Truth
 
 In any production cluster, observability is crucial. Metrics such as CPU usage and memory consumption provide insights into the **health** of applications. However, during a security incident, the focus shifts from **health** to **accountability** and **intent**.
 
 Audit logs serve as the definitive record of actions within the cluster. They are the authoritative record of the Control Plane, capturing the **5 Ws** of every interaction with the API Server: **Who**, **What**, **Where**, **When**, and the **Decision** (RBAC).
 
-## Prerequisite 1: Storage Integrity (The "Safe")
+## Prerequisite 1: Storage Integrity
 
 Before we start the hunt, we must address the most important rule of forensic logging: **Storage Integrity.**
 
 Audit logs are generated on the Master nodes. If an attacker successfully escalates privileges and takes over the node (Root compromise), they can wipe the log files. Therefore, for these logs to be legally and forensically valid, they **must be forwarded** to an external system (Splunk, Elastic, Remote Syslog).
 
-## Prerequisite 2: The Audit Profile (The "Resolution")
+## Prerequisite 2: The Audit Profile
 
 Secure logs are useless if they don't contain enough detail. This is defined by the **Audit Log Policy**.
 
