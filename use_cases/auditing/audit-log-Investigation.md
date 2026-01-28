@@ -84,9 +84,16 @@ We will now switch to the terminal to reconstruct this timeline using **Behavior
 
 ### Setup: Load the Forensic Library
 
+#### Prerequisites
+*   **`jq`**: Required for parsing JSON logs.
+*   **`column`**: (Standard in most Linux/macOS distros) for formatting output.
+*   **`oc`**: OpenShift CLI (optional, only needed if fetching fresh logs from a cluster).
+
 Before we begin, we will load our forensic toolkit. This library contains pre-built functions to query the audit logs efficiently.
 
 ```bash
+git clone https://github.com/ralvares/security-demos
+cd security-demos/use_cases/auditing
 source forensics.sh
 ```
 
@@ -101,7 +108,7 @@ Once we identify a pod IP making these anonymous requests, we can correlate it t
 At this stage, we search for anonymous `403 Forbidden` attempts from the pod network:
 
 ```bash
-audit_detect_anonymous_access audit.log
+audit_detect_anonymous_access logs/audit.log
 ```
 
 Explanation: Understanding `sourceIPs`
@@ -116,7 +123,7 @@ Finally, to correlate network flows with these events, we need to know the IP ad
 **The Query:**
 ```bash
 TARGET_IP=10.128.1.81
-audit_lookup_pod_by_ip audit.log $TARGET_IP
+audit_lookup_pod_by_ip logs/audit.log $TARGET_IP
 ```
 
 **The Finding:**
@@ -143,7 +150,7 @@ We run a history check on this specific IP to see if it ever made a request with
 
 ```bash
 TARGET_IP="10.128.1.81"
-audit_track_ip_activity audit.log $TARGET_IP
+audit_track_ip_activity logs/audit.log $TARGET_IP
 ```
 
 **The Finding:**
@@ -158,7 +165,7 @@ Exploiting the lack of NetworkPolicies, the attacker moved laterally to the `vis
 Now that we have identified the compromised account (`system:serviceaccount:payments:visa-processor`), we don't need to run individual detection scripts for every possible attack vector. We can simply ask the audit log: *'What did this user do?'*
 
 ```bash
-audit_track_user_activity audit.log system:serviceaccount:payments:visa-processor
+audit_track_user_activity logs/audit.log system:serviceaccount:payments:visa-processor
 ```
 
 **The Finding:**
@@ -203,7 +210,7 @@ While the actual use of escape tools and subsequent host actions are not visible
 
 ```bash
 POD_NAME="visa-processor"
-audit_track_pod_lifecycle audit.log $POD_NAME
+audit_track_pod_lifecycle logs/audit.log $POD_NAME
 ```
 
 **The Finding:**
