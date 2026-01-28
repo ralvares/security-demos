@@ -52,7 +52,11 @@ Show what happens when applications attempt to exceed their resource limits or b
 * **Quotas:** [Resource Quotas](admissioncontrols/quota.md)
 * **Cluster-Wide Quotas:** [Cluster-Wide Quotas](admissioncontrols/ClusterResourceQuota.md)
 * **Limits:** [LimitRanges](admissioncontrols/limits.md)
-* **Security Context Constraints:** [Security Context Constraints (SCC)](admissioncontrols/scc.md)
+* **Security Context Constraints (SCC):**
+    * [SCC Fundamentals](admissioncontrols/scc.md)
+    * [SCC Defense in Depth - DAC & MAC](admissioncontrols/scc/SCC-LayersOfContainerSecurity.md)
+    * [SCC Customization - Demo](admissioncontrols/scc/custom.md)
+* **Privileged Containers:** [The Real Danger of Privileged Containers](admissioncontrols/ShadowAPI.md)
 * **Validating Admission Policy:** [Validating Admission Policy (VAP) Overview](admissioncontrols/vap/README.md)
 * **VAP Demo:** [Validating Admission Demo](admissioncontrols/vap/vap-demo.md)
 * **Goal:** Prove the cluster's ability to self-enforce security by blocking privileged pods and automatically rightsizing deployments.
@@ -96,3 +100,12 @@ The final stage covers how to react and investigate when a security event occurs
 * **Goal:** Use forensic tools to search through audit logs and identify the specific actors behind unauthorized access or privilege escalation.
 
 ---
+
+## Module 8: Sovereign
+
+**Focus:** Data Residency and Operational Autonomy
+
+Understanding the requirements and characteristics of Sovereign Cloud environments.
+
+* **Overview:** [Sovereign Cloud Overview](sovereign.md)
+* **Goal:** Understand data residency, operational autonomy, and compliance with local regulations.
