@@ -63,14 +63,15 @@ This program is built on four "Workstreams" that turn RHACS data into a repeatab
 **Goal:** Prioritize **Critical Exploitable Vulnerabilities** and reduce alert fatigue.
 
 * **The Rule:** Follow the **Risk Prioritization** logic (Critical + Exploited + Fixable).
+
 * **The Action (The SLA):**
-* **Critical Risk:** Fix within **3–7 Days**.
-* **High Risk:** Fix within **30 Days**.
+    * **Critical Risk:** Fix within **3–7 Days**.
+    * **High Risk:** Fix within **30 Days**.
 
 * **The Response:** Use the **Remediation Paths**:
-* **Patch:** Update the image.
-* **Mitigate:** Apply a Network Policy to block access to the vulnerable port.
-* **Accept:** Formal sign-off for business-critical apps that can't be patched.
+    * **Patch:** Update the image.
+    * **Mitigate:** Apply a Network Policy to block access to the vulnerable port.
+    * **Accept:** Formal sign-off for business-critical apps that can't be patched.
 
 
 ### 4. Network & Runtime Defense (CIS Controls 13 & 17)
