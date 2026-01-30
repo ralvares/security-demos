@@ -23,7 +23,8 @@ This is an additional security layer enforced by the kernel, based on **Labels**
 - **Strength:** Even if a process runs as the correct UID, if the SELinux labels (MCS categories) don't match, the Kernel blocks access. This is the primary defense against container breakouts.
 
 ### 3. OpenShift Security Context Constraints (SCC)
-**"The API Gatekeeper & Policy Engine"**
+
+**"The Cluster's Perspective"**
 
 While DAC and MAC are the enforcement mechanisms in the Linux Kernel, SCC is the higher-level admission controller that configures them. It governs *what* a pod is allowed to request before it ever reaches a node.
 
