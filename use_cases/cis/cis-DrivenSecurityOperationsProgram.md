@@ -6,24 +6,24 @@ The CIS Center for Internet Security Top 18 Critical Security Controls (v8) are 
 
 ### The 18 CIS Critical Security Controls (v8):
 
-1. Inventory and Control of Enterprise Assets: Actively manage all hardware devices.
-2. Inventory and Control of Software Assets: Actively manage all software.
-3. Data Protection: Identify, classify, and protect sensitive data.
-4. Secure Configuration of Enterprise Assets and Software: Maintain hardened security settings.
-5. Account Management: Manage, monitor, and restrict user accounts.
-6. Access Control Management: Control access to assets and data.
-7. Continuous Vulnerability Management: Assess and remediate vulnerabilities.
-8. Audit Log Management: Collect and analyze logs to detect threats.
-9. Email and Web Browser Protections: Secure web and email tools.
-10. Malware Defenses: Prevent or detect malicious code execution.
-11. Data Recovery: Implement data backup and recovery.
-12. Network Infrastructure Management: Secure network devices.
-13. Network Monitoring and Defense: Defend against network threats.
-14. Security Awareness and Skills Training: Train personnel on security risks.
-15. Service Provider Management: Manage service provider security.
-16. Application Software Security: Secure internally developed or acquired software.
-17. Incident Response Management: Plan and execute incident response.
-18. Penetration Testing: Test effectiveness of security controls.
+1. **Inventory and Control of Enterprise Assets:** Actively manage all hardware devices.
+2. **Inventory and Control of Software Assets:** Actively manage all software.
+3. **Data Protection:** Identify, classify, and protect sensitive data.
+4. **Secure Configuration of Enterprise Assets and Software:** Maintain hardened security settings.
+5. **Account Management:** Manage, monitor, and restrict user accounts.
+6. **Access Control Management:** Control access to assets and data.
+7. **Continuous Vulnerability Management:** Assess and remediate vulnerabilities.
+8. **Audit Log Management:** Collect and analyze logs to detect threats.
+9. **Email and Web Browser Protections:** Secure web and email tools.
+10. **Malware Defenses:** Prevent or detect malicious code execution.
+11. **Data Recovery:** Implement data backup and recovery.
+12. **Network Infrastructure Management:** Secure network devices.
+13. **Network Monitoring and Defense:** Defend against network threats.
+14. **Security Awareness and Skills Training:** Train personnel on security risks.
+15. **Service Provider Management:** Manage service provider security.
+16. **Application Software Security:** Secure internally developed or acquired software.
+17. **Incident Response Management:** Plan and execute incident response.
+18. **Penetration Testing:** Test effectiveness of security controls.
 
 The controls are implemented in three Implementation Groups (IGs) to accommodate different resource levels, with IG1 representing essential cyber hygiene. 
 
