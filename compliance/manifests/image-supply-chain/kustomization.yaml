@@ -1,0 +1,5 @@
+resources:
+  - allowed-registries-configured.yaml
+  - disallow-shadow-databases.yaml
+  - image-supply-chain-profile.yaml
+  - image-supply-chain-scan-binding.yaml
