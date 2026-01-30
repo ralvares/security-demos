@@ -40,7 +40,7 @@ This program is built on four "Workstreams" that turn RHACS data into a repeatab
 
 ### 2. Configuration Hardening (CIS Control 4)
 
-**Goal:** Lock the "Open Doors" that allow vulnerabilities to be exploited.
+**Goal:** Eliminate **Misconfigurations** that increase the attack surface.
 
 * **The Rule:** All workloads must meet the **CIS OpenShift Benchmark** (e.g., No Root, No Host IPC).
 * **The Action:** Focus on the **Top 5 Violations** in the RHACS "Violations" tab.
@@ -56,22 +56,22 @@ This program is built on four "Workstreams" that turn RHACS data into a repeatab
 
 ### 3. Continuous Vulnerability Management (CIS Control 7)
 
-**Goal:** Triage the "Killers" and ignore the noise.
+**Goal:** Prioritize **Critical Exploitable Vulnerabilities** and reduce alert fatigue.
 
-* **The Rule:** Follow the **Triple Filter** logic (Critical + Exploited + Fixable).
+* **The Rule:** Follow the **Risk Prioritization** logic (Critical + Exploited + Fixable).
 * **The Action (The SLA):**
 * **Critical Risk:** Fix within **3–7 Days**.
 * **High Risk:** Fix within **30 Days**.
 
 * **The Response:** Use the **Remediation Paths**:
 * **Patch:** Update the image.
-* **Shield:** Apply a Network Policy to block access to the vulnerable port.
+* **Mitigate:** Apply a Network Policy to block access to the vulnerable port.
 * **Accept:** Formal sign-off for business-critical apps that can't be patched.
 
 
 ### 4. Network & Runtime Defense (CIS Controls 13 & 17)
 
-**Goal:** Detect and stop the "Break-In" in real-time.
+**Goal:** Detect and Respond to **Anomalous Activity** in real-time.
 
 * **The Rule:** Any process or network traffic not in the "Baseline" triggers an alert.
 * **The Action:** Use the **RHACS Network Graph** to generate "Baseline" policies. Anything outside that (e.g., a pod trying to talk to an external IP) is a violation of **CIS 13**.
@@ -79,14 +79,14 @@ This program is built on four "Workstreams" that turn RHACS data into a repeatab
 
 ---
 
-## How to Close the Meeting (The "Simplified Check")
+## Simplified Decision Matrix
 
-When the customer is overwhelmed by the thousands of alerts, show them this flowchart logic:
+When faced with a high volume of alerts, use this logic to determine the immediate course of action:
 
 > **"Is this a CVE or a Configuration Violation?"**
-> * **If CVE:** Check if it's **Fixable & Exploited**. (If yes, follow the 7-day clock).
-> * **If Configuration:** Check if it's **Privileged/Root**. (If yes, harden the YAML).
-> * **If neither:** Add it to the backlog and **ignore it for now.**
+> * **If CVE:** Check for **Fixability & Exploitability**. (If yes, adhere to the 7-day remediation SLA).
+> * **If Configuration:** Check if it involves **Privileged Access or Root**. (If yes, harden the deployment manifest).
+> * **If neither:** Add to the backlog and **defer for future review.**
 > 
 > 
 
