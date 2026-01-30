@@ -62,7 +62,7 @@ This program is built on four "Workstreams" that turn RHACS data into a repeatab
 
 **Goal:** Prioritize **Critical Exploitable Vulnerabilities** and reduce alert fatigue.
 
-* **The Rule:** Follow the **Risk Prioritization** logic (Critical + Exploited + Fixable).
+* **The Rule:** Follow the **Risk Prioritization** logic (Critical + Exploited + Exposed + Fixable).
 
 * **The Action (The SLA):**
     * **Critical Risk:** Fix within **3–7 Days**.
@@ -89,7 +89,7 @@ This program is built on four "Workstreams" that turn RHACS data into a repeatab
 When faced with a high volume of alerts, use this logic to determine the immediate course of action:
 
 > **"Is this a CVE or a Configuration Violation?"**
-> * **If CVE:** Check for **Fixability & Exploitability**. (If yes, adhere to the 7-day remediation SLA).
+> * **If CVE:** Check for **Fixability, Exploitability & Exposure**. (If yes, adhere to the 7-day remediation SLA).
 > * **If Configuration:** Check if it involves **Privileged Access or Root**. (If yes, harden the deployment manifest).
 > * **If neither:** Add to the backlog and **defer for future review.**
 > 
