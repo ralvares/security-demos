@@ -43,13 +43,17 @@ This program is built on four "Workstreams" that turn RHACS data into a repeatab
 **Goal:** Eliminate **Misconfigurations** that increase the attack surface.
 
 * **The Rule:** All workloads must meet the **CIS OpenShift Benchmark** (e.g., No Root, No Host IPC).
-* **The Action:** Focus on the **Top 5 Violations** in the RHACS "Violations" tab.
+* **The Action:** Focus on the **Critical Security Violations** in the RHACS "Violations" tab.
 
-1. Privileged Containers.
-2. Containers running as Root.
-3. Host Mounts (Writable).
-4. Missing Network Policies.
-5. No Resource Limits.
+    1. Privileged Containers.
+    2. Containers running as Root.
+    3. Host Mounts (Writable).
+    4. Missing Network Policies.
+    5. No Resource Limits.
+    6. Secrets as Environment Variables.
+    7. Host Network Access (`hostNetwork: true`).
+    8. Privilege Escalation Allowed (`allowPrivilegeEscalation`).
+    9. Dangerous Capabilities (e.g., `CAP_SYS_ADMIN`, `NET_ADMIN`).
 
 
 * **The Response:** These are **not** patches; these are **YAML changes**. The SRE team must update the Deployment or use OpenShift SCCs to block these behaviors.
