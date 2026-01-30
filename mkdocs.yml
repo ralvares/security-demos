@@ -12,6 +12,9 @@ nav:
   - Home: 'README.md'
   - RHACS:
     - Demo App: 'demo_app.md'
+  - CIS:
+    - The CIS-Driven Security Operations Program: 'cis/cis-DrivenSecurityOperationsProgram.md'
+    - The CIS-Driven Vulnerability Management Program (VMP): 'cis/cis-ContinuousVulnerabilityManagement.md'
   - Modules:
     - Module 1 - Architecture, Threats & Security Strategy: 
         - OpenShift Security Architecture & Threat Awareness: 'compliance/architecture and threat awareness.md'
