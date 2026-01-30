@@ -4,6 +4,27 @@ This repository provides a comprehensive walkthrough for implementing enterprise
 
 ---
 
+## The RHACS Demo App
+
+This repository uses a purposely vulnerable application to demonstrate real-world attacks and defenses.
+
+* **RHACS Demo App:** [The RHACS Demo Application](demo_app.md)
+* **Goal:** Understand the target application, its architecture, and how to deploy it for the hands-on labs.
+
+---
+
+## The CIS Framework - Small Quick Start
+
+**Focus:** Standards and Best Practices
+
+Adopting the Center for Internet Security (CIS) controls to build a data-driven security program and effective vulnerability management.
+
+* **Security Program:** [The CIS-Driven Security Operations Program](cis/cis-DrivenSecurityOperationsProgram.md)
+* **Vulnerability Management:** [The CIS-Driven Vulnerability Management Program](cis/cis-ContinuousVulnerabilityManagement.md)
+* **Goal:** Align security operations with industry best practices and standards.
+
+---
+
 ## Module 1: Architecture, Threats & Security Strategy
 
 **Focus:** Foundation and Threat Modeling
