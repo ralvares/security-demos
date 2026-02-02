@@ -42,7 +42,23 @@ echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml' >> ~/.bashrc
 
 ```
 
-### 3. Provision the Restricted User & Namespace
+### 3. Check Global RKE2 Configuration
+
+RKE2 stores its PSA defaults in a specific admission configuration file. You can see the global default by inspecting this file on the host.
+
+```bash
+# Check the default PSA levels enforced by RKE2
+sudo cat /etc/rancher/rke2/rke2-pss.yaml
+
+```
+
+**What to look for:**
+
+* **`privileged`**: You are in the **Default Profile**. New namespaces will have no restrictions.
+* **`restricted`**: You are in the **CIS Profile**. The cluster is hardened.
+
+
+### 4. Provision the Restricted User & Namespace
 
 We create a user (`dev-user`) and lock them into a single namespace (`dev-space`) with standard `edit` permissions.
 
