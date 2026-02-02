@@ -36,7 +36,9 @@ nav:
             - SCC Fundamentals: 'admissioncontrols/scc.md'
             - SCC Defense in Depth - DAC & MAC: 'admissioncontrols/scc/SCC-LayersOfContainerSecurity.md'
             - SCC Customization - Demo: 'admissioncontrols/scc/custom.md'
-        - The Real Danger of Privileged Containers: 'admissioncontrols/ShadowAPI.md'
+        - The Real Danger of Privileged Containers: 
+            - SUSE RKE2: 'admissioncontrols/ShadowAPI-rke2.md'
+            - OpenShift: 'admissioncontrols/ShadowAPI.md'
         - Validating Admission Policy (VAP) Overview: 'admissioncontrols/vap/README.md'
         - Validating Admission  Demo: 'admissioncontrols/vap/vap-demo.md'
     - Module 5 - Network Security & Isolation: 
