@@ -32,7 +32,7 @@ nav:
         - Resource Quotas: 'admissioncontrols/quota.md'
         - Cluster-Wide Quotas: 'admissioncontrols/ClusterResourceQuota.md'
         - LimitRanges: 'admissioncontrols/limits.md'
-        - User Namespaces Demo: 'rbac/usernamespaces.md'
+        - User Namespaces Demo: 'admissioncontrols/usernamespaces.md'
         - Security Context Constraints (SCC):
             - SCC Fundamentals: 'admissioncontrols/scc.md'
             - SCC Defense in Depth - DAC & MAC: 'admissioncontrols/scc/SCC-LayersOfContainerSecurity.md'
