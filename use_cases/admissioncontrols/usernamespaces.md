@@ -6,7 +6,7 @@ This lab proves that pods running as either **UID 1000** or **UID 0 (root)** ins
 
 In this lab, you are interacting with two specific Security Context Constraints (SCCs). While they look similar, they have very different philosophies regarding what a container is allowed to do.
 
-#### 1. `restricted-v3` (The Standard Jail)
+#### 1. `restricted-v3` 
 
 This is the default scc for User Namespaces. It is designed for maximum security by assuming the container should have **no special powers**.
 
@@ -14,7 +14,7 @@ This is the default scc for User Namespaces. It is designed for maximum security
 * **Capabilities (`NET_BIND_SERVICE` only):** It only allows the container to bind to "low" ports (like 80). It explicitly forbids `SETUID` and `SETGID`.
 * **The Goal:** To protect the host from "escapes." Even if a pod is compromised, the attacker is stuck as a low-privileged user with no ability to change their identity.
 
-#### 2. `nested-container` (The Sandbox Jail)
+#### 2. `nested-container`
 
 This SCC is specifically designed for workloads that **need** to act like root (like Podman-in-Podman or legacy Web Servers) but are safely wrapped inside a **User Namespace**.
 
