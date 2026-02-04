@@ -1,0 +1,13 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: ScanSettingBinding
+metadata:
+  name: sensitive-pod-security-scan
+  namespace: openshift-compliance
+profiles:
+  - name: sensitive-pod-security-checks
+    kind: TailoredProfile
+    apiGroup: compliance.openshift.io/v1alpha1
+settingsRef:
+  name: default
+  kind: ScanSetting
+  apiGroup: compliance.openshift.io/v1alpha1

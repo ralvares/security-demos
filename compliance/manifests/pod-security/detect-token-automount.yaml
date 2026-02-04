@@ -1,0 +1,50 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: CustomRule
+metadata:
+  name: detect-token-automount
+  namespace: openshift-compliance
+spec:
+  title: Detect ServiceAccount Token Automount
+  description: Detect pods with SA token automount enabled. Exemptions are controlled strictly by Namespace labels.
+  failureReason: Pod has automount enabled and the Namespace does not have the exemption label.
+  severity: medium
+  id: detect_token_automount
+  checkType: Platform
+  scannerType: CEL
+  inputs:
+    - name: pods
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: pods
+    - name: namespaces
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: namespaces
+    # Removed Deployments/ReplicaSets inputs (Huge performance gain)
+  expression: |
+    pods.items.all(pod,
+      namespaces.items.exists(ns,
+        ns.metadata.name == pod.metadata.namespace &&
+        (
+          // 1. SKIP: If Namespace is NOT Enforced
+          (
+            !has(ns.metadata.labels) ||
+            !('custom.security/enforce' in ns.metadata.labels) ||
+            ns.metadata.labels['custom.security/enforce'] != 'true'
+          ) ||
+          
+          // 2. PASS: If Namespace has the Admin Exemption Label
+          (
+            has(ns.metadata.labels) &&
+            'custom.security/automount' in ns.metadata.labels &&
+            ns.metadata.labels['custom.security/automount'] == 'true'
+          ) ||
+
+          // 3. PASS: If the Pod actually has Automount Disabled
+          (
+            has(pod.spec.automountServiceAccountToken) && 
+            pod.spec.automountServiceAccountToken == false
+          )
+        )
+      )
+    )
