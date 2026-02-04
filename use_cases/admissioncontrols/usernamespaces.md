@@ -23,18 +23,7 @@ This SCC is specifically designed for workloads that **need** to act like root (
 * **The Safety Catch:** While it looks "looser" than `restricted-v3`, it is actually very safe because OpenShift generally requires `hostUsers: false` to be set for this SCC to be effective.
 * **The Goal:** To allow "root-like" behavior without actually giving the process any power over the physical host node.
 
-#### Comparison Table
-
-| Feature | `restricted-v3` | `nested-container` |
-| --- | --- | --- |
-| **Primary Use** | Modern, non-root microservices. | Legacy apps or "container-in-container." |
-| **Escalation** | **Forbidden.** | **Allowed.** |
-| **Identity Switching** | Blocked (no `SETUID/GID`). | Allowed (has `SETUID/GID`). |
-| **Host Impact** | Nearly zero. | High (**unless** using User Namespaces). |
-
----
-
-### Official Lab: User Namespaces (v3)
+### Lab: User Namespaces (v3)
 
 #### 1. Cluster-Admin: Prepare the Security Boundary
 
