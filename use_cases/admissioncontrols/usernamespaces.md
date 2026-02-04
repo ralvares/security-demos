@@ -2,6 +2,36 @@ This is the definitive, end-to-end lab for **User Namespaces** on OpenShift, bas
 
 This lab proves that pods running as either **UID 1000** or **UID 0 (root)** inside the container are remapped to **massive, unprivileged UIDs** on the host worker node, effectively "jailing" the processes.
 
+### SCC Philosophy: Understanding the Boundaries
+
+In this lab, you are interacting with two specific Security Context Constraints (SCCs). While they look similar, they have very different philosophies regarding what a container is allowed to do.
+
+#### 1. `restricted-v3` (The Standard Jail)
+
+This is the default scc for User Namespaces. It is designed for maximum security by assuming the container should have **no special powers**.
+
+* **Privilege Escalation (`false`):** It strictly forbids a process from ever gaining more privileges than it started with.
+* **Capabilities (`NET_BIND_SERVICE` only):** It only allows the container to bind to "low" ports (like 80). It explicitly forbids `SETUID` and `SETGID`.
+* **The Goal:** To protect the host from "escapes." Even if a pod is compromised, the attacker is stuck as a low-privileged user with no ability to change their identity.
+
+#### 2. `nested-container` (The Sandbox Jail)
+
+This SCC is specifically designed for workloads that **need** to act like root (like Podman-in-Podman or legacy Web Servers) but are safely wrapped inside a **User Namespace**.
+
+* **Privilege Escalation (`true`):** It allows the process to change its identity (e.g., from root to `www-data`).
+* **Allowed Capabilities (`SETUID`, `SETGID`):** It permits the two specific powers needed to switch user identities.
+* **The Safety Catch:** While it looks "looser" than `restricted-v3`, it is actually very safe because OpenShift generally requires `hostUsers: false` to be set for this SCC to be effective.
+* **The Goal:** To allow "root-like" behavior without actually giving the process any power over the physical host node.
+
+#### Comparison Table
+
+| Feature | `restricted-v3` | `nested-container` |
+| --- | --- | --- |
+| **Primary Use** | Modern, non-root microservices. | Legacy apps or "container-in-container." |
+| **Escalation** | **Forbidden.** | **Allowed.** |
+| **Identity Switching** | Blocked (no `SETUID/GID`). | Allowed (has `SETUID/GID`). |
+| **Host Impact** | Nearly zero. | High (**unless** using User Namespaces). |
+
 ---
 
 ### Official Lab: User Namespaces (v3)
@@ -30,7 +60,7 @@ oc patch namespace userns-lab --type='merge' -p '
 # C. Grant the SCCs to the default ServiceAccount
 # restricted-v3: Standard isolation.
 # nested-container: Allows SETUID/SETGID (needed for apps like httpd).
-#oc adm policy add-scc-to-user restricted-v3 -z default -n userns-lab
+oc adm policy add-scc-to-user restricted-v3 -z default -n userns-lab
 oc adm policy add-scc-to-user nested-container -z default -n userns-lab
 
 ```
