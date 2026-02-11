@@ -96,7 +96,6 @@ graph TD
 
         subgraph Management_Plane["⚙️ CONTROL PLANE (Management)"]
             MasterAPI["Master API Server"]
-            Registry["Image Registry"]
         end
 
         subgraph Internal_Zone["🔵 INTERNAL ZONE (Trusted)"]
@@ -147,7 +146,5 @@ When you combine these features, you create a "Hardened" environment:
 | **Namespaces** | Logical | Keeps teams from seeing each other's configuration. |
 | **SCC (`restricted-v2`)** | Process | Strips the container of "Root" powers and dangerous system calls. |
 | **Node Selectors** | **Physical** | Ensures "Exposed" apps never share a kernel with "Internal" apps. |
-
-### The "Best Flow" Reality
 
 By using the **Namespace Node Selector** method we set up, you have implemented a "Guardrail." The classification is enforced at the platform level—even if a developer makes a mistake in their deployment code, the platform will force the application to stay in its designated zone.
