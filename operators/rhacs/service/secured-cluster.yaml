@@ -10,6 +10,8 @@ spec:
         value: 'true'
       - name: ROX_VIRTUAL_MACHINES
         value: 'true'
+      - name: ROX_SCANNER_V4_RED_HAT_LAYERS_RED_HAT_VULNS_ONLY
+        value: 'true'
   sensor:
     resources:
       requests:
