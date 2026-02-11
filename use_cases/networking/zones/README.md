@@ -66,6 +66,36 @@ oc get pod dmz-app -n dmz -o wide
 
 In the output, look at the **NODE** column. It will match the specific node you labeled. If you try to deploy this same pod in a different namespace (e.g., `default`), it would land on an internal node instead.
 
+#### Proof of Enforcement: Shifting the DMZ Boundary
+
+To prove that the workload follows the *label* and not just a specific machine, let's move the `dmz=true` label to a different node.
+
+1.  **Remove the label from the current node:**
+    ```bash
+    # Ensure you replace <current_node> with the one from the previous step (e.g., compute-0)
+    oc label node compute-0 dmz-
+    ```
+
+2.  **Apply the label to a new node:**
+    ```bash
+    # Pick a different worker node (e.g., compute-1)
+    oc label node compute-1 dmz=true
+    ```
+
+3.  **Redeploy the application:**
+    Since the Node Selector is enforced at scheduling time, we delete the old pod and recreate it to see the scheduler force it onto the new DMZ node.
+    
+    ```bash
+    oc delete pod dmz-app -n dmz
+    oc run dmz-app --image=registry.access.redhat.com/ubi8/httpd-24 -n dmz
+    ```
+
+4.  **Verify the migration:**
+    ```bash
+    oc get pod dmz-app -n dmz -o wide
+    ```
+    The pod has now "jumped" to the new "safe" hardware holding the `dmz=true` label.
+
 ---
 
 ### 2. Concept: Nodes and Node Groups
