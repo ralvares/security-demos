@@ -89,7 +89,9 @@ spec:
 This policy prevents workloads from setting `nodeSelector` or `tolerations`, but **only** for namespaces that are explicitly tagged as "restricted". This allows you to apply stricter controls to specific environments (like production) while leaving dev environments flexible.
 
 **The Strategy:**
+
 1.  **The Policy (Rules):** "Deny if `nodeSelector` or `tolerations` are present."
+
 2.  **The Binding (Scope):** "Apply ONLY to namespaces with the label `env=restricted`."
 
 **Policy Definition:**
