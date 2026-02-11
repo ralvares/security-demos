@@ -84,6 +84,58 @@ spec:
       reason: Invalid
 ```
 
+### 3. Scenario: Opt-In Restriction
+
+This policy prevents workloads from setting `nodeSelector` or `tolerations`, but **only** for namespaces that are explicitly tagged as "restricted". This allows you to apply stricter controls to specific environments (like production) while leaving dev environments flexible.
+
+**The Strategy:**
+1.  **The Policy (Rules):** "Deny if `nodeSelector` or `tolerations` are present."
+2.  **The Binding (Scope):** "Apply ONLY to namespaces with the label `env=restricted`."
+
+**Policy Definition:**
+
+```yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: "block-custom-scheduling"
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+      - apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["deployments", "statefulsets", "daemonsets"]
+  validations:
+    - expression: |
+        object.kind == 'Pod' ? 
+        (!has(object.spec.nodeSelector) && !has(object.spec.tolerations)) : 
+        (!has(object.spec.template.spec.nodeSelector) && !has(object.spec.template.spec.tolerations))
+      message: "Custom scheduling (nodeSelector, tolerations) is forbidden in 'restricted' environments."
+```
+
+**Binding (The Inclusion Logic):**
+
+```yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: "block-custom-scheduling-binding"
+spec:
+  policyName: "block-custom-scheduling"
+  validationActions: [Deny]
+  matchResources:
+    # Logic: Apply ONLY to namespaces with this specific label
+    namespaceSelector:
+      matchLabels:
+        env: restricted
+```
+
 ## Advanced Features
 
 *   **Match Conditions**: Fine-grained filtering using CEL (e.g., exclude specific users or groups).

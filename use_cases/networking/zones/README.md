@@ -24,6 +24,7 @@ First, let's set up the environment by creating the namespace and defining the n
 
 ```bash
 oc create ns dmz
+oc label ns dmz env=restricted
 ```
 
 **2. Force Pods to the DMZ Zone:**
