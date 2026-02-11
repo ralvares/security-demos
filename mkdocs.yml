@@ -25,6 +25,7 @@ nav:
         - Multi-Tenancy: 'rbac/multi-tenancy.md'
         - Automated Project Provisioning: 'rbac/project-demo.md'
     - Module 3 - Identity and Access Management: 
+        - IAM and Admission Control Overview: 'admissioncontrols/README.md'
         - RBAC Fundamentals: 'rbac/rbac-intro.md'
         - Granular Custom Roles: 'rbac/custom-roles.md'
     - Module 4 - Admission Control & Enforcement: 

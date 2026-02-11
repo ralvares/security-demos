@@ -6,6 +6,14 @@ In this demo, we move beyond generic permissions. We will create a custom role s
 
 Default roles are "bundled" permissions. For example, the `view` role allows a user to see almost everything in a namespace. A **Custom Role** allows you to follow the **Principle of Least Privilege** to the letter by selecting only the specific API "Verbs" and "Resources" required for a task.
 
+### Step 0: Setup Namespaces
+
+```bash
+# Create the namespaces for the Auditor (payments) and Monitoring (management) scenarios
+oc create ns payments
+oc create ns management
+```
+
 ---
 
 ## 2. Defining the Custom Role

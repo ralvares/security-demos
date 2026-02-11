@@ -38,6 +38,16 @@ oc adm groups add-users payment-team payment-admin
 
 ```
 
+### Step 2: Create the Project Structure
+
+Create the three namespaces that represent our application tiers:
+
+```bash
+oc new-project frontend
+oc new-project backend
+oc new-project payments
+```
+
 ---
 
 ## 3. The Permission Strategy Matrix
