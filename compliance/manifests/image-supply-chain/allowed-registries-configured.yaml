@@ -1,0 +1,64 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: CustomRule
+metadata:
+  name: allowed-registries-configured
+  labels:
+    compliance.openshift.io/custom: "true"
+  namespace: openshift-compliance
+spec:
+  title: "Allowed Registries for Pod Images"
+  description: "Ensure pods in namespaces labeled custom.security/enforce=true only use images from quay.io or registry.redhat.io."
+  severity: medium
+  failureReason: One or more pods use images from unapproved registries in an enforced namespace.
+  id: allowed_registries_pod_images
+  checkType: Platform
+  scannerType: CEL
+  inputs:
+    - name: pods
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: pods
+    - name: namespaces
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: namespaces
+  expression: |
+    pods.items.all(pod,
+      (
+        // 1. SKIP: Check if Namespace is enforced. 
+        // We use safe map lookup ('key' in map) to prevent "no such key" crashes.
+        !namespaces.items.exists(ns,
+          ns.metadata.name == pod.metadata.namespace &&
+          has(ns.metadata.labels) &&
+          'custom.security/enforce' in ns.metadata.labels &&
+          ns.metadata.labels['custom.security/enforce'] == 'true'
+        )
+      ) ||
+      (
+        // 2. PASS: If namespace is enforced, check ALL container types.
+        
+        // A. Standard Containers (Always exist)
+        pod.spec.containers.all(c, 
+          c.image.startsWith('quay.io/') || 
+          c.image.startsWith('registry.redhat.io/')
+        ) &&
+        
+        // B. Init Containers (Use !has() for safety)
+        (
+          !has(pod.spec.initContainers) || 
+          pod.spec.initContainers.all(ic, 
+            ic.image.startsWith('quay.io/') || 
+            ic.image.startsWith('registry.redhat.io/')
+          )
+        ) &&
+
+        // C. Ephemeral Containers (Debug containers - often missed!)
+        (
+          !has(pod.spec.ephemeralContainers) || 
+          pod.spec.ephemeralContainers.all(ec, 
+            ec.image.startsWith('quay.io/') || 
+            ec.image.startsWith('registry.redhat.io/')
+          )
+        )
+      )
+    )
