@@ -7,7 +7,7 @@ _rox_format_jq() {
 # 1. Image Check (Policies) - Path: .results[].violatedPolicies
 rox-check() {
   ./roxctl image check --insecure-skip-tls-verify -o json -i "$1" 2>/dev/null | \
-  _rox_format_jq '["POLICY", "SEVERITY", "VIOLATION"], (["-"*10,"-"*10,"-"*10]), (.results[].violatedPolicies[]? | [.name, .severity, .violation[0]]) | @tsv'
+  _rox_format_jq '["POLICY", "SEVERITY", "ENFORCED", "VIOLATION"], (["-"*10,"-"*10,"-"*10,"-"*10]), (.results[].violatedPolicies[]? | [.name, .severity, .failingCheck, .violation[0]]) | @tsv'
 }
 
 # 2. Image Scan (CVEs) - Path: .result.vulnerabilities
@@ -19,5 +19,5 @@ rox-scan() {
 # 3. Deployment Check (YAMLs) - Path: .results[].violatedPolicies
 rox-deploy() {
   ./roxctl deployment check --insecure-skip-tls-verify -o json -f "$1" 2>/dev/null | \
-  _rox_format_jq '["POLICY", "SEVERITY", "VIOLATION"], (["-"*10,"-"*10,"-"*10]), (.results[].violatedPolicies[]? | [.name, .severity, .violation[0]]) | @tsv'
+  _rox_format_jq '["POLICY", "SEVERITY", "ENFORCED", "VIOLATION"], (["-"*10,"-"*10,"-"*10,"-"*10]), (.results[].violatedPolicies[]? | [.name, .severity, .failingCheck, .violation[0]]) | @tsv'
 }
