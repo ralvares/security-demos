@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-team-b-default-8080
+  namespace: team-a
+spec:
+  podSelector:
+    matchLabels:
+      app: default
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: team-b
+        podSelector:
+          matchLabels:
+            app: default
+      ports:
+        - protocol: TCP
+          port: 8080

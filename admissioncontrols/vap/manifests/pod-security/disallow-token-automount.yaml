@@ -1,0 +1,36 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: disallow-token-automount
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+  validations:
+  - expression: |
+      ( !has(object.spec.automountServiceAccountToken) || object.spec.automountServiceAccountToken == false )
+    message: "Pod must disable automountServiceAccountToken unless namespace has custom.security/automount=true label"
+    reason: Forbidden
+  # No variables required - the binding selector handles exemptions
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: disallow-token-automount-binding
+spec:
+  policyName: disallow-token-automount
+  validationActions: ["Deny"]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+      - key: custom.security/enforce
+        operator: In
+        values: ["true"]
+      - key: custom.security/automount
+        operator: NotIn
+        values: ["true"]

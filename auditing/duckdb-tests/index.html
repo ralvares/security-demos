@@ -1,0 +1,2365 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ocpsec.ralvares.com/auditing/duckdb-tests/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+    
+    
+      
+        <title>Duckdb tests - kubernetes/OpenShift Security & Demo and More.</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="kubernetes/OpenShift Security &amp; Demo and More." class="md-header__button md-logo" aria-label="kubernetes/OpenShift Security & Demo and More." data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            kubernetes/OpenShift Security & Demo and More.
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Duckdb tests
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ralvares/security-demos" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ralvares/security-demos
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="kubernetes/OpenShift Security &amp; Demo and More." class="md-nav__button md-logo" aria-label="kubernetes/OpenShift Security & Demo and More." data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    kubernetes/OpenShift Security & Demo and More.
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ralvares/security-demos" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ralvares/security-demos
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RHACS
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RHACS
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../demo_app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CIS
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CIS
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cis/cis-DrivenSecurityOperationsProgram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The CIS-Driven Security Operations Program
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cis/cis-ContinuousVulnerabilityManagement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The CIS-Driven Vulnerability Management Program (VMP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_1" id="__nav_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 1 - Architecture, Threats & Security Strategy
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 1 - Architecture, Threats & Security Strategy
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../compliance/architecture%20and%20threat%20awareness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenShift Security Architecture & Threat Awareness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The 10 Essential Controls - A Unified Kubernetes Security Playbook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../compliance/the%208%20pillars%20of%20a%20secure%20container%20platform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The 8 Pillars of a Secure Container Platform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../compliance/The%20Risk-Driven%20Business%20Conversation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Risk-Driven Business Conversation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 2 - Secure Multi-Tenancy & Project Governance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 2 - Secure Multi-Tenancy & Project Governance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rbac/multi-tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rbac/project-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Automated Project Provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 3 - Identity and Access Management
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 3 - Identity and Access Management
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM and Admission Control Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rbac/rbac-intro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC Fundamentals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rbac/custom-roles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Granular Custom Roles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 4 - Admission Control & Enforcement
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 4 - Admission Control & Enforcement
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM and Admission Control Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/quota/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resource Quotas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/ClusterResourceQuota/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cluster-Wide Quotas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LimitRanges
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/usernamespaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Namespaces Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4_6" id="__nav_4_4_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Context Constraints (SCC)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security Context Constraints (SCC)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/scc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SCC Fundamentals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/scc/SCC-LayersOfContainerSecurity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SCC Defense in Depth - DAC & MAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/scc/custom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SCC Customization - Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4_7" id="__nav_4_4_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Real Danger of Privileged Containers
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The Real Danger of Privileged Containers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/ShadowAPI-rke2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SUSE RKE2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/ShadowAPI/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenShift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/vap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validating Admission Policy (VAP) Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admissioncontrols/vap/vap-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validating Admission  Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 5 - Network Security & Isolation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 5 - Network Security & Isolation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../networking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Policies - Intro
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../networking/networkpolicies/protecting-the-network-using-networkpolicies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Policies - Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../networking/networkpolicies/adminnetworkpolicies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin Network Policies Intro
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../networking/networkpolicies/anp-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin Network Policies - Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../networking/zones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Security Zones
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 6 - Compliance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 6 - Compliance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../compliance/compliance-operator-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance Operator - Custom Rules - Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../compliance/compliance-operator-variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance Operator Custom Rules - Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 7 - Incident Response & Forensics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 7 - Incident Response & Forensics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-log-Investigation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mastering Audit Logs & Forensics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubectl-timemachine-instructions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubectl Timemachine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 8 - Sovereign
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 8 - Sovereign
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sovereign/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sovereign Cloud Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Duckdb tests</h1>
+
+<p>➜  ~ duckdb -c "
+SELECT
+  json_extract_string(objectRef, '$.name') AS Namespace,
+  requestReceivedTimestamp AS CreationTime,
+  json_extract_string(responseObject, '$.status.phase') AS Status
+FROM read_json_auto('audit.log', ignore_errors=true) 
+WHERE json_extract_string(objectRef, '$.resource') = 'namespaces'
+  AND verb = 'create'
+ORDER BY CreationTime;
+"
+┌───────────┬─────────────────────────────┬─────────┐
+│ Namespace │        CreationTime         │ Status  │
+│  varchar  │           varchar           │ varchar │
+├───────────┼─────────────────────────────┼─────────┤
+│ backend   │ 2025-12-10T06:29:45.805882Z │ Active  │
+│ frontend  │ 2025-12-10T06:29:46.148817Z │ Active  │
+│ payments  │ 2025-12-10T06:29:46.493026Z │ Active  │
+└───────────┴─────────────────────────────┴─────────┘
+➜  ~ </p>
+<p>➜  ~ duckdb -c "
+SELECT
+  requestReceivedTimestamp AS Time,
+  json_extract_string(objectRef, '$.resource') AS Kind,
+  json_extract_string(objectRef, '$.name') AS Name,
+  json_extract_string(user, '$.username') AS User,
+  json_extract_string(responseStatus, '$.code') AS Code
+FROM read_json_auto('audit.log', ignore_errors=true)
+WHERE json_extract_string(objectRef, '$.namespace') = 'payments'
+  AND verb = 'create'
+ORDER BY Time;
+"
+┌──────────────────────┬──────────────────────┬────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────┬─────────┐
+│         Time         │         Kind         │                      Name                      │                                          User                                          │  Code   │
+│       varchar        │       varchar        │                    varchar                     │                                        varchar                                         │ varchar │
+├──────────────────────┼──────────────────────┼────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┼─────────┤
+│ 2025-12-10T06:29:4…  │ configmaps           │ kube-root-ca.crt                               │ system:serviceaccount:kube-system:root-ca-cert-publisher                               │ 201     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ default                                        │ system:serviceaccount:kube-system:service-account-controller                           │ 201     │
+│ 2025-12-10T06:29:4…  │ configmaps           │ openshift-service-ca.crt                       │ system:serviceaccount:kube-system:service-ca-cert-publisher                            │ 201     │
+│ 2025-12-10T06:29:4…  │ rolebindings         │ system:deployers                               │ system:serviceaccount:openshift-infra:default-rolebindings-controller                  │ 201     │
+│ 2025-12-10T06:29:4…  │ rolebindings         │ system:image-pullers                           │ system:serviceaccount:openshift-infra:default-rolebindings-controller                  │ 201     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ builder                                        │ system:serviceaccount:openshift-infra:serviceaccount-controller                        │ 201     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ deployer                                       │ system:serviceaccount:openshift-infra:serviceaccount-controller                        │ 201     │
+│ 2025-12-10T06:29:4…  │ rolebindings         │ system:image-builders                          │ system:serviceaccount:openshift-infra:default-rolebindings-controller                  │ 201     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ builder                                        │ system:serviceaccount:openshift-infra:serviceaccount-pull-secrets-controller           │ 201     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ deployer                                       │ system:serviceaccount:openshift-infra:serviceaccount-pull-secrets-controller           │ 201     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ default                                        │ system:serviceaccount:kube-system:service-account-controller                           │ 409     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ default                                        │ system:serviceaccount:openshift-infra:serviceaccount-pull-secrets-controller           │ 201     │
+│ 2025-12-10T06:29:4…  │ clusterservicevers…  │ network-observability-operator.v1.10.1         │ system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount │ 201     │
+│ 2025-12-10T06:29:4…  │ clusterservicevers…  │ compliance-operator.v1.8.0                     │ system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount │ 201     │
+│ 2025-12-10T06:29:4…  │ clusterservicevers…  │ openshift-pipelines-operator-rh.v1.20.1        │ system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount │ 201     │
+│ 2025-12-10T06:29:4…  │ clusterservicevers…  │ rhacs-operator.v4.9.1                          │ system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount │ 201     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ pipeline                                       │ system:serviceaccount:openshift-operators:openshift-pipelines-operator                 │ 201     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ pipeline                                       │ system:serviceaccount:openshift-infra:serviceaccount-pull-secrets-controller           │ 201     │
+│ 2025-12-10T06:29:4…  │ rolebindings         │ pipelines-scc-rolebinding                      │ system:serviceaccount:openshift-operators:openshift-pipelines-operator                 │ 201     │
+│ 2025-12-10T06:29:4…  │ serviceaccounts      │ mastercard-processor                           │ admin                                                                                  │ 201     │
+│          ·           │  ·                   │          ·                                     │   ·                                                                                    │  ·      │
+│          ·           │  ·                   │          ·                                     │   ·                                                                                    │  ·      │
+│          ·           │  ·                   │          ·                                     │   ·                                                                                    │  ·      │
+│ 2025-12-10T06:30:4…  │ pods                 │ gateway-79d69c8875-69zn9                       │ system:kube-scheduler                                                                  │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ gateway-79d69c8875.187fc6df2c1d1a9e            │ system:serviceaccount:kube-system:replicaset-controller                                │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ gateway-79d69c8875-69zn9.187fc6df2cbfc8ae      │ system:kube-scheduler                                                                  │ 201     │
+│ 2025-12-10T06:30:4…  │ deployments          │ mastercard-processor                           │ admin                                                                                  │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ gateway-79d69c8875-69zn9.187fc6df4ae6cb68      │ system:multus:master-1                                                                 │ 201     │
+│ 2025-12-10T06:30:4…  │ replicasets          │ mastercard-processor-59986f994c                │ system:serviceaccount:kube-system:deployment-controller                                │ 201     │
+│ 2025-12-10T06:30:4…  │ pods                 │ NULL                                           │ system:serviceaccount:kube-system:replicaset-controller                                │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ mastercard-processor.187fc6e03de6b7ef          │ system:serviceaccount:kube-system:deployment-controller                                │ 201     │
+│ 2025-12-10T06:30:4…  │ pods                 │ mastercard-processor-59986f994c-lmwmx          │ system:kube-scheduler                                                                  │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ mastercard-processor-59986f994c.187fc6e03eb4…  │ system:serviceaccount:kube-system:replicaset-controller                                │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ mastercard-processor-59986f994c-lmwmx.187fc6…  │ system:kube-scheduler                                                                  │ 201     │
+│ 2025-12-10T06:30:4…  │ deployments          │ visa-processor                                 │ admin                                                                                  │ 201     │
+│ 2025-12-10T06:30:4…  │ replicasets          │ visa-processor-7d57964dc8                      │ system:serviceaccount:kube-system:deployment-controller                                │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ visa-processor.187fc6e05c52a0f9                │ system:serviceaccount:kube-system:deployment-controller                                │ 201     │
+│ 2025-12-10T06:30:4…  │ pods                 │ NULL                                           │ system:serviceaccount:kube-system:replicaset-controller                                │ 201     │
+│ 2025-12-10T06:30:4…  │ pods                 │ visa-processor-7d57964dc8-brrf7                │ system:kube-scheduler                                                                  │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ visa-processor-7d57964dc8.187fc6e05f261c24     │ system:serviceaccount:kube-system:replicaset-controller                                │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ visa-processor-7d57964dc8-brrf7.187fc6e05f79…  │ system:kube-scheduler                                                                  │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ mastercard-processor-59986f994c-lmwmx.187fc6…  │ system:multus:master-1                                                                 │ 201     │
+│ 2025-12-10T06:30:4…  │ events               │ visa-processor-7d57964dc8-brrf7.187fc6e08145…  │ system:multus:master-1                                                                 │ 201     │
+├──────────────────────┴──────────────────────┴────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────┴─────────┤
+│ 63 rows (40 shown)                                                                                                                                                                    5 columns │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+➜  ~ </p>
+<p>➜  ~ duckdb -c "
+SELECT
+  json_extract_string(objectRef, '$.name') AS Deployment,
+  json_extract_string(responseObject, '$.spec.template.spec.containers[0].image') AS Image,
+  COALESCE(json_extract_string(responseObject, '$.spec.template.spec.serviceAccountName'), 'default') AS ServiceAccount
+FROM read_json_auto('audit.log', ignore_errors=true)
+WHERE json_extract_string(objectRef, '$.namespace') = 'payments'
+  AND json_extract_string(objectRef, '$.resource') = 'deployments'
+  AND verb = 'create'
+ORDER BY requestReceivedTimestamp;
+"
+┌──────────────────────┬──────────────────────────────────────────┬──────────────────────┐
+│      Deployment      │                  Image                   │    ServiceAccount    │
+│       varchar        │                 varchar                  │       varchar        │
+├──────────────────────┼──────────────────────────────────────────┼──────────────────────┤
+│ gateway              │ quay.io/vuln/gateway:v1                  │ default              │
+│ mastercard-processor │ quay.io/vuln/mastercard-processor:latest │ mastercard-processor │
+│ visa-processor       │ quay.io/vuln/visa-processor:latest       │ visa-processor       │
+└──────────────────────┴──────────────────────────────────────────┴──────────────────────┘
+➜  ~ </p>
+<p>➜  ~ duckdb -c "
+SELECT
+  json_extract(responseObject, '$') AS FullJson
+FROM read_json_auto('audit.log', ignore_errors=true)
+WHERE json_extract_string(objectRef, '$.namespace') = 'payments'
+  AND json_extract_string(objectRef, '$.resource') = 'deployments'
+  AND json_extract_string(objectRef, '$.name') = 'gateway'
+  AND verb = 'create';
+"
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                            FullJson                                                                                             │
+│                                                                                              json                                                                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ {"kind":"Deployment","apiVersion":"apps/v1","metadata":{"name":"gateway","namespace":"payments","uid":"ccd7ab4c-b4f9-4c05-ac24-bacbbf13fa90","resourceVersion":"11632574","creationTimestamp"…  │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+➜  ~ duckdb -c "
+SELECT
+  json_extract(responseObject, '$.metadata') AS Metadata
+FROM read_json_auto('audit.log', ignore_errors=true)
+WHERE json_extract_string(objectRef, '$.namespace') = 'payments'
+  AND json_extract_string(objectRef, '$.resource') = 'deployments'
+  AND json_extract_string(objectRef, '$.name') = 'gateway'
+  AND verb = 'create';
+"
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                            Metadata                                                                                             │
+│                                                                                              json                                                                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ {"name":"gateway","namespace":"payments","uid":"ccd7ab4c-b4f9-4c05-ac24-bacbbf13fa90","resourceVersion":"11632574","creationTimestamp":"2025-12-10 06:30:37","labels":{"app":"gateway","app.k…  │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+➜  ~ duckdb -c "
+SELECT
+  json_extract_string(objectRef, '$.name') AS Deployment,
+  json_extract_string(responseObject, '$.spec.template.spec.containers[0].image') AS Image,
+  COALESCE(json_extract_string(responseObject, '$.spec.template.spec.serviceAccountName'), 'default') AS ServiceAccount
+FROM read_json_auto('audit.log', ignore_errors=true)
+WHERE json_extract_string(objectRef, '$.namespace') = 'payments'
+  AND json_extract_string(objectRef, '$.resource') = 'deployments'
+  AND verb = 'create'
+ORDER BY requestReceivedTimestamp;
+"
+┌──────────────────────┬──────────────────────────────────────────┬──────────────────────┐
+│      Deployment      │                  Image                   │    ServiceAccount    │
+│       varchar        │                 varchar                  │       varchar        │
+├──────────────────────┼──────────────────────────────────────────┼──────────────────────┤
+│ gateway              │ quay.io/vuln/gateway:v1                  │ default              │
+│ mastercard-processor │ quay.io/vuln/mastercard-processor:latest │ mastercard-processor │
+│ visa-processor       │ quay.io/vuln/visa-processor:latest       │ visa-processor       │
+└──────────────────────┴──────────────────────────────────────────┴──────────────────────┘
+➜  ~ </p>
+<hr />
+<p>➜  ~ duckdb -c "
+WITH history AS (
+    SELECT
+        requestReceivedTimestamp as ts,
+        verb,
+        json_extract_string(objectRef, '$.namespace') as ns,
+        json_extract_string(objectRef, '$.resource') as kind,
+        json_extract_string(objectRef, '$.name') as name,
+        -- Find the latest event for every unique object (Namespace + Kind + Name)
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                json_extract_string(objectRef, '$.namespace'),
+                json_extract_string(objectRef, '$.resource'),
+                json_extract_string(objectRef, '$.name')
+            ORDER BY requestReceivedTimestamp DESC
+        ) as rn
+    FROM read_json_auto('audit.log', ignore_errors=true)
+    WHERE json_extract_string(objectRef, '$.resource') IN (
+          'pods', 'services', 'configmaps', 'serviceaccounts', 'namespaces', 'nodes', 'secrets',
+          'persistentvolumes', 'persistentvolumeclaims', 'deployments', 'daemonsets', 'statefulsets',
+          'replicasets', 'jobs', 'cronjobs', 'ingresses', 'routes', 'networkpolicies',
+          'virtualmachines', 'virtualmachineinstances'
+          )
+      AND verb IN ('create', 'update', 'patch', 'delete')
+)
+SELECT
+    ns AS Namespace,
+    kind AS Kind,
+    name AS Name,
+    ts AS LastUpdated
+FROM history
+WHERE rn = 1
+  AND verb != 'delete'  -- Exclude objects that were deleted
+  AND Name IS NOT NULL  -- Exclude malformed log entries
+ORDER BY ns, kind, name;
+"
+┌────────────────┬─────────────────┬─────────────────────────────────────┬─────────────────────────────┐
+│   Namespace    │      Kind       │                Name                 │         LastUpdated         │
+│    varchar     │     varchar     │               varchar               │           varchar           │
+├────────────────┼─────────────────┼─────────────────────────────────────┼─────────────────────────────┤
+│ backend        │ configmaps      │ checkout-endpoint-config            │ 2025-12-10T06:29:50.888226Z │
+│ backend        │ configmaps      │ config-service-cabundle             │ 2025-12-10T06:29:46.435614Z │
+│ backend        │ configmaps      │ config-trusted-cabundle             │ 2025-12-10T06:29:46.430860Z │
+│ backend        │ configmaps      │ kube-root-ca.crt                    │ 2025-12-10T06:29:45.852862Z │
+│ backend        │ configmaps      │ openshift-service-ca.crt            │ 2025-12-10T06:29:45.889466Z │
+│ backend        │ configmaps      │ recommendation-endpoint-config      │ 2025-12-10T06:29:51.377209Z │
+│ backend        │ configmaps      │ reports-endpoint-config             │ 2025-12-10T06:29:51.876048Z │
+│ backend        │ deployments     │ catalog                             │ 2025-12-10T06:30:07.439014Z │
+│ backend        │ deployments     │ checkout                            │ 2025-12-10T06:30:12.510642Z │
+│ backend        │ deployments     │ notification                        │ 2025-12-10T06:30:15.516189Z │
+│ backend        │ deployments     │ recommendation                      │ 2025-12-10T06:30:18.543918Z │
+│ backend        │ deployments     │ reports                             │ 2025-12-10T06:30:21.564426Z │
+│ backend        │ deployments     │ shipping                            │ 2025-12-10T06:30:25.615086Z │
+│ backend        │ namespaces      │ backend                             │ 2025-12-10T06:29:46.437041Z │
+│ backend        │ pods            │ catalog-6f458f4787-gvv42            │ 2025-12-10T06:30:05.280742Z │
+│ backend        │ pods            │ checkout-d4f598d84-57pwx            │ 2025-12-10T06:30:08.971804Z │
+│ backend        │ pods            │ notification-77477dc7ff-4kr6n       │ 2025-12-10T06:30:12.730477Z │
+│ backend        │ pods            │ recommendation-7fb9bc97dc-k66tj     │ 2025-12-10T06:30:16.467920Z │
+│ backend        │ pods            │ reports-5c477c86b7-cg947            │ 2025-12-10T06:30:19.672406Z │
+│ backend        │ pods            │ shipping-56c9c9dd4f-26xzw           │ 2025-12-10T06:30:23.839068Z │
+│    ·           │  ·              │          ·                          │              ·              │
+│    ·           │  ·              │          ·                          │              ·              │
+│    ·           │  ·              │          ·                          │              ·              │
+│ payments       │ serviceaccounts │ mastercard-processor                │ 2025-12-10T06:29:47.526509Z │
+│ payments       │ serviceaccounts │ pipeline                            │ 2025-12-10T06:29:47.450458Z │
+│ payments       │ serviceaccounts │ visa-processor                      │ 2025-12-10T06:29:48.084534Z │
+│ payments       │ services        │ gateway-service                     │ 2025-12-10T06:29:58.028051Z │
+│ payments       │ services        │ mastercard-processor-service        │ 2025-12-10T06:29:58.538021Z │
+│ payments       │ services        │ visa-processor-service              │ 2025-12-10T06:29:59.053820Z │
+│ rhacs-operator │ secrets         │ pipeline-dockercfg-66qz4            │ 2025-12-10T06:28:11.023468Z │
+│ rhacs-operator │ serviceaccounts │ pipeline                            │ 2025-12-10T06:28:11.001486Z │
+│ stackrox       │ deployments     │ scanner-v4-matcher                  │ 2025-12-10T06:31:07.119432Z │
+│ stackrox       │ pods            │ scanner-v4-matcher-6d5bdd4dc8-zckqv │ 2025-12-10T06:31:04.024169Z │
+│ stackrox       │ replicasets     │ scanner-v4-matcher-6d5bdd4dc8       │ 2025-12-10T06:31:07.102478Z │
+│ stackrox       │ secrets         │ pipeline-dockercfg-4tbwh            │ 2025-12-10T06:28:13.023658Z │
+│ stackrox       │ serviceaccounts │ pipeline                            │ 2025-12-10T06:28:13.002409Z │
+│ NULL           │ ingresses       │ cluster                             │ 2025-12-10T06:30:32.899432Z │
+│ NULL           │ namespaces      │ backend                             │ 2025-12-10T06:29:45.805882Z │
+│ NULL           │ namespaces      │ frontend                            │ 2025-12-10T06:29:46.148817Z │
+│ NULL           │ namespaces      │ payments                            │ 2025-12-10T06:29:46.493026Z │
+│ NULL           │ nodes           │ master-0                            │ 2025-12-10T06:31:29.260508Z │
+│ NULL           │ nodes           │ master-1                            │ 2025-12-10T06:31:32.322597Z │
+│ NULL           │ nodes           │ master-2                            │ 2025-12-10T06:31:15.271081Z │
+├────────────────┴─────────────────┴─────────────────────────────────────┴─────────────────────────────┤
+│ 248 rows (40 shown)                                                                        4 columns │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+➜  ~ duckdb -c "
+WITH history AS (
+    SELECT
+        requestReceivedTimestamp as ts,
+        verb,
+        json_extract_string(objectRef, '$.namespace') as ns,
+        json_extract_string(objectRef, '$.resource') as kind,
+        json_extract_string(objectRef, '$.name') as name,
+        -- Find the latest event for every unique object (Namespace + Kind + Name)
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                json_extract_string(objectRef, '$.namespace'),
+                json_extract_string(objectRef, '$.resource'),
+                json_extract_string(objectRef, '$.name')
+            ORDER BY requestReceivedTimestamp DESC
+        ) as rn
+    FROM read_json_auto('audit.log', ignore_errors=true)
+    WHERE json_extract_string(objectRef, '$.resource') IN (
+          'pods', 'services', 'configmaps', 'serviceaccounts', 'namespaces', 'nodes', 'secrets',
+          'persistentvolumes', 'persistentvolumeclaims', 'deployments', 'daemonsets', 'statefulsets',
+          'replicasets', 'jobs', 'cronjobs', 'ingresses', 'routes', 'networkpolicies',
+          'virtualmachines', 'virtualmachineinstances'
+          )
+      AND verb IN ('create', 'update', 'patch', 'delete')
+)
+SELECT
+    ns AS Namespace,
+    kind AS Kind,
+    name AS Name,
+    ts AS LastUpdated
+FROM history
+WHERE rn = 1
+  AND verb != 'delete'  -- Exclude objects that were deleted
+  AND Name IS NOT NULL  -- Exclude malformed log entries
+ORDER BY ns, kind, name;
+"</p>
+<p>➜  ~ duckdb -c "                                                                               <br />
+WITH all_events AS (
+    SELECT
+        json_extract_string(objectRef, '$.namespace') as ns,
+        json_extract_string(objectRef, '$.name') as name,
+        requestReceivedTimestamp as ts,
+        verb,
+        -- Extract IP from either Status OR OpenShift Annotation
+        COALESCE(
+            json_extract_string(responseObject, '$.status.podIP'),
+            json_extract_string(
+                json_extract_string(responseObject, '$.metadata.annotations.\"k8s.ovn.org/pod-networks\"'),
+                '$.default.ip_address'
+            )
+        ) as extracted_ip
+    FROM read_json_auto('audit.log.new', ignore_errors=true)
+    WHERE json_extract_string(objectRef, '$.resource') = 'pods'
+),
+-- 1. Get the current status of every pod (Active vs Deleted)
+active_pods AS (
+    SELECT DISTINCT ON (ns, name)
+        ns, name, verb
+    FROM all_events
+    WHERE name IS NOT NULL
+    ORDER BY ns, name, ts DESC
+),
+-- 2. Get the last known IP for every pod (skipping NULLs)
+latest_ips AS (
+    SELECT DISTINCT ON (ns, name)
+        ns, name, extracted_ip as ip
+    FROM all_events
+    WHERE extracted_ip IS NOT NULL
+      AND name IS NOT NULL
+    ORDER BY ns, name, ts DESC
+)
+-- 3. Combine them
+SELECT
+    p.ns AS Namespace,
+    p.name AS Pod,
+    i.ip AS IP
+FROM active_pods p
+LEFT JOIN latest_ips i ON p.ns = i.ns AND p.name = i.name
+WHERE p.verb != 'delete'
+ORDER BY p.ns, p.name;
+"
+┌──────────────────────────────────────┬─────────────────────────────────────────┬─────────────────┐
+│              Namespace               │                   Pod                   │       IP        │
+│               varchar                │                 varchar                 │     varchar     │
+├──────────────────────────────────────┼─────────────────────────────────────────┼─────────────────┤
+│ backend                              │ catalog-6f458f4787-gvv42                │ 10.130.0.181/23 │
+│ backend                              │ checkout-d4f598d84-57pwx                │ 10.130.0.182/23 │
+│ backend                              │ notification-77477dc7ff-4kr6n           │ 10.130.0.184/23 │
+│ backend                              │ recommendation-7fb9bc97dc-k66tj         │ 10.130.0.185/23 │
+│ backend                              │ reports-5c477c86b7-cg947                │ 10.130.0.186/23 │
+│ backend                              │ shipping-56c9c9dd4f-26xzw               │ 10.130.0.187/23 │
+│ frontend                             │ asset-cache-7d548fc66f-x4cmp            │ 10.128.1.202/23 │
+│ frontend                             │ blog-7776768bf6-lxhjp                   │ 10.128.1.203/23 │
+│ frontend                             │ webapp-7f77777944-9xs4h                 │ 10.130.0.188/23 │
+│ openshift-authentication             │ oauth-openshift-67cbf56478-6b6s6        │ NULL            │
+│ openshift-authentication             │ oauth-openshift-67cbf56478-f2zqm        │ NULL            │
+│ openshift-authentication             │ oauth-openshift-67cbf56478-h8mqr        │ NULL            │
+│ openshift-etcd                       │ etcd-guard-master-0                     │ NULL            │
+│ openshift-etcd                       │ etcd-guard-master-1                     │ NULL            │
+│ openshift-etcd                       │ etcd-guard-master-2                     │ NULL            │
+│ openshift-etcd                       │ etcd-master-0                           │ NULL            │
+│ openshift-etcd                       │ etcd-master-1                           │ NULL            │
+│ openshift-etcd                       │ etcd-master-2                           │ NULL            │
+│ openshift-kube-apiserver             │ kube-apiserver-guard-master-0           │ NULL            │
+│ openshift-kube-apiserver             │ kube-apiserver-guard-master-1           │ NULL            │
+│            ·                         │              ·                          │  ·              │
+│            ·                         │              ·                          │  ·              │
+│            ·                         │              ·                          │  ·              │
+│ openshift-kube-apiserver             │ revision-pruner-16-master-0             │ NULL            │
+│ openshift-kube-apiserver             │ revision-pruner-16-master-1             │ NULL            │
+│ openshift-kube-apiserver             │ revision-pruner-16-master-2             │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-guard-master-0  │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-guard-master-1  │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-guard-master-2  │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-master-0        │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-master-1        │ NULL            │
+│ openshift-kube-controller-manager    │ kube-controller-manager-master-2        │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-guard-master-0 │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-guard-master-1 │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-guard-master-2 │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-master-0       │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-master-1       │ NULL            │
+│ openshift-kube-scheduler             │ openshift-kube-scheduler-master-2       │ NULL            │
+│ openshift-operator-lifecycle-manager │ collect-profiles-29422470-vj4ds         │ 10.129.1.125/23 │
+│ payments                             │ gateway-79d69c8875-69zn9                │ 10.130.0.189/23 │
+│ payments                             │ mastercard-processor-59986f994c-lmwmx   │ 10.130.0.190/23 │
+│ payments                             │ visa-processor-7d57964dc8-brrf7         │ 10.130.0.191/23 │
+│ stackrox                             │ scanner-v4-matcher-6d5bdd4dc8-zckqv     │ 10.128.1.204/23 │
+├──────────────────────────────────────┴─────────────────────────────────────────┴─────────────────┤
+│ 44 rows (40 shown)                                                                     3 columns │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+➜  ~ </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

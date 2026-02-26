@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-a
+  labels:
+    custom.security/enforce: "true"
+---
+# ConfigMap for index.html
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: index-html
+  namespace: team-a
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head><title>Connectivity Probe</title></head>
+    <body><h1>ok</h1></body>
+    </html>
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: default
+  namespace: team-a
+  labels:
+    app: default
+spec:
+  containers:
+  - name: httpd
+    image: registry.access.redhat.com/ubi9/httpd-24
+    ports:
+    - containerPort: 8080
+    volumeMounts:
+    - name: index-html
+      mountPath: /var/www/html/index.html
+      subPath: index.html
+  volumes:
+  - name: index-html
+    configMap:
+      name: index-html
+      defaultMode: 0444
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: default
+  namespace: team-a
+spec:
+  selector:
+    app: default
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080

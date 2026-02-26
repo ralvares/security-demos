@@ -1,0 +1,12 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: TailoredProfile
+metadata:
+  name: networkpolicy-security-checks
+  namespace: openshift-compliance
+spec:
+  title: NetworkPolicy Security Checks
+  description: Custom checks enforcing NetworkPolicy standards for labeled namespaces
+  enableRules:
+    - name: netpol-require-deny-all-in-labeled-namespaces
+      kind: CustomRule
+      rationale: Ensure deny-all NetworkPolicies exist in enforced namespaces
