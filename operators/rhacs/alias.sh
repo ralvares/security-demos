@@ -31,3 +31,9 @@ rox-deploy() {
   $_ROXCTL deployment check --insecure-skip-tls-verify -o json -f "$1" 2>/dev/null | \
   _rox_format_jq '["POLICY", "SEVERITY", "ENFORCED", "VIOLATION"], (["-"*10,"-"*10,"-"*10,"-"*10]), (.results[].violatedPolicies[]? | [.name, .severity, .failingCheck, .violation[0]]) | @tsv'
 }
+
+# 4. Get RHACS admin password from central-htpasswd secret
+rox-get-secret() {
+  oc get secret central-htpasswd -o jsonpath='{.data.password}' -n stackrox | base64 -d
+  echo
+}
