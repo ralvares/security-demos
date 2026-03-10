@@ -23,8 +23,9 @@ By default, OpenShift uses the `restricted-v2` SCC. This policy:
 We will try to run a standard `fedora` image and force it to run as the root user (UID 0).
 
 ```bash
+oc new-project scc-governance-lab
 # Attempt to run a pod as root
-oc run root-pod --image=fedora --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' -n secure-app-demo
+oc run root-pod --image=registry.access.redhat.com/ubi9/ubi --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' -n scc-governance-lab
 
 ```
 
@@ -74,7 +75,7 @@ Now, we run the same pod again, but this time we tell it to use our authorized `
 
 ```bash
 # Run the pod using the authorized ServiceAccount
-oc run root-pod-fixed --image=fedora \
+oc run root-pod-fixed --image=registry.access.redhat.com/ubi9/ubi \
   --serviceaccount=root-service-app \
   --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' \
   -n secure-app-demo
