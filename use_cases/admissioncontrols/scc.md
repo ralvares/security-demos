@@ -25,7 +25,7 @@ We will try to run a standard `fedora` image and force it to run as the root use
 ```bash
 oc new-project scc-governance-lab
 # Attempt to run a pod as root
-oc run root-pod --image=registry.access.redhat.com/ubi9/ubi --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' -n scc-governance-lab
+oc run root-pod --image=registry.access.redhat.com/ubi9/ubi --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' -n scc-governance-lab -- sleep infinity
 
 ```
 
@@ -63,7 +63,7 @@ We will grant this specific identity the `anyuid` SCC, which allows the pod to c
 
 ```bash
 # Grant the 'anyuid' SCC to the ServiceAccount
-oc adm policy add-scc-to-user anyuid -z root-service-app -n scc-governance-lab
+oc adm policy add-scc-to-user anyuid -z default -n scc-governance-lab
 
 ```
 
@@ -71,14 +71,13 @@ oc adm policy add-scc-to-user anyuid -z root-service-app -n scc-governance-lab
 
 ## 4. The Success: Running with the New Identity
 
-Now, we run the same pod again, but this time we tell it to use our authorized `root-service-app` identity.
+Now, we run the same pod again, but this time we tell it to use our authorized `default` identity.
 
 ```bash
 # Run the pod using the authorized ServiceAccount
 oc run root-pod-fixed --image=registry.access.redhat.com/ubi9/ubi \
-  --serviceaccount=root-service-app \
   --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' \
-  -n scc-governance-lab
+  -n scc-governance-lab -- sleep infinity
 
 ```
 
