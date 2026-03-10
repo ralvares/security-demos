@@ -35,7 +35,7 @@ OpenShift will accept the command, but the pod will fail to enter a "Running" st
 
 ```bash
 # Check the pod status
-oc get pod root-pod -n secure-app-demo
+oc get pod root-pod -n scc-governance-lab
 
 ```
 
@@ -53,7 +53,7 @@ We never want to grant "Root" access to a whole project or a human user. Instead
 
 ```bash
 # Create a dedicated ServiceAccount for this specific workload
-oc create sa root-service-app -n secure-app-demo
+oc create sa root-service-app -n scc-governance-lab
 
 ```
 
@@ -63,7 +63,7 @@ We will grant this specific identity the `anyuid` SCC, which allows the pod to c
 
 ```bash
 # Grant the 'anyuid' SCC to the ServiceAccount
-oc adm policy add-scc-to-user anyuid -z root-service-app -n secure-app-demo
+oc adm policy add-scc-to-user anyuid -z root-service-app -n scc-governance-lab
 
 ```
 
@@ -78,7 +78,7 @@ Now, we run the same pod again, but this time we tell it to use our authorized `
 oc run root-pod-fixed --image=registry.access.redhat.com/ubi9/ubi \
   --serviceaccount=root-service-app \
   --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' \
-  -n secure-app-demo
+  -n scc-governance-lab
 
 ```
 
@@ -86,10 +86,10 @@ oc run root-pod-fixed --image=registry.access.redhat.com/ubi9/ubi \
 
 ```bash
 # Check if the pod is running
-oc get pod root-pod-fixed -n secure-app-demo
+oc get pod root-pod-fixed -n scc-governance-lab
 
 # Verify the user inside the container is actually root
-oc exec root-pod-fixed -n secure-app-demo -- whoami
+oc exec root-pod-fixed -n scc-governance-lab -- whoami
 
 ```
 
@@ -112,7 +112,7 @@ oc get scc anyuid -o yaml
 ## 6. Cleanup
 
 ```bash
-oc delete pod root-pod root-pod-fixed -n secure-app-demo
-oc delete sa root-service-app -n secure-app-demo
+oc delete pod root-pod root-pod-fixed -n scc-governance-lab
+oc delete sa root-service-app -n scc-governance-lab
 
 ```
