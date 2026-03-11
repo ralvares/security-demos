@@ -24,24 +24,23 @@ We will try to run a standard `fedora` image and force it to run as the root use
 
 ```bash
 oc new-project scc-governance-lab
+oc adm policy add-role-to-user admin user001 -n scc-governance-lab    
 # Attempt to run a pod as root
-oc run root-pod --image=registry.access.redhat.com/ubi9/ubi --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' -n scc-governance-lab -- sleep infinity
+oc run --as=user001 root-pod --image=registry.access.redhat.com/ubi9/ubi --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' -n scc-governance-lab -- sleep infinity
 
 ```
 
-### The Reveal: Inspect the Block
+### The Reveal: Admission Control Blocks the Request
 
-OpenShift will accept the command, but the pod will fail to enter a "Running" state.
+OpenShift **rejects the request immediately** — the pod is never created. SCC enforcement happens at the admission control layer, before any scheduling or container runtime is involved.
 
-```bash
-# Check the pod status
-oc get pod root-pod -n scc-governance-lab
+**Expected Result:** The `oc run` command itself returns a `Forbidden` error:
 
 ```
+Error from server (Forbidden): pods "root-pod" is forbidden: unable to validate against any security context constraint: [provider "anyuid": Forbidden: not usable by user or serviceaccount, provider restricted-v2: .containers[0].runAsUser: Invalid value: 0: must be in the ranges: [1000660000, 1000669999], ...]
+```
 
-**Expected Result:** The pod will stay in `CreateContainerConfigError` or `CrashLoopBackOff`. If you describe the pod, you will see:
-
-> `Error: container's runAsUser breaks non-root policy (pod has uid 0, but must have non-zero uid)`
+No pod object is created in the cluster. There is nothing to `oc get` — the API server denied the request before any pod was scheduled.
 
 ---
 
@@ -101,7 +100,7 @@ Now, we run the same pod again, but this time we tell it to use our authorized `
 
 ```bash
 # Run the pod using the authorized ServiceAccount
-oc run root-pod-fixed --image=registry.access.redhat.com/ubi9/ubi \
+oc run --as=user001 root-pod-fixed --image=registry.access.redhat.com/ubi9/ubi \
   --overrides='{"spec":{"securityContext":{"runAsUser":0}}}' \
   -n scc-governance-lab -- sleep infinity
 
@@ -111,10 +110,10 @@ oc run root-pod-fixed --image=registry.access.redhat.com/ubi9/ubi \
 
 ```bash
 # Check if the pod is running
-oc get pod root-pod-fixed -n scc-governance-lab
+oc get pod root-pod-fixed -n scc-governance-lab  --as=user001
 
 # Verify the user inside the container is actually root
-oc exec root-pod-fixed -n scc-governance-lab -- whoami
+oc exec root-pod-fixed -n scc-governance-lab -- whoami  --as=user001
 
 ```
 
@@ -137,7 +136,7 @@ oc get scc anyuid -o yaml
 ## 6. Cleanup
 
 ```bash
-oc delete pod root-pod root-pod-fixed -n scc-governance-lab
+oc delete pod root-pod-fixed -n scc-governance-lab
 oc delete sa root-service-app -n scc-governance-lab
 
 ```
