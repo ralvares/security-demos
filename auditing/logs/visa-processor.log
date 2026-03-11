@@ -1,0 +1,36 @@
+{
+  "kind": "Event",
+  "apiVersion": "audit.k8s.io/v1",
+  "level": "Metadata",
+  "auditID": "7d731abd-5322-4cd3-904b-2fae5a5d0c6a",
+  "stage": "ResponseComplete",
+  "requestURI": "/api/v1/secrets?limit=500",
+  "verb": "list",
+  "user": {
+    "username": "system:serviceaccount:payments:visa-processor",
+    "uid": "59319de7-791c-44ae-8283-6ad43c6bc499",
+    "groups": [
+      "system:serviceaccounts",
+      "system:serviceaccounts:payments",
+      "system:authenticated"
+    ],
+  },
+  "sourceIPs": [
+    "192.168.50.11"
+  ],
+  "userAgent": "kubectl/v1.27.2 (linux/amd64) kubernetes/7f6f68f",
+  "objectRef": {
+    "resource": "secrets",
+    "apiVersion": "v1"
+  },
+  "responseStatus": {
+    "metadata": {},
+    "code": 200
+  },
+  "requestReceivedTimestamp": "2025-12-09T12:57:15.833619Z",
+  "stageTimestamp": "2025-12-09T12:57:15.861689Z",
+  "annotations": {
+    "authorization.k8s.io/decision": "allow",
+    "authorization.k8s.io/reason": "RBAC: allowed by ClusterRoleBinding \"visa-processor\" of ClusterRole \"cluster-admin\" to ServiceAccount \"visa-processor/payments\""
+  }
+}

@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: stackrox
+resources:
+- httpd-server-version-2.4.50.yaml
+- sample-log4shell-log4j-remote-code-execution-vulnerability.yaml
