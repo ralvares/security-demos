@@ -57,7 +57,28 @@ oc create sa root-service-app -n scc-governance-lab
 
 ```
 
-### Step B: Bind the SCC to the ServiceAccount
+### Step B: Verify the Default SCC Permissions
+
+Before granting anything, we can confirm that the `default` ServiceAccount can only use `restricted-v2` and **cannot** use `anyuid`:
+
+```bash
+# This should return "yes" — restricted-v2 is allowed by default
+oc auth can-i use scc/restricted-v2 --as=system:serviceaccount:scc-governance-lab:default
+
+# This should return "no" — anyuid is NOT allowed yet
+oc auth can-i use scc/anyuid --as=system:serviceaccount:scc-governance-lab:default
+
+```
+
+**Expected Output:**
+```
+yes
+no
+```
+
+This confirms that, out of the box, a ServiceAccount is locked to the `restricted-v2` policy and cannot escalate privileges on its own.
+
+### Step C: Bind the SCC to the ServiceAccount
 
 We will grant this specific identity the `anyuid` SCC, which allows the pod to choose its own User ID (including 0).
 
@@ -65,7 +86,12 @@ We will grant this specific identity the `anyuid` SCC, which allows the pod to c
 # Grant the 'anyuid' SCC to the ServiceAccount
 oc adm policy add-scc-to-user anyuid -z default -n scc-governance-lab
 
+# Confirm the permission has been granted
+oc auth can-i use scc/anyuid --as=system:serviceaccount:scc-governance-lab:default
+
 ```
+
+**Expected Output:** `yes`
 
 ---
 
