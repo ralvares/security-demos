@@ -9,3 +9,11 @@ resources:
   - central.yaml                # The Central CR
   - create-cluster-crs-job.yaml # The NEW CRS-based Job
   - secured-cluster.yaml        # The SecuredCluster CR
+
+patches:
+  - path: console-plugin-patch.yaml
+    target:
+      group: operator.openshift.io
+      version: v1
+      kind: Console
+      name: cluster
