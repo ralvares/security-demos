@@ -1,0 +1,12 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: PolicyGenerator
+metadata:
+  name: simulate-compliance-logic
+policyDefaults:
+  namespace: open-cluster-management-policies
+  remediationAction: enforce
+  severity: low
+policies:
+  - name: demo-label-enforcement
+    manifests:
+      - path: manifests/tailored-profile.yaml

@@ -1,0 +1,18 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: TailoredProfile
+metadata:
+  name: demo-targeted-profile
+  namespace: openshift-compliance
+spec:
+  extends: ocp4-cis
+  set-values:
+    - name: ocp4-var-network-policies-namespaces-exempt-regex
+      # ACM Template logic: exempt everything that DOES NOT have the demo label
+      value: >-
+        {{- $exempt_list := "openshift-.*|kube-.*|default" -}}
+        {{- range $ns := (lookup "v1" "Namespace" "" "").items -}}
+          {{- if not (and $ns.metadata.labels (eq (index $ns.metadata.labels "complience-netpol-demo") "true")) -}}
+            {{- $exempt_list = printf "%s|%s" $exempt_list $ns.metadata.name -}}
+          {{- end -}}
+        {{- end -}}
+        ^({{ $exempt_list }})$
