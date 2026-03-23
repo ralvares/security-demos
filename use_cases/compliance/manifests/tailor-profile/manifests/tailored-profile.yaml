@@ -5,14 +5,15 @@ metadata:
   namespace: openshift-compliance
 spec:
   extends: ocp4-cis
-  set-values:
+  title: "Targeted Demo Compliance Profile"
+  # 1. Added required description
+  description: "This profile targets only namespaces labeled for the network policy demo by exempting everything else."
+  enableRules:
+    - name: ocp4-network-policies-exist
+      # 2. Added required rationale for the rule
+      rationale: "Ensures network isolation is enforced on demo-specific namespaces."
+  setValues:
     - name: ocp4-var-network-policies-namespaces-exempt-regex
-      # ACM Template logic: exempt everything that DOES NOT have the demo label
-      value: >-
-        {{- $exempt_list := "openshift-.*|kube-.*|default" -}}
-        {{- range $ns := (lookup "v1" "Namespace" "" "").items -}}
-          {{- if not (and $ns.metadata.labels (eq (index $ns.metadata.labels "complience-netpol-demo") "true")) -}}
-            {{- $exempt_list = printf "%s|%s" $exempt_list $ns.metadata.name -}}
-          {{- end -}}
-        {{- end -}}
-        ^({{ $exempt_list }})$
+      # 3. Added required rationale for the variable
+      rationale: "Dynamically excludes non-demo namespaces based on the absence of the demo label."
+      value: '{{- $list := list "openshift-.*" "kube-.*" "default" -}}{{- range $ns := (lookup "v1" "Namespace" "" "").items -}}{{- if not (and (index $ns.metadata "labels") (eq (index $ns.metadata.labels "complience-netpol-demo") "true")) -}}{{- $list = append $list $ns.metadata.name -}}{{- end -}}{{- end -}}^({{ $list | join "|" }})$'
