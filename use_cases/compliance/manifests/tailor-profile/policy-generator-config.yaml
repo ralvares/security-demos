@@ -10,3 +10,4 @@ policies:
   - name: demo-label-enforcement
     manifests:
       - path: manifests/tailored-profile.yaml
+      - path: manifests/scan-setting-binding.yaml
