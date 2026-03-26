@@ -41,7 +41,7 @@ RUN microdnf install -y mailcap perl expat openssl pcre && \
     rpm -ivh /tmp/rpms/$ARCH/$RPM_PATH && \
     microdnf clean all && \
     rm -rf /var/cache/{dnf,yum} /tmp/rpms && \
-    rpm -e --nodeps $(rpm -qa '*rpm*' '*dnf*' '*libsolv*' '*hawkey*' 'yum*') || true
+    rpm -e --nodeps $(rpm -qa '*rpm*' '*dnf*' '*libsolv*' '*hawkey*' 'yum*' 'kernel-headers') || true
 
 RUN mkdir -p /var/www/html /var/www/cgi-bin /var/log/httpd /run/httpd && \
     chown -R 1001:0 /var/www /var/log/httpd /run/httpd && \
