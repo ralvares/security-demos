@@ -1,0 +1,41 @@
+# CIS-OCP 5.2.1  — Minimize the admission of privileged containers
+# CIS-OCP 5.2.2  — Minimize the admission of containers wishing to share the host process ID namespace
+# PCI DSS 2.2.1  — System configuration standards must address all known security vulnerabilities
+# PCI DSS 7.2.1  — Access to system components and data assigned based on required role/function
+#
+# inform-only: flags Pods that run containers with securityContext.privileged: true
+# (both regular and init containers) in user namespaces.
+# Infra namespaces (kube-*, openshift-*, open-cluster-management*) are excluded.
+
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: no-privileged-containers
+spec:
+  remediationAction: inform
+  severity: critical
+  namespaceSelector:
+    exclude:
+      - kube-*
+      - openshift-*
+      - open-cluster-management*
+      - stackrox
+    include:
+      - "*"
+  object-templates:
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+            - securityContext:
+                privileged: true
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: v1
+        kind: Pod
+        spec:
+          initContainers:
+            - securityContext:
+                privileged: true

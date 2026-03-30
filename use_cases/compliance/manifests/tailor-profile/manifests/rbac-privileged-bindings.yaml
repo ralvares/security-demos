@@ -1,0 +1,152 @@
+# CIS-OCP 5.1.1  — Ensure cluster-admin role is only used where required
+# CIS-OCP 5.1.2  — Minimize access to secrets (wildcard roles)
+# CIS-OCP 5.1.4  — Minimize access to create pods (wildcard roles)
+# CIS-OCP 5.2.10 — Ensure no RBAC policies allow wildcard use
+# PCI DSS 7.2    — Access to system components assigned based on least privilege
+# PCI DSS 7.3    — Access to system components controlled via an access control system
+#
+# All checks are inform-only. Service accounts and users in infra namespaces
+# (kube-*, openshift-*, open-cluster-management*) are excluded from flagging.
+
+# --- Check 1: Subject bound to cluster-admin (CRB or RB) ---
+# Flags ClusterRoleBindings and RoleBindings that grant the cluster-admin
+# ClusterRole to any ServiceAccount in a user namespace.
+# CRB = cluster-wide cluster-admin grant (most dangerous)
+# RB  = namespace-scoped cluster-admin grant
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: cluster-admin-binding
+spec:
+  remediationAction: inform
+  severity: critical
+  object-templates-raw: |
+    {{- range $crb := (lookup "rbac.authorization.k8s.io/v1" "ClusterRoleBinding" "" "").items }}
+    {{- if eq $crb.roleRef.name "cluster-admin" }}
+    {{- range $subj := $crb.subjects }}
+    {{- if eq $subj.kind "ServiceAccount" }}
+    {{- $ns := $subj.namespace }}
+    {{- if not (or (hasPrefix "kube-" $ns) (hasPrefix "openshift-" $ns) (hasPrefix "open-cluster-management" $ns) (eq $ns "stackrox")) }}
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: '{{ $crb.metadata.name }}'
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
+    {{- $nsName := $ns.metadata.name }}
+    {{- if not (or (hasPrefix "kube-" $nsName) (hasPrefix "openshift-" $nsName) (hasPrefix "open-cluster-management" $nsName) (eq $nsName "stackrox")) }}
+    {{- range $rb := (lookup "rbac.authorization.k8s.io/v1" "RoleBinding" $nsName "").items }}
+    {{- if eq $rb.roleRef.name "cluster-admin" }}
+    {{- range $subj := $rb.subjects }}
+    {{- if eq $subj.kind "ServiceAccount" }}
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        metadata:
+          name: '{{ $rb.metadata.name }}'
+          namespace: '{{ $nsName }}'
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+
+---
+# --- Check 2: Subject bound to a ClusterRole with wildcard verbs/resources ---
+# Performs a nested lookup to inspect the referenced ClusterRole's rules.
+# cluster-admin is excluded here — handled by Check 1.
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: wildcard-crole-binding
+spec:
+  remediationAction: inform
+  severity: high
+  object-templates-raw: |
+    {{- $allowedCRBs := list "hive-controllers" "hypershift-operator" "open-cluster-management:cluster-proxy-addon:addon-manager" "open-cluster-management:hive-operator:hive-operator" }}
+    {{- range $crb := (lookup "rbac.authorization.k8s.io/v1" "ClusterRoleBinding" "" "").items }}
+    {{- if not (eq $crb.roleRef.name "cluster-admin") }}
+    {{- if not (has $crb.metadata.name $allowedCRBs) }}
+    {{- if not (or (hasPrefix "multicluster-engine." $crb.metadata.name) (hasPrefix "rhacs-operator." $crb.metadata.name)) }}
+    {{- range $subj := $crb.subjects }}
+    {{- if eq $subj.kind "ServiceAccount" }}
+    {{- $ns := $subj.namespace }}
+    {{- if not (or (hasPrefix "kube-" $ns) (hasPrefix "openshift-" $ns) (hasPrefix "open-cluster-management" $ns) (eq $ns "stackrox")) }}
+    {{- $cr := lookup "rbac.authorization.k8s.io/v1" "ClusterRole" "" $crb.roleRef.name }}
+    {{- range $rule := $cr.rules }}
+    {{- if or (has "*" $rule.verbs) (has "*" $rule.resources) }}
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: '{{ $crb.metadata.name }}'
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+
+---
+# --- Check 3: Subject bound to a namespaced Role with wildcard verbs/resources ---
+# Iterates all user namespaces, looks up RoleBindings referencing a Role,
+# and inspects the Role's rules for wildcard grants (ServiceAccount and User subjects).
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: wildcard-role-binding
+spec:
+  remediationAction: inform
+  severity: high
+  object-templates-raw: |
+    {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
+    {{- $nsName := $ns.metadata.name }}
+    {{- if not (or (hasPrefix "kube-" $nsName) (hasPrefix "openshift-" $nsName) (hasPrefix "open-cluster-management" $nsName) (eq $nsName "stackrox") (eq $nsName "hypershift") (eq $nsName "multicluster-engine") (eq $nsName "local-cluster")) }}
+    {{- range $rb := (lookup "rbac.authorization.k8s.io/v1" "RoleBinding" $nsName "").items }}
+    {{- if eq $rb.roleRef.kind "Role" }}
+    {{- range $subj := $rb.subjects }}
+    {{- if eq $subj.kind "ServiceAccount" }}
+    {{- $role := lookup "rbac.authorization.k8s.io/v1" "Role" $nsName $rb.roleRef.name }}
+    {{- range $rule := $role.rules }}
+    {{- if or (has "*" $rule.verbs) (has "*" $rule.resources) }}
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        metadata:
+          name: '{{ $rb.metadata.name }}'
+          namespace: '{{ $nsName }}'
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if eq $subj.kind "User" }}
+    {{- $role := lookup "rbac.authorization.k8s.io/v1" "Role" $nsName $rb.roleRef.name }}
+    {{- range $rule := $role.rules }}
+    {{- if or (has "*" $rule.verbs) (has "*" $rule.resources) }}
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        metadata:
+          name: '{{ $rb.metadata.name }}'
+          namespace: '{{ $nsName }}'
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}

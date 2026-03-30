@@ -1,0 +1,67 @@
+# CIS-OCP 5.7.1 — Ensure namespaces are used to separate workloads
+# CIS-OCP 5.7.2 — Ensure seccomp profile is set to docker/default or runtime/default
+# CIS-OCP 5.7.3 — Apply security context to pods and containers
+# CIS-OCP 5.7.4 — The default namespace should not be used for workloads
+# PCI DSS 1.3.1 — Restrict inbound and outbound traffic to only that which is necessary
+# PCI DSS 2.2.1 — Configuration standards address all known security vulnerabilities
+# PCI DSS 6.3.3 — All system components are protected from known vulnerabilities
+#
+# Mixed remediationAction per ConfigurationPolicy (parent policy must be set to 'enforce'
+# in the PolicyGenerator so each template's own setting is respected).
+
+# --- Check 1 (inform): flag any Deployments/DaemonSets/StatefulSets in 'default' namespace ---
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: no-workloads-default-ns
+spec:
+  remediationAction: inform
+  severity: medium
+  namespaceSelector:
+    include:
+      - default
+  object-templates:
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: v1
+        kind: Pod
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: apps/v1
+        kind: Deployment
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: apps/v1
+        kind: DaemonSet
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: apps/v1
+        kind: StatefulSet
+---
+# --- Check 2 (enforce): ensure user namespaces carry Pod Security Standards labels ---
+# 'audit' and 'warn' at 'restricted' level enforces seccomp RuntimeDefault and
+# security context requirements (CIS 5.7.2 + 5.7.3) without hard-blocking workloads.
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: ns-pod-security-standards
+spec:
+  remediationAction: enforce
+  severity: high
+  namespaceSelector:
+    exclude:
+      - kube-*
+      - openshift-*
+      - open-cluster-management*
+      - default
+    include:
+      - "*"
+  object-templates:
+    - complianceType: musthave
+      objectDefinition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          labels:
+            pod-security.kubernetes.io/audit: restricted
+            pod-security.kubernetes.io/warn: restricted

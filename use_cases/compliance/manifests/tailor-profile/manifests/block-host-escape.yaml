@@ -1,0 +1,67 @@
+# VAP: block host-escape vectors — opt-in per namespace
+#
+# Blocks Pods and controller-managed workloads from using known host-escape vectors:
+#   - hostPath volumes    (mounts node filesystem into the container)
+#   - hostPID: true       (shares host process namespace — can inspect/kill node processes)
+#   - hostIPC: true       (shares host IPC namespace — can read shared memory segments)
+#   - hostNetwork: true   (shares host network stack — bypasses network policy)
+#
+# Activation is opt-in per namespace via label:
+#   oc label namespace <ns> enforce-no-host-escape=true   # activate enforcement
+#   oc label namespace <ns> enforce-no-host-escape-       # deactivate
+#
+# ACM (enforce) keeps both objects present on every managed cluster.
+# Requires Kubernetes 1.30+ / OCP 4.17+ (VAP GA).
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: no-host-escape
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   [""]
+        apiVersions: ["v1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["pods"]
+      - apiGroups:   ["apps"]
+        apiVersions: ["v1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["deployments", "daemonsets", "statefulsets", "replicasets"]
+  variables:
+    - name: podSpec
+      expression: >
+        has(object.spec.template) ? object.spec.template.spec : object.spec
+  validations:
+    - expression: >
+        !has(variables.podSpec.hostPID) || variables.podSpec.hostPID == false
+      message: "hostPID shares the host process namespace and is not allowed in this namespace."
+      reason: Forbidden
+    - expression: >
+        !has(variables.podSpec.hostIPC) || variables.podSpec.hostIPC == false
+      message: "hostIPC shares the host IPC namespace and is not allowed in this namespace."
+      reason: Forbidden
+    - expression: >
+        !has(variables.podSpec.hostNetwork) || variables.podSpec.hostNetwork == false
+      message: "hostNetwork shares the host network stack and is not allowed in this namespace."
+      reason: Forbidden
+    - expression: >
+        !has(variables.podSpec.volumes) ||
+        !variables.podSpec.volumes.exists(v, has(v.hostPath))
+      message: "hostPath volumes expose the node filesystem and are not allowed in this namespace."
+      reason: Forbidden
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: no-host-escape-binding
+spec:
+  policyName: no-host-escape
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        enforce-no-host-escape: "true"

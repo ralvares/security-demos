@@ -1,0 +1,39 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: container-resource-requirements
+spec:
+  remediationAction: inform
+  severity: high
+  object-templates-raw: |
+    {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
+    {{- $n := $ns.metadata.name }}
+    {{- if and (not (hasPrefix "kube-" $n)) (not (hasPrefix "openshift-" $n)) (not (hasPrefix "open-cluster-management" $n)) (ne $n "default") }}
+    {{- range $pod := (lookup "v1" "Pod" $n "").items }}
+    {{- range $c := $pod.spec.containers }}
+    {{- $res  := $c.resources | default (dict) }}
+    {{- $reqs := (index $res "requests") | default (dict) }}
+    {{- $lims := (index $res "limits") | default (dict) }}
+    {{- $cpuReq := index $reqs "cpu"    | default "" }}
+    {{- $memLim := index $lims "memory" | default "" }}
+    {{- if or (eq $cpuReq "") (eq $memLim "") }}
+    - complianceType: musthave
+      objectDefinition:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: {{ $pod.metadata.name }}
+          namespace: {{ $n }}
+        spec:
+          containers:
+            - name: {{ $c.name }}
+              resources:
+                requests:
+                  cpu: "{{ if eq $cpuReq "" }}100m{{ else }}{{ $cpuReq }}{{ end }}"
+                limits:
+                  memory: "{{ if eq $memLim "" }}128Mi{{ else }}{{ $memLim }}{{ end }}"
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}

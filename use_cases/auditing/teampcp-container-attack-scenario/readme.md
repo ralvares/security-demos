@@ -11,7 +11,6 @@ The payload was three stages.. harvest every SSH key, cloud token, Kubernetes se
 https://x.com/aakashgupta/status/2036653323978420322?s=46
 
 
-
 This is the "Conference Keynote" version of the TeamPCP story. It is written to be delivered from a stage, with clear distinctions between the **Pod** (the entry point), the **Server** (the hijacked host), and the **Cluster** (the target territory).
 
 ---

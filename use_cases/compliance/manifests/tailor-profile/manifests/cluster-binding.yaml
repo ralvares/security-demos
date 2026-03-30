@@ -1,0 +1,33 @@
+# Cluster binding prerequisites for PolicySet placement.
+#
+# ACM Placements can only select clusters from ManagedClusterSets that are
+# explicitly bound to the namespace where the Placement lives.
+#
+# Flow:
+#   ManagedClusterSet "default"  (all clusters not in an explicit set)
+#       └── ManagedClusterSetBinding  (grants the namespace access to the set)
+#               └── Placement "default"  (selects all clusters from the set)
+#                       └── PlacementBinding  (links Placement → PolicySet)
+
+---
+# Bind the "default" ManagedClusterSet into the policies namespace so that
+# Placements in this namespace can select clusters from it.
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: default
+  namespace: open-cluster-management-policies
+spec:
+  clusterSet: default
+
+---
+# Placement that selects all clusters from the bound "default" cluster set.
+# Referenced by the three PolicySet PlacementBindings in policy-sets.yaml.
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: default
+  namespace: open-cluster-management-policies
+spec:
+  clusterSets:
+    - default
