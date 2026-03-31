@@ -108,8 +108,17 @@ Now remediate:
 
 ```bash
 # Create a default-deny ingress NetworkPolicy in the namespace
-oc create networkpolicy deny-by-default -n network-demo \
-  --pod-selector="" --policy-type="Ingress"
+oc apply -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-by-default
+  namespace: network-demo
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+EOF
 
 # Confirm the policy exists
 oc get networkpolicy -n network-demo
