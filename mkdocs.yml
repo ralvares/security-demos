@@ -52,6 +52,7 @@ nav:
     - Module 6 - Compliance: 
         - Compliance Operator - Custom Rules - Demo: 'compliance/compliance-operator-demo.md'
         - Compliance Operator Custom Rules - Variables: 'compliance/compliance-operator-variables.md'
+        - ACM Security Compliance Policies - Demo: 'compliance/manifests/tailor-profile/readme.md'
     - Module 7 - Incident Response & Forensics: 
         - Mastering Audit Logs & Forensics: 'auditing/audit-log-Investigation.md'
         - Kubectl Timemachine: 'auditing/kubectl-timemachine-instructions.md'
