@@ -10,21 +10,20 @@ apiVersion: policy.open-cluster-management.io/v1beta1
 kind: PolicySet
 metadata:
   name: network-controls
-  namespace: open-cluster-management-policies
+  namespace: acm-policies
 spec:
   description: >-
     Verifies network policy enforcement across managed clusters.
     Covers both Compliance Operator scanning (ocp4-cis) and ACM-native
     NetworkPolicy detection.
   policies:
-    - netpol-compliance-scan
-    - netpol-compliance-acm
+    - netpol-check-acm-configpolicy
 ---
 apiVersion: policy.open-cluster-management.io/v1
 kind: PlacementBinding
 metadata:
   name: binding-network-controls
-  namespace: open-cluster-management-policies
+  namespace: acm-policies
 placementRef:
   name: default
   apiGroup: cluster.open-cluster-management.io
@@ -39,22 +38,22 @@ apiVersion: policy.open-cluster-management.io/v1beta1
 kind: PolicySet
 metadata:
   name: access-controls
-  namespace: open-cluster-management-policies
+  namespace: acm-policies
 spec:
   description: >-
     Audits identity and RBAC posture for least-privilege compliance.
     Flags over-privileged service accounts, dangerous ClusterRoleBindings,
     and wildcard role grants across all user namespaces.
   policies:
-    - sa-least-privilege
-    - rbac-controls
-    - rbac-privileged-bindings
+    - enforce-sa-token-automount-off
+    - detect-anonymous-and-wildcard-rbac
+    - detect-overprivileged-rbac-bindings
 ---
 apiVersion: policy.open-cluster-management.io/v1
 kind: PlacementBinding
 metadata:
   name: binding-access-controls
-  namespace: open-cluster-management-policies
+  namespace: acm-policies
 placementRef:
   name: default
   apiGroup: cluster.open-cluster-management.io
@@ -69,7 +68,7 @@ apiVersion: policy.open-cluster-management.io/v1beta1
 kind: PolicySet
 metadata:
   name: workload-hardening
-  namespace: open-cluster-management-policies
+  namespace: acm-policies
 spec:
   description: >-
     Detects and prevents workload privilege escalation and host escape.
@@ -77,18 +76,18 @@ spec:
     ValidatingAdmissionPolicies (enforce/opt-in) to layer runtime and
     admission-time controls.
   policies:
-    - ns-workload-isolation
-    - scc-sa-isolation
-    - privileged-containers
-    - block-privileged-containers
-    - block-host-escape
-    - resource-requirements
+    - enforce-workload-namespace-isolation
+    - detect-default-sa-and-scc-weakness
+    - detect-privileged-container-pods
+    - block-privileged-containers-via-vap
+    - block-host-escape-vectors-via-vap
+    - detect-containers-missing-resources
 ---
 apiVersion: policy.open-cluster-management.io/v1
 kind: PlacementBinding
 metadata:
   name: binding-workload-hardening
-  namespace: open-cluster-management-policies
+  namespace: acm-policies
 placementRef:
   name: default
   apiGroup: cluster.open-cluster-management.io

@@ -16,7 +16,7 @@ apiVersion: cluster.open-cluster-management.io/v1beta2
 kind: ManagedClusterSetBinding
 metadata:
   name: default
-  namespace: open-cluster-management-policies
+  namespace: acm-policies
 spec:
   clusterSet: default
 
@@ -27,7 +27,7 @@ apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
 metadata:
   name: default
-  namespace: open-cluster-management-policies
+  namespace: acm-policies
 spec:
   clusterSets:
     - default

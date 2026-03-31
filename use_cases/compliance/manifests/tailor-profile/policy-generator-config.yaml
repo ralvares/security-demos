@@ -3,12 +3,13 @@ kind: PolicyGenerator
 metadata:
   name: simulate-compliance-logic
 policyDefaults:
-  namespace: open-cluster-management-policies
+  namespace: acm-policies
   remediationAction: enforce
   severity: low
   generatePolicyPlacement: false
 policies:
-  - name: netpol-compliance-scan
+  - name: netpol-scan-compliance-operator
+    disabled: true
     description: >-
       Deploys a TailoredProfile extending ocp4-cis and a
       ScanSettingBinding scoped to namespaces labelled 'complience-netpol-demo: true'.
@@ -30,7 +31,7 @@ policies:
       - path: manifests/tailored-profile.yaml
       - path: manifests/scan-setting-binding.yaml
 
-  - name: netpol-compliance-acm
+  - name: netpol-check-acm-configpolicy
     description: >-
       Equivalent of netpol-compliance-scan without the Compliance Operator.
       Uses object-templates-raw with a lookup to dynamically find all namespaces
@@ -58,7 +59,7 @@ policies:
   # and will never evaluate them automatically. ACM ConfigurationPolicy is the
   # correct mechanism to audit and enforce these controls.
 
-  - name: sa-least-privilege
+  - name: enforce-sa-token-automount-off
     description: >-
       Disables automatic service account token mounting on the 'default' service
       account in every user namespace and ensures workloads use dedicated service
@@ -80,7 +81,7 @@ policies:
     manifests:
       - path: manifests/cis-sa-token-restriction.yaml
 
-  - name: rbac-controls
+  - name: detect-anonymous-and-wildcard-rbac
     description: >-
       Audit-only checks that flag dangerous RBAC patterns: ClusterRoleBindings
       granting access to unauthenticated or anonymous users, and wildcard Roles
@@ -103,7 +104,7 @@ policies:
     manifests:
       - path: manifests/cis-rbac-controls.yaml
 
-  - name: ns-workload-isolation
+  - name: enforce-workload-namespace-isolation
     description: >-
       Ensures workloads are not deployed into the 'default' namespace and that
       user namespaces carry Pod Security Standards labels at the 'restricted'
@@ -128,7 +129,7 @@ policies:
     manifests:
       - path: manifests/cis-namespace-workload-isolation.yaml
 
-  - name: scc-sa-isolation
+  - name: detect-default-sa-and-scc-weakness
     description: >-
       Verifies the restricted-v2 SCC integrity (key security fields must not be
       weakened), flags default SA RoleBindings in user namespaces, and flags
@@ -155,7 +156,7 @@ policies:
     manifests:
       - path: manifests/cis-scc-sa-isolation.yaml
 
-  - name: privileged-containers
+  - name: detect-privileged-container-pods
     description: >-
       Flags Pods running with securityContext.privileged: true (both regular
       and init containers) in user namespaces. Infra namespaces
@@ -178,7 +179,7 @@ policies:
     manifests:
       - path: manifests/privileged-containers.yaml
 
-  - name: rbac-privileged-bindings
+  - name: detect-overprivileged-rbac-bindings
     description: >-
       Flags service accounts in user namespaces that hold cluster-admin via a
       ClusterRoleBinding or RoleBinding, or are bound to a ClusterRole/Role
@@ -201,7 +202,7 @@ policies:
     manifests:
       - path: manifests/rbac-privileged-bindings.yaml
 
-  - name: block-privileged-containers
+  - name: block-privileged-containers-via-vap
     description: >-
       Deploys a ValidatingAdmissionPolicy and binding that block privileged
       containers at admission time. Activation is opt-in per namespace via the
@@ -226,7 +227,7 @@ policies:
     manifests:
       - path: manifests/block-privileged-containers.yaml
 
-  - name: block-host-escape
+  - name: block-host-escape-vectors-via-vap
     description: >-
       Deploys a ValidatingAdmissionPolicy and binding that block all known
       host-escape vectors at admission time: hostPath volumes (node filesystem),
@@ -254,7 +255,7 @@ policies:
     manifests:
       - path: manifests/block-host-escape.yaml
 
-  - name: resource-requirements
+  - name: detect-containers-missing-resources
     description: >-
       Flags containers in user namespaces that do not specify a CPU request
       or a memory limit. Containers without a CPU request may be starved of
