@@ -278,3 +278,37 @@ policies:
       - PCI-DSS-6.3.3 Security Patch and Component Management
     manifests:
       - path: manifests/resource-requirements.yaml
+
+  # ── RHACS Security Policies ─────────────────────────────────────────────────
+  # Delivered via ACM ConfigurationPolicy into the stackrox namespace.
+  # Placement is label-gated: add label 'rhacs-vulnerability-policy=enabled'
+  # to a managed cluster to activate enforcement.
+
+  - name: rhacs-httpd-server-version-2.4.50
+    description: >-
+      Delivers an RHACS SecurityPolicy that detects and enforces against
+      Apache HTTP Server (httpd) versions earlier than 2.4.51. Versions 2.4.49
+      and 2.4.50 are vulnerable to CVE-2021-41773 (path traversal / RCE) and
+      CVE-2021-42013 (path traversal bypass). The policy blocks builds, scales
+      offending deployments to zero, and prevents rescheduling via unsatisfiable
+      node constraints. Addresses CIS-OCP 5.4.1 (image scanning) and
+      PCI DSS 6.2 / 6.3.3 (vulnerability management and patch hygiene).
+    remediationAction: enforce
+    severity: critical
+    generatePolicyPlacement: false
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - CM Configuration Management
+      - SI System and Information Integrity
+    controls:
+      - CM-6 Configuration Settings
+      - CM-7 Least Functionality
+      - SI-2 Flaw Remediation
+      - SI-3 Malicious Code Protection
+      - PCI-DSS-6.2 Bespoke and Custom Software
+      - PCI-DSS-6.3.3 Security Patch and Component Management
+      - CIS-OCP-5.4.1 Image Vulnerability Scanning
+    manifests:
+      - path: manifests/httpd-server-version-2.4.50.yaml

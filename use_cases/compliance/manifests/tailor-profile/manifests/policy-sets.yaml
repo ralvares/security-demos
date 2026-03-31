@@ -96,3 +96,48 @@ subjects:
   - name: workload-hardening
     apiGroup: policy.open-cluster-management.io
     kind: PolicySet
+
+# ── Vulnerability Management (RHACS policies) ────────────────────────────────
+# Label-gated: add label 'rhacs-vulnerability-policy=enabled' to a managed
+# cluster to activate the PolicySet. No cluster is affected until labelled.
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: placement-vulnerability-management
+  namespace: acm-policies
+spec:
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            rhacs-vulnerability-policy: "enabled"
+---
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: PolicySet
+metadata:
+  name: vulnerability-management
+  namespace: acm-policies
+spec:
+  description: >-
+    Delivers RHACS SecurityPolicies that enforce image vulnerability hygiene
+    across managed clusters. Covers known exploited CVEs in widely-used server
+    components. Activation is opt-in per cluster via the label
+    'rhacs-vulnerability-policy=enabled'. Addresses CIS-OCP 5.4.1 and
+    PCI DSS 6.2 / 6.3.3.
+  policies:
+    - rhacs-httpd-server-version-2.4.50
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-vulnerability-management
+  namespace: acm-policies
+placementRef:
+  name: placement-vulnerability-management
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+subjects:
+  - name: vulnerability-management
+    apiGroup: policy.open-cluster-management.io
+    kind: PolicySet
