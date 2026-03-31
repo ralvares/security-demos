@@ -51,8 +51,24 @@ spec:
   namespaceSelector:
     exclude:
       - kube-*
-      - openshift-*
+      - openshift*
       - open-cluster-management*
+      - multicluster*
+      - cert-*
+      - catalogd-*
+      - costmanagement-*
+      - external-dns-*
+      - node-observability-*
+      - redhat-*
+      - rhdh-*
+      - submariner-*
+      - hive
+      - stackrox
+      - aap
+      - ack-system
+      - metallb-system
+      - mtr
+      - service-telemetry
     include:
       - "*"
   object-templates:
@@ -82,8 +98,24 @@ spec:
   namespaceSelector:
     exclude:
       - kube-*
-      - openshift-*
+      - openshift*
       - open-cluster-management*
+      - multicluster*
+      - cert-*
+      - catalogd-*
+      - costmanagement-*
+      - external-dns-*
+      - node-observability-*
+      - redhat-*
+      - rhdh-*
+      - submariner-*
+      - hive
+      - stackrox
+      - aap
+      - ack-system
+      - metallb-system
+      - mtr
+      - service-telemetry
     include:
       - "*"
   object-templates:

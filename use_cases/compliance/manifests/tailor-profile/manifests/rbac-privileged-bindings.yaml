@@ -26,7 +26,7 @@ spec:
     {{- range $subj := $crb.subjects }}
     {{- if eq $subj.kind "ServiceAccount" }}
     {{- $ns := $subj.namespace }}
-    {{- if not (or (hasPrefix "kube-" $ns) (hasPrefix "openshift-" $ns) (hasPrefix "open-cluster-management" $ns) (eq $ns "stackrox")) }}
+    {{- if not (or (hasPrefix "kube-" $ns) (hasPrefix "openshift" $ns) (hasPrefix "open-cluster-management" $ns) (hasPrefix "multicluster" $ns) (hasPrefix "cert-" $ns) (hasPrefix "catalogd-" $ns) (hasPrefix "costmanagement-" $ns) (hasPrefix "external-dns-" $ns) (hasPrefix "node-observability-" $ns) (hasPrefix "redhat-" $ns) (hasPrefix "rhdh-" $ns) (hasPrefix "submariner-" $ns) (eq $ns "hive") (eq $ns "stackrox") (eq $ns "aap") (eq $ns "ack-system") (eq $ns "metallb-system") (eq $ns "mtr") (eq $ns "service-telemetry")) }}
     - complianceType: mustnothave
       objectDefinition:
         apiVersion: rbac.authorization.k8s.io/v1
@@ -40,7 +40,7 @@ spec:
     {{- end }}
     {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
     {{- $nsName := $ns.metadata.name }}
-    {{- if not (or (hasPrefix "kube-" $nsName) (hasPrefix "openshift-" $nsName) (hasPrefix "open-cluster-management" $nsName) (eq $nsName "stackrox")) }}
+    {{- if not (or (hasPrefix "kube-" $nsName) (hasPrefix "openshift" $nsName) (hasPrefix "open-cluster-management" $nsName) (hasPrefix "multicluster" $nsName) (hasPrefix "cert-" $nsName) (hasPrefix "catalogd-" $nsName) (hasPrefix "costmanagement-" $nsName) (hasPrefix "external-dns-" $nsName) (hasPrefix "node-observability-" $nsName) (hasPrefix "redhat-" $nsName) (hasPrefix "rhdh-" $nsName) (hasPrefix "submariner-" $nsName) (eq $nsName "hive") (eq $nsName "stackrox") (eq $nsName "aap") (eq $nsName "ack-system") (eq $nsName "metallb-system") (eq $nsName "mtr") (eq $nsName "service-telemetry")) }}
     {{- range $rb := (lookup "rbac.authorization.k8s.io/v1" "RoleBinding" $nsName "").items }}
     {{- if eq $rb.roleRef.name "cluster-admin" }}
     {{- range $subj := $rb.subjects }}
@@ -79,7 +79,7 @@ spec:
     {{- range $subj := $crb.subjects }}
     {{- if eq $subj.kind "ServiceAccount" }}
     {{- $ns := $subj.namespace }}
-    {{- if not (or (hasPrefix "kube-" $ns) (hasPrefix "openshift-" $ns) (hasPrefix "open-cluster-management" $ns) (eq $ns "stackrox")) }}
+    {{- if not (or (hasPrefix "kube-" $ns) (hasPrefix "openshift" $ns) (hasPrefix "open-cluster-management" $ns) (hasPrefix "multicluster" $ns) (hasPrefix "cert-" $ns) (hasPrefix "catalogd-" $ns) (hasPrefix "costmanagement-" $ns) (hasPrefix "external-dns-" $ns) (hasPrefix "node-observability-" $ns) (hasPrefix "redhat-" $ns) (hasPrefix "rhdh-" $ns) (hasPrefix "submariner-" $ns) (eq $ns "hive") (eq $ns "stackrox") (eq $ns "aap") (eq $ns "ack-system") (eq $ns "metallb-system") (eq $ns "mtr") (eq $ns "service-telemetry")) }}
     {{- $cr := lookup "rbac.authorization.k8s.io/v1" "ClusterRole" "" $crb.roleRef.name }}
     {{- range $rule := $cr.rules }}
     {{- if or (has "*" $rule.verbs) (has "*" $rule.resources) }}
@@ -113,7 +113,7 @@ spec:
   object-templates-raw: |
     {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
     {{- $nsName := $ns.metadata.name }}
-    {{- if not (or (hasPrefix "kube-" $nsName) (hasPrefix "openshift-" $nsName) (hasPrefix "open-cluster-management" $nsName) (eq $nsName "stackrox") (eq $nsName "hypershift") (eq $nsName "multicluster-engine") (eq $nsName "local-cluster")) }}
+    {{- if not (or (hasPrefix "kube-" $nsName) (hasPrefix "openshift" $nsName) (hasPrefix "open-cluster-management" $nsName) (hasPrefix "multicluster" $nsName) (hasPrefix "cert-" $nsName) (hasPrefix "catalogd-" $nsName) (hasPrefix "costmanagement-" $nsName) (hasPrefix "external-dns-" $nsName) (hasPrefix "node-observability-" $nsName) (hasPrefix "redhat-" $nsName) (hasPrefix "rhdh-" $nsName) (hasPrefix "submariner-" $nsName) (eq $nsName "hive") (eq $nsName "stackrox") (eq $nsName "aap") (eq $nsName "ack-system") (eq $nsName "metallb-system") (eq $nsName "mtr") (eq $nsName "service-telemetry") (eq $nsName "local-cluster")) }}
     {{- range $rb := (lookup "rbac.authorization.k8s.io/v1" "RoleBinding" $nsName "").items }}
     {{- if eq $rb.roleRef.kind "Role" }}
     {{- range $subj := $rb.subjects }}

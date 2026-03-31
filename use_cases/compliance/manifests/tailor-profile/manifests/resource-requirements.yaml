@@ -8,7 +8,7 @@ spec:
   object-templates-raw: |
     {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
     {{- $n := $ns.metadata.name }}
-    {{- if and (not (hasPrefix "kube-" $n)) (not (hasPrefix "openshift-" $n)) (not (hasPrefix "open-cluster-management" $n)) (ne $n "default") }}
+    {{- if not (or (hasPrefix "kube-" $n) (hasPrefix "openshift" $n) (hasPrefix "open-cluster-management" $n) (hasPrefix "multicluster" $n) (hasPrefix "cert-" $n) (hasPrefix "catalogd-" $n) (hasPrefix "costmanagement-" $n) (hasPrefix "external-dns-" $n) (hasPrefix "node-observability-" $n) (hasPrefix "redhat-" $n) (hasPrefix "rhdh-" $n) (hasPrefix "submariner-" $n) (eq $n "hive") (eq $n "stackrox") (eq $n "aap") (eq $n "ack-system") (eq $n "metallb-system") (eq $n "mtr") (eq $n "service-telemetry") (eq $n "default")) }}
     {{- range $pod := (lookup "v1" "Pod" $n "").items }}
     {{- range $c := $pod.spec.containers }}
     {{- $res  := $c.resources | default (dict) }}
