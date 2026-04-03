@@ -1,0 +1,314 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: PolicyGenerator
+metadata:
+  name: simulate-compliance-logic
+policyDefaults:
+  namespace: acm-policies
+  remediationAction: enforce
+  severity: low
+  generatePolicyPlacement: false
+policies:
+  - name: netpol-scan-compliance-operator
+    disabled: true
+    description: >-
+      Deploys a TailoredProfile extending ocp4-cis and a
+      ScanSettingBinding scoped to namespaces labelled 'complience-netpol-demo: true'.
+      Uses the OpenShift Compliance Operator to evaluate the ocp4-configure-network-
+      policies-namespaces rule. Requires Compliance Operator in openshift-compliance.
+      Addresses CIS-OCP 5.3.2 / 5.7.x and PCI DSS 1.3 / 1.4.
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - CM Configuration Management
+    controls:
+      - CM-6 Configuration Settings
+      - CM-7 Least Functionality
+      - SC-7 Boundary Protection
+      - PCI-DSS-1.3 Network Access Controls
+      - PCI-DSS-1.4 Network Connections Between Trusted and Untrusted Networks
+    manifests:
+      - path: manifests/tailored-profile.yaml
+      - path: manifests/scan-setting-binding.yaml
+
+  - name: netpol-check-acm-configpolicy
+    description: >-
+      Equivalent of netpol-compliance-scan without the Compliance Operator.
+      Uses object-templates-raw with a lookup to dynamically find all namespaces
+      labelled 'complience-netpol-demo: true' at evaluation time and require at least
+      one NetworkPolicy in each. No additional operators required — evaluated directly
+      by the ACM hub. Addresses CIS-OCP 5.3.2 / 5.7.1 and PCI DSS 1.3 / 1.4.
+    remediationAction: inform
+    severity: high
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - CM Configuration Management
+    controls:
+      - CM-6 Configuration Settings
+      - CM-7 Least Functionality
+      - SC-7 Boundary Protection
+      - PCI-DSS-1.3 Network Access Controls
+      - PCI-DSS-1.4 Network Connections Between Trusted and Untrusted Networks
+    manifests:
+      - path: manifests/netpol-acm-enforce.yaml
+
+  # ── Manual CIS rules — implemented via ACM ConfigurationPolicy ──────────────
+  # The Compliance Operator marks these rules as 'manual' (type="manual" in XCCDF)
+  # and will never evaluate them automatically. ACM ConfigurationPolicy is the
+  # correct mechanism to audit and enforce these controls.
+
+  - name: enforce-sa-token-automount-off
+    description: >-
+      Disables automatic service account token mounting on the 'default' service
+      account in every user namespace and ensures workloads use dedicated service
+      accounts. Addresses CIS-OCP 5.1.5 / 5.1.6 and PCI DSS 7.2 / 8.2.2 / 8.6
+      (least-privilege access and service account management).
+    remediationAction: enforce
+    severity: high
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - AC Access Control
+    controls:
+      - AC-2 Account Management
+      - AC-6 Least Privilege
+      - PCI-DSS-7.2 Access Control Systems
+      - PCI-DSS-8.2.2 Service Account Management
+      - PCI-DSS-8.6 Application Account Controls
+    manifests:
+      - path: manifests/cis-sa-token-restriction.yaml
+
+  - name: detect-anonymous-and-wildcard-rbac
+    description: >-
+      Audit-only checks that flag dangerous RBAC patterns: ClusterRoleBindings
+      granting access to unauthenticated or anonymous users, and wildcard Roles
+      in user namespaces. Addresses CIS-OCP 5.1.1 / 5.1.2 / 5.1.4 / 5.2.10
+      and PCI DSS 7.3 (deny-all default access control) / 7.2 (least privilege).
+      Remediation is inform-only — RBAC changes require deliberate human review.
+    remediationAction: inform
+    severity: high
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - AC Access Control
+    controls:
+      - AC-6 Least Privilege
+      - AC-3 Access Enforcement
+      - CM-7 Least Functionality
+      - PCI-DSS-7.2 Access Control Systems
+      - PCI-DSS-7.3 Access Control Mechanisms
+    manifests:
+      - path: manifests/cis-rbac-controls.yaml
+
+  - name: enforce-workload-namespace-isolation
+    description: >-
+      Ensures workloads are not deployed into the 'default' namespace and that
+      user namespaces carry Pod Security Standards labels at the 'restricted'
+      level (seccomp RuntimeDefault, no privilege escalation, all caps dropped).
+      Addresses CIS-OCP 5.7.1–5.7.4 and PCI DSS 1.3.1 (inbound/outbound
+      traffic restriction) / 2.2.1 (system hardening) / 6.3.3 (security
+      components).
+    remediationAction: enforce
+    severity: high
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - SC System and Communications Protection
+    controls:
+      - SC-2 Application Partitioning
+      - SC-7 Boundary Protection
+      - CM-6 Configuration Settings
+      - PCI-DSS-1.3.1 Inbound and Outbound Traffic Restriction
+      - PCI-DSS-2.2.1 System Hardening Standards
+      - PCI-DSS-6.3.3 Security Patch and Component Management
+    manifests:
+      - path: manifests/cis-namespace-workload-isolation.yaml
+
+  - name: detect-default-sa-and-scc-weakness
+    description: >-
+      Verifies the restricted-v2 SCC integrity (key security fields must not be
+      weakened), flags default SA RoleBindings in user namespaces, and flags
+      workloads explicitly using the default service account. Addresses CIS-OCP
+      5.1.5 / 5.3.2 / 5.7.3 and PCI DSS 2.2.1 (system hardening) / 7.2.1
+      (least-privilege access) / 8.6.1 (service account controls). Workloads
+      omitting serviceAccountName require a validating webhook (e.g. Kyverno).
+    remediationAction: inform
+    severity: high
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - AC Access Control
+      - SC System and Communications Protection
+    controls:
+      - AC-6 Least Privilege
+      - AC-2 Account Management
+      - CM-6 Configuration Settings
+      - SC-39 Process Isolation
+      - PCI-DSS-2.2.1 System Hardening Standards
+      - PCI-DSS-7.2.1 Least Privilege Access
+      - PCI-DSS-8.6.1 Service Account Controls
+    manifests:
+      - path: manifests/cis-scc-sa-isolation.yaml
+
+  - name: detect-privileged-container-pods
+    description: >-
+      Flags Pods running with securityContext.privileged: true (both regular
+      and init containers) in user namespaces. Infra namespaces
+      (kube-*, openshift-*, open-cluster-management*) are excluded.
+      Addresses CIS-OCP 5.2.1 / 5.2.2 and PCI DSS 2.2.1 / 7.2.1.
+    remediationAction: inform
+    severity: critical
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - SC System and Communications Protection
+      - CM Configuration Management
+    controls:
+      - CM-6 Configuration Settings
+      - CM-7 Least Functionality
+      - SC-39 Process Isolation
+      - PCI-DSS-2.2.1 System Hardening Standards
+      - PCI-DSS-7.2.1 Least Privilege Access
+    manifests:
+      - path: manifests/privileged-containers.yaml
+
+  - name: detect-overprivileged-rbac-bindings
+    description: >-
+      Flags service accounts in user namespaces that hold cluster-admin via a
+      ClusterRoleBinding or RoleBinding, or are bound to a ClusterRole/Role
+      whose rules contain wildcard verbs or resources (*). Infra namespace SAs
+      (kube-*, openshift-*, open-cluster-management*) are excluded.
+      Addresses CIS-OCP 5.1.1 / 5.1.2 / 5.1.4 / 5.2.10 and PCI DSS 7.2 / 7.3.
+    remediationAction: inform
+    severity: critical
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - AC Access Control
+    controls:
+      - AC-2 Account Management
+      - AC-3 Access Enforcement
+      - AC-6 Least Privilege
+      - PCI-DSS-7.2 Access Control Systems
+      - PCI-DSS-7.3 Access Control Mechanisms
+    manifests:
+      - path: manifests/rbac-privileged-bindings.yaml
+
+  - name: block-privileged-containers-via-vap
+    description: >-
+      Deploys a ValidatingAdmissionPolicy and binding that block privileged
+      containers at admission time. Activation is opt-in per namespace via the
+      label enforce-no-privileged=true — no namespace is affected until labelled.
+      ACM enforce keeps the VAP and binding present on every managed cluster.
+      Requires OCP 4.17+ / Kubernetes 1.30+ (VAP GA).
+      Addresses CIS-OCP 5.2.1 / 5.2.2 and PCI DSS 2.2.1 / 7.2.1.
+    remediationAction: enforce
+    severity: critical
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - SC System and Communications Protection
+      - CM Configuration Management
+    controls:
+      - CM-6 Configuration Settings
+      - CM-7 Least Functionality
+      - SC-39 Process Isolation
+      - PCI-DSS-2.2.1 System Hardening Standards
+      - PCI-DSS-7.2.1 Least Privilege Access
+    manifests:
+      - path: manifests/block-privileged-containers.yaml
+
+  - name: block-host-escape-vectors-via-vap
+    description: >-
+      Deploys a ValidatingAdmissionPolicy and binding that block all known
+      host-escape vectors at admission time: hostPath volumes (node filesystem),
+      hostPID (host process namespace), hostIPC (host IPC namespace), and
+      hostNetwork (host network stack). Activation is opt-in per namespace via
+      the label enforce-no-host-escape=true — no namespace is affected until
+      labelled. ACM enforce keeps the VAP and binding present on every managed
+      cluster. Requires OCP 4.17+ / Kubernetes 1.30+ (VAP GA).
+      Addresses CIS-OCP 5.2.4, 5.2.5, 5.2.6, 5.2.12 and PCI DSS 2.2.1 / 7.2.1.
+    remediationAction: enforce
+    severity: critical
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - SC System and Communications Protection
+      - CM Configuration Management
+    controls:
+      - CM-6 Configuration Settings
+      - CM-7 Least Functionality
+      - SC-7 Boundary Protection
+      - SC-39 Process Isolation
+      - PCI-DSS-2.2.1 System Hardening Standards
+      - PCI-DSS-7.2.1 Least Privilege Access
+    manifests:
+      - path: manifests/block-host-escape.yaml
+
+  - name: detect-containers-missing-resources
+    description: >-
+      Flags containers in user namespaces that do not specify a CPU request
+      or a memory limit. Containers without a CPU request may be starved of
+      CPU time under contention; containers without a memory limit can cause
+      node over-provisioning and OOM kills. Uses a dynamic lookup over all
+      running Pods in user namespaces. Addresses CIS-OCP 5.7.5 / 5.7.6 and
+      PCI DSS 2.2.1 (system hardening) / 6.3.3 (resource management).
+    remediationAction: inform
+    severity: high
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - CM Configuration Management
+    controls:
+      - CM-6 Configuration Settings
+      - CM-7 Least Functionality
+      - SC-5 Resource Availability
+      - PCI-DSS-2.2.1 System Hardening Standards
+      - PCI-DSS-6.3.3 Security Patch and Component Management
+    manifests:
+      - path: manifests/resource-requirements.yaml
+
+  # ── RHACS Security Policies ─────────────────────────────────────────────────
+  # Delivered via ACM ConfigurationPolicy into the stackrox namespace.
+  # Placement is label-gated: add label 'rhacs-vulnerability-policy=enabled'
+  # to a managed cluster to activate enforcement.
+
+  - name: rhacs-httpd-server-version-2.4.50
+    description: >-
+      Delivers an RHACS SecurityPolicy that detects and enforces against
+      Apache HTTP Server (httpd) versions earlier than 2.4.51. Versions 2.4.49
+      and 2.4.50 are vulnerable to CVE-2021-41773 (path traversal / RCE) and
+      CVE-2021-42013 (path traversal bypass). The policy blocks builds, scales
+      offending deployments to zero, and prevents rescheduling via unsatisfiable
+      node constraints. Addresses CIS-OCP 5.4.1 (image scanning) and
+      PCI DSS 6.2 / 6.3.3 (vulnerability management and patch hygiene).
+    remediationAction: enforce
+    severity: critical
+    generatePolicyPlacement: false
+    standards:
+      - CIS OpenShift Container Platform 4 Benchmark
+      - PCI DSS v4.0
+    categories:
+      - CM Configuration Management
+      - SI System and Information Integrity
+    controls:
+      - CM-6 Configuration Settings
+      - CM-7 Least Functionality
+      - SI-2 Flaw Remediation
+      - SI-3 Malicious Code Protection
+      - PCI-DSS-6.2 Bespoke and Custom Software
+      - PCI-DSS-6.3.3 Security Patch and Component Management
+      - CIS-OCP-5.4.1 Image Vulnerability Scanning
+    manifests:
+      - path: manifests/httpd-server-version-2.4.50.yaml

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: loki-audit
+  labels:
+    app: promtail
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+  template:
+    metadata:
+      labels:
+        app: promtail
+    spec:
+      # Using your existing privileged service account
+      serviceAccountName: loki-sa
+      
+      # Essential: Ensures Promtail runs on master/control-plane nodes
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      
+      containers:
+      - name: promtail
+        image: grafana/promtail:latest
+        args:
+        - "-config.file=/etc/promtail/promtail.yaml"
+        # Adds the hostname as a label for easier filtering in Loki
+        - "-client.external-labels=hostname=$(HOSTNAME)"
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        securityContext:
+          privileged: true 
+          runAsUser: 0
+        volumeMounts:
+        - name: config
+          mountPath: /etc/promtail
+        - name: run
+          mountPath: /run/promtail
+        - name: audit-logs
+          # Directory where audit logs are stored on host
+          mountPath: /var/log/kube-apiserver 
+          readOnly: true
+      
+      volumes:
+      - name: config
+        configMap:
+          name: promtail-config
+      - name: run
+        hostPath:
+          path: /run/promtail
+          type: DirectoryOrCreate
+      - name: audit-logs
+        hostPath:
+          path: /var/log/kube-apiserver
+          type: Directory

@@ -1,0 +1,143 @@
+# PolicySets group policies for the ACM Governance dashboard.
+# Each set gets its own PlacementBinding referencing the built-in
+# 'global' Placement, which selects all managed clusters.
+#
+# Dashboard view: Governance -> Policy Sets -> three tiles (network-controls,
+# access-controls, workload-hardening) with aggregated compliance status.
+
+---
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: PolicySet
+metadata:
+  name: network-controls
+  namespace: acm-policies
+spec:
+  description: >-
+    Verifies network policy enforcement across managed clusters.
+    Covers both Compliance Operator scanning (ocp4-cis) and ACM-native
+    NetworkPolicy detection.
+  policies:
+    - netpol-check-acm-configpolicy
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-network-controls
+  namespace: acm-policies
+placementRef:
+  name: default
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+subjects:
+  - name: network-controls
+    apiGroup: policy.open-cluster-management.io
+    kind: PolicySet
+
+---
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: PolicySet
+metadata:
+  name: access-controls
+  namespace: acm-policies
+spec:
+  description: >-
+    Audits identity and RBAC posture for least-privilege compliance.
+    Flags over-privileged service accounts, dangerous ClusterRoleBindings,
+    and wildcard role grants across all user namespaces.
+  policies:
+    - enforce-sa-token-automount-off
+    - detect-anonymous-and-wildcard-rbac
+    - detect-overprivileged-rbac-bindings
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-access-controls
+  namespace: acm-policies
+placementRef:
+  name: default
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+subjects:
+  - name: access-controls
+    apiGroup: policy.open-cluster-management.io
+    kind: PolicySet
+
+---
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: PolicySet
+metadata:
+  name: workload-hardening
+  namespace: acm-policies
+spec:
+  description: >-
+    Detects and prevents workload privilege escalation and host escape.
+    Combines detective ConfigurationPolicies (inform) with preventive
+    ValidatingAdmissionPolicies (enforce/opt-in) to layer runtime and
+    admission-time controls.
+  policies:
+    - enforce-workload-namespace-isolation
+    - detect-default-sa-and-scc-weakness
+    - detect-privileged-container-pods
+    - block-privileged-containers-via-vap
+    - block-host-escape-vectors-via-vap
+    - detect-containers-missing-resources
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-workload-hardening
+  namespace: acm-policies
+placementRef:
+  name: default
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+subjects:
+  - name: workload-hardening
+    apiGroup: policy.open-cluster-management.io
+    kind: PolicySet
+
+# ── Vulnerability Management (RHACS policies) ────────────────────────────────
+# Label-gated: add label 'rhacs-vulnerability-policy=enabled' to a managed
+# cluster to activate the PolicySet. No cluster is affected until labelled.
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: placement-vulnerability-management
+  namespace: acm-policies
+spec:
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            rhacs-vulnerability-policy: "enabled"
+---
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: PolicySet
+metadata:
+  name: vulnerability-management
+  namespace: acm-policies
+spec:
+  description: >-
+    Delivers RHACS SecurityPolicies that enforce image vulnerability hygiene
+    across managed clusters. Covers known exploited CVEs in widely-used server
+    components. Activation is opt-in per cluster via the label
+    'rhacs-vulnerability-policy=enabled'. Addresses CIS-OCP 5.4.1 and
+    PCI DSS 6.2 / 6.3.3.
+  policies:
+    - rhacs-httpd-server-version-2.4.50
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-vulnerability-management
+  namespace: acm-policies
+placementRef:
+  name: placement-vulnerability-management
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+subjects:
+  - name: vulnerability-management
+    apiGroup: policy.open-cluster-management.io
+    kind: PolicySet

@@ -1,0 +1,145 @@
+# CIS-OCP 5.3.2 — Minimize the admission of containers wishing to share the host IPC namespace
+# CIS-OCP 5.7.3 — Apply Security Context Constraints to pods and containers
+# CIS-OCP 5.1.5 — Ensure default service accounts are not bound to active cluster roles
+# PCI DSS 2.2.1 — Configuration standards address all known security vulnerabilities
+# PCI DSS 7.2.1 — Access to system components assigned based on least privilege
+# PCI DSS 8.6.1 — System/application accounts and authentication factors strictly managed
+#
+# Policy 1: Verify the 'restricted-v2' SCC is present and its key security fields
+# have not been weakened. restricted-v2 (OCP 4.11+) is the hardened default: it
+# drops ALL capabilities, disables privilege escalation, and requires
+# seccompProfile RuntimeDefault.
+
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: scc-restricted-v2-integrity
+spec:
+  remediationAction: inform
+  severity: high
+  object-templates:
+    - complianceType: musthave
+      objectDefinition:
+        apiVersion: security.openshift.io/v1
+        kind: SecurityContextConstraints
+        metadata:
+          name: restricted-v2
+        allowPrivilegedContainer: false
+        allowPrivilegeEscalation: false
+        allowHostDirVolumePlugin: false
+        allowHostIPC: false
+        allowHostNetwork: false
+        allowHostPID: false
+        allowHostPorts: false
+        requiredDropCapabilities:
+          - ALL
+        seccompProfiles:
+          - runtime/default
+
+---
+# Policy 2: Flag RoleBindings in user namespaces that bind the 'default' service
+# account to any role. The default SA should have zero RBAC grants — workloads
+# that need API access must use a dedicated SA (CIS-OCP 5.1.5).
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: default-sa-no-rolebindings
+spec:
+  remediationAction: inform
+  severity: high
+  namespaceSelector:
+    exclude:
+      - kube-*
+      - openshift*
+      - open-cluster-management*
+      - multicluster*
+      - cert-*
+      - catalogd-*
+      - costmanagement-*
+      - external-dns-*
+      - node-observability-*
+      - redhat-*
+      - rhdh-*
+      - submariner-*
+      - hive
+      - stackrox
+      - aap
+      - ack-system
+      - metallb-system
+      - mtr
+      - service-telemetry
+    include:
+      - "*"
+  object-templates:
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        subjects:
+          - kind: ServiceAccount
+            name: default
+
+---
+# Policy 3: Flag Deployments, StatefulSets, and DaemonSets that explicitly use the
+# 'default' service account. Workloads must reference a dedicated, purpose-built SA.
+#
+# NOTE: This only catches workloads that explicitly set serviceAccountName: default.
+# Workloads that omit serviceAccountName entirely also land on the default SA at
+# runtime — blocking that requires a mutating/validating webhook (e.g. Kyverno).
+# See: https://kyverno.io/policies/best-practices/require-non-default-serviceaccount/
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: workloads-dedicated-sa
+spec:
+  remediationAction: inform
+  severity: medium
+  namespaceSelector:
+    exclude:
+      - kube-*
+      - openshift*
+      - open-cluster-management*
+      - multicluster*
+      - cert-*
+      - catalogd-*
+      - costmanagement-*
+      - external-dns-*
+      - node-observability-*
+      - redhat-*
+      - rhdh-*
+      - submariner-*
+      - hive
+      - stackrox
+      - aap
+      - ack-system
+      - metallb-system
+      - mtr
+      - service-telemetry
+    include:
+      - "*"
+  object-templates:
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: apps/v1
+        kind: Deployment
+        spec:
+          template:
+            spec:
+              serviceAccountName: default
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: apps/v1
+        kind: StatefulSet
+        spec:
+          template:
+            spec:
+              serviceAccountName: default
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: apps/v1
+        kind: DaemonSet
+        spec:
+          template:
+            spec:
+              serviceAccountName: default
