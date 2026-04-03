@@ -1,5 +1,71 @@
 # Network Policies
 
+## Generating Policies with kubectl-netpol
+
+`kubectl-netpol` is a `kubectl` plugin that generates ready-to-apply `NetworkPolicy` YAML from simple peer references. It operates in three modes:
+
+| Mode | Trigger | Use case |
+|------|---------|----------|
+| Command-Line Direct | `--src` and `--dst` fully specified | Automation / CI |
+| Interactive TUI | Peer info absent or ambiguous | Discovery against live cluster or manifests |
+| Filesystem Mode | `-f <folder>` | GitOps offline analysis — no cluster needed |
+
+### Resource reference format
+
+```
+namespace/workload[/port/protocol]
+```
+
+`+` is the wildcard token (shell-safe, no quoting needed).
+
+| Reference | Meaning |
+|-----------|---------|
+| `ns/app/8080/tcp` | Specific port — inline, no TUI |
+| `ns/app/+` | All ports — no TUI |
+| `ns/+` | All workloads in namespace |
+| `ns/app` | Workload present, port discovered via TUI |
+| `ns` | Namespace present, workload + port via TUI |
+
+### Zero-trust baseline
+
+```bash
+# Deny-all + allow same-namespace traffic for a single namespace
+kubectl netpol -n myapp --deny-all --allow-internal
+
+# Combined with traffic rules — hygiene policies prepended per namespace
+kubectl netpol --src=frontend/web --dst=backend/api --deny-all -f ./manifests
+```
+
+### Generating allow rules
+
+```bash
+# Specific port — fully inline, no cluster access
+kubectl netpol --src=frontend/web/+ --dst=backend/api/8080/tcp
+
+# Bare namespace dst — AllPorts, no TUI
+kubectl netpol --src=frontend/webapp --dst=backend -f ./manifests
+
+# Both sides partially specified — TUI opens to complete the selection
+kubectl netpol --src=frontend --dst=backend -f ./manifests
+
+# Manifest folder only — full interactive TUI, no cluster needed
+kubectl netpol -f ./manifests
+```
+
+Each invocation emits a matching ingress policy (on the destination) and egress policy (on the source), ready for `kubectl apply` or GitOps commit.
+
+### Install
+
+```bash
+# From source
+make && sudo make install
+
+# Verify
+kubectl netpol --help
+```
+
+---
+
 ## What Are Network Policies
 
 By default, Kubernetes behaves as if it trusts everything in your cluster. All pods can talk to all other pods, on all ports, at all times.
