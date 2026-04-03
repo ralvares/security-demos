@@ -3,9 +3,11 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	klabels "github.com/ralvares/kubectl-netpol/internal/labels"
 	appsv1 "k8s.io/api/apps/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -42,7 +44,7 @@ func NewLiveProvider(kubeconfig, kubeContext string) (*LiveProvider, error) {
 func (p *LiveProvider) ListNamespaces() ([]string, error) {
 	list, err := p.client.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, clusterErr(err)
 	}
 	names := make([]string, len(list.Items))
 	for i, ns := range list.Items {
@@ -56,7 +58,7 @@ func (p *LiveProvider) ListWorkloads(namespace string) ([]WorkloadInfo, error) {
 
 	deps, err := p.client.AppsV1().Deployments(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, clusterErr(err)
 	}
 	for _, d := range deps.Items {
 		workloads = append(workloads, WorkloadInfo{
@@ -68,7 +70,7 @@ func (p *LiveProvider) ListWorkloads(namespace string) ([]WorkloadInfo, error) {
 
 	ss, err := p.client.AppsV1().StatefulSets(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, clusterErr(err)
 	}
 	for _, s := range ss.Items {
 		workloads = append(workloads, WorkloadInfo{
@@ -80,7 +82,7 @@ func (p *LiveProvider) ListWorkloads(namespace string) ([]WorkloadInfo, error) {
 
 	ds, err := p.client.AppsV1().DaemonSets(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, clusterErr(err)
 	}
 	for _, d := range ds.Items {
 		workloads = append(workloads, WorkloadInfo{
@@ -98,15 +100,39 @@ func (p *LiveProvider) GetWorkloadLabels(namespace, workload string) (map[string
 	if err == nil {
 		return klabels.Clean(d.Spec.Selector.MatchLabels), nil
 	}
+	if !k8serrors.IsNotFound(err) {
+		return nil, clusterErr(err)
+	}
 	s, err2 := p.client.AppsV1().StatefulSets(namespace).Get(context.Background(), workload, metav1.GetOptions{})
 	if err2 == nil {
 		return klabels.Clean(s.Spec.Selector.MatchLabels), nil
+	}
+	if !k8serrors.IsNotFound(err2) {
+		return nil, clusterErr(err2)
 	}
 	ds, err3 := p.client.AppsV1().DaemonSets(namespace).Get(context.Background(), workload, metav1.GetOptions{})
 	if err3 == nil {
 		return klabels.Clean(ds.Spec.Selector.MatchLabels), nil
 	}
+	if !k8serrors.IsNotFound(err3) {
+		return nil, clusterErr(err3)
+	}
 	return nil, fmt.Errorf("workload %q not found in namespace %q", workload, namespace)
+}
+
+// clusterErr enriches an API error with a login hint when appropriate.
+func clusterErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	if k8serrors.IsUnauthorized(err) || k8serrors.IsForbidden(err) {
+		return fmt.Errorf("%w\n\nHint: you are not authenticated — run `oc login` or `kubectl config use-context <ctx>`", err)
+	}
+	msg := err.Error()
+	if strings.Contains(msg, "connection refused") || strings.Contains(msg, "no such host") || strings.Contains(msg, "dial") {
+		return fmt.Errorf("%w\n\nHint: cannot reach the cluster — run `oc login` or check your kubeconfig", err)
+	}
+	return err
 }
 
 func (p *LiveProvider) GetWorkloadPorts(namespace, workload string) ([]PortInfo, error) {
