@@ -1,8 +1,9 @@
 # Detect roxctl binary: prefer PATH, fall back to ./roxctl
+# Resolve absolute path to avoid recursion with roxctl() wrapper
 if command -v roxctl &>/dev/null; then
-  _ROXCTL="roxctl"
+  _ROXCTL="$(command -v roxctl)"
 elif [[ -x "./roxctl" ]]; then
-  _ROXCTL="./roxctl"
+  _ROXCTL="$(cd . && pwd)/roxctl"
 else
   echo "Warning: roxctl not found in PATH or current directory" >&2
   _ROXCTL="roxctl"
@@ -36,4 +37,42 @@ rox-deploy() {
 rox-get-secret() {
   oc get secret central-htpasswd -o jsonpath='{.data.password}' -n stackrox | base64 -d
   echo
+}
+
+# Helper: extract value for a flag from args (e.g. _rox_extract_flag -i "$@")
+_rox_extract_flag() {
+  local flag="$1"; shift
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      "$flag") echo "$2"; return 0 ;;
+      "$flag"=*) echo "${1#*=}"; return 0 ;;
+    esac
+    shift
+  done
+  return 1
+}
+
+# 5. roxctl wrapper - mimics real roxctl syntax with formatted output
+roxctl() {
+  case "$1 $2" in
+    "image check")
+      shift 2
+      local img; img="$(_rox_extract_flag -i "$@")" || { echo "Usage: roxctl image check -i <image>" >&2; return 1; }
+      rox-check "$img"
+      ;;
+    "image scan")
+      shift 2
+      local img; img="$(_rox_extract_flag -i "$@")" || { echo "Usage: roxctl image scan -i <image>" >&2; return 1; }
+      rox-scan "$img"
+      ;;
+    "deployment check")
+      shift 2
+      local file; file="$(_rox_extract_flag -f "$@")" || { echo "Usage: roxctl deployment check -f <file>" >&2; return 1; }
+      rox-deploy "$file"
+      ;;
+    *)
+      echo "Supported commands: roxctl image check -i <image>, roxctl image scan -i <image>, roxctl deployment check -f <file>" >&2
+      return 1
+      ;;
+  esac
 }
