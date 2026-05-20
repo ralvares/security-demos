@@ -1,3 +1,4 @@
 .DS_Store
 demo_app/attack/url-shortener/addons/__pycache__
 use_cases/networking/networkpolicies/netpol-plugin/kubectl-netpol
+demo_app/attack/token
