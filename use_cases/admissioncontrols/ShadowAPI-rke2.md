@@ -4,6 +4,13 @@ A developer with nothing more than `edit` rights in a single namespace escalates
 
 This is not a theoretical risk. Every step uses standard Kubernetes primitives. No CVE. No zero-day. Just a default that trusts too much.
 
+## Getting Started
+
+```bash
+git clone https://github.com/ralvares/security-demos.git
+cd security-demos/use_cases/admissioncontrols
+```
+
 ---
 
 ## The Story
@@ -95,13 +102,21 @@ This creates a Lima VM running RKE2 with the default profile, a `dev-space` name
 Copy the exploit script into the VM and execute it:
 
 ```bash
-limactl copy shadow-api-rke2-exploit.sh rke2-lab:~/users/
-limactl shell rke2-lab -- bash ~/users/shadow-api-rke2-exploit.sh
+limactl copy shadow-api-rke2-exploit.sh rke2-lab:/tmp/
+limactl shell rke2-lab -- bash /tmp/shadow-api-rke2-exploit.sh
 ```
 
 The script walks through all 5 acts interactively, with `[OK]`/`[FAIL]` status checks and pauses between each act.
 
-### Cleanup
+### Re-run (Undo Exploit, Keep Lab)
+
+```bash
+limactl shell rke2-lab -- bash /tmp/shadow-api-rke2-exploit.sh --cleanup
+```
+
+Removes exploit pods, shadow token, and the persistent `cluster-admin` binding — but keeps the namespace and `dev-user` intact. Ready for another demo.
+
+### Destroy Lab
 
 ```bash
 limactl stop rke2-lab && limactl delete rke2-lab
