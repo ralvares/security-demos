@@ -16,6 +16,16 @@ spec:
         value: 'true'
       - name: ROX_SCANNER_V4_RED_HAT_LAYERS_RED_HAT_VULNS_ONLY
         value: 'true'
+      - name: ROX_POLICY_FILTERS_UI
+        value: 'enabled'
+      - name: ROX_CISA_KEV
+        value: 'true'
+      - name: ROX_SENSITIVE_FILE_ACTIVITY
+        value: 'true'
+      - name: ROX_SBOM_SCANNING
+        value: 'true'
+      - name: ROX_INIT_CONTAINER_SUPPORT
+        value: true
   central:
     db:
       connectionPoolSize:
