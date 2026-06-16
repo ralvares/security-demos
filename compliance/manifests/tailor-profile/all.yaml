@@ -1,0 +1,1003 @@
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: default
+  namespace: open-cluster-management-policies
+spec:
+  clusterSets:
+  - default
+---
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: default
+  namespace: open-cluster-management-policies
+spec:
+  clusterSet: default
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-access-controls
+  namespace: open-cluster-management-policies
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: default
+subjects:
+- apiGroup: policy.open-cluster-management.io
+  kind: PolicySet
+  name: access-controls
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-network-controls
+  namespace: open-cluster-management-policies
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: default
+subjects:
+- apiGroup: policy.open-cluster-management.io
+  kind: PolicySet
+  name: network-controls
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-workload-hardening
+  namespace: open-cluster-management-policies
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: default
+subjects:
+- apiGroup: policy.open-cluster-management.io
+  kind: PolicySet
+  name: workload-hardening
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: SC System and Communications Protection,CM
+      Configuration Management
+    policy.open-cluster-management.io/controls: CM-6 Configuration Settings,CM-7 Least
+      Functionality,SC-7 Boundary Protection,SC-39 Process Isolation,PCI-DSS-2.2.1
+      System Hardening Standards,PCI-DSS-7.2.1 Least Privilege Access
+    policy.open-cluster-management.io/description: 'Deploys a ValidatingAdmissionPolicy
+      and binding that block all known host-escape vectors at admission time: hostPath
+      volumes (node filesystem), hostPID (host process namespace), hostIPC (host IPC
+      namespace), and hostNetwork (host network stack). Activation is opt-in per namespace
+      via the label enforce-no-host-escape=true — no namespace is affected until labelled.
+      ACM enforce keeps the VAP and binding present on every managed cluster. Requires
+      OCP 4.17+ / Kubernetes 1.30+ (VAP GA). Addresses CIS-OCP 5.2.4, 5.2.5, 5.2.6,
+      5.2.12 and PCI DSS 2.2.1 / 7.2.1.'
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: block-host-escape
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: block-host-escape
+      spec:
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: admissionregistration.k8s.io/v1
+            kind: ValidatingAdmissionPolicy
+            metadata:
+              name: no-host-escape
+            spec:
+              failurePolicy: Fail
+              matchConstraints:
+                resourceRules:
+                - apiGroups:
+                  - ""
+                  apiVersions:
+                  - v1
+                  operations:
+                  - CREATE
+                  - UPDATE
+                  resources:
+                  - pods
+                - apiGroups:
+                  - apps
+                  apiVersions:
+                  - v1
+                  operations:
+                  - CREATE
+                  - UPDATE
+                  resources:
+                  - deployments
+                  - daemonsets
+                  - statefulsets
+                  - replicasets
+              validations:
+              - expression: |
+                  !has(variables.podSpec.hostPID) || variables.podSpec.hostPID == false
+                message: hostPID shares the host process namespace and is not allowed
+                  in this namespace.
+                reason: Forbidden
+              - expression: |
+                  !has(variables.podSpec.hostIPC) || variables.podSpec.hostIPC == false
+                message: hostIPC shares the host IPC namespace and is not allowed
+                  in this namespace.
+                reason: Forbidden
+              - expression: |
+                  !has(variables.podSpec.hostNetwork) || variables.podSpec.hostNetwork == false
+                message: hostNetwork shares the host network stack and is not allowed
+                  in this namespace.
+                reason: Forbidden
+              - expression: |
+                  !has(variables.podSpec.volumes) || !variables.podSpec.volumes.exists(v, has(v.hostPath))
+                message: hostPath volumes expose the node filesystem and are not allowed
+                  in this namespace.
+                reason: Forbidden
+              variables:
+              - expression: |
+                  has(object.spec.template) ? object.spec.template.spec : object.spec
+                name: podSpec
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: admissionregistration.k8s.io/v1
+            kind: ValidatingAdmissionPolicyBinding
+            metadata:
+              name: no-host-escape-binding
+            spec:
+              matchResources:
+                namespaceSelector:
+                  matchLabels:
+                    enforce-no-host-escape: "true"
+              policyName: no-host-escape
+              validationActions:
+              - Deny
+        remediationAction: enforce
+        severity: critical
+  remediationAction: enforce
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: SC System and Communications Protection,CM
+      Configuration Management
+    policy.open-cluster-management.io/controls: CM-6 Configuration Settings,CM-7 Least
+      Functionality,SC-39 Process Isolation,PCI-DSS-2.2.1 System Hardening Standards,PCI-DSS-7.2.1
+      Least Privilege Access
+    policy.open-cluster-management.io/description: Deploys a ValidatingAdmissionPolicy
+      and binding that block privileged containers at admission time. Activation is
+      opt-in per namespace via the label enforce-no-privileged=true — no namespace
+      is affected until labelled. ACM enforce keeps the VAP and binding present on
+      every managed cluster. Requires OCP 4.17+ / Kubernetes 1.30+ (VAP GA). Addresses
+      CIS-OCP 5.2.1 / 5.2.2 and PCI DSS 2.2.1 / 7.2.1.
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: block-privileged-containers
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: block-privileged-containers
+      spec:
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: admissionregistration.k8s.io/v1
+            kind: ValidatingAdmissionPolicy
+            metadata:
+              name: no-privileged-containers
+            spec:
+              failurePolicy: Fail
+              matchConstraints:
+                resourceRules:
+                - apiGroups:
+                  - ""
+                  apiVersions:
+                  - v1
+                  operations:
+                  - CREATE
+                  - UPDATE
+                  resources:
+                  - pods
+                - apiGroups:
+                  - apps
+                  apiVersions:
+                  - v1
+                  operations:
+                  - CREATE
+                  - UPDATE
+                  resources:
+                  - deployments
+                  - daemonsets
+                  - statefulsets
+                  - replicasets
+              validations:
+              - expression: |
+                  !variables.podSpec.containers.exists(c,
+                    has(c.securityContext) &&
+                    has(c.securityContext.privileged) &&
+                    c.securityContext.privileged == true
+                  )
+                message: Privileged containers are not allowed in this namespace.
+                reason: Forbidden
+              - expression: |
+                  !has(variables.podSpec.initContainers) || !variables.podSpec.initContainers.exists(c,
+                    has(c.securityContext) &&
+                    has(c.securityContext.privileged) &&
+                    c.securityContext.privileged == true
+                  )
+                message: Privileged init containers are not allowed in this namespace.
+                reason: Forbidden
+              variables:
+              - expression: |
+                  has(object.spec.containers) ? object.spec.containers : []
+                name: containers
+              - expression: |
+                  has(object.spec.initContainers) ? object.spec.initContainers : []
+                name: initContainers
+              - expression: |
+                  has(object.spec.template) ? object.spec.template.spec : object.spec
+                name: podSpec
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: admissionregistration.k8s.io/v1
+            kind: ValidatingAdmissionPolicyBinding
+            metadata:
+              name: no-privileged-containers-binding
+            spec:
+              matchResources:
+                namespaceSelector:
+                  matchLabels:
+                    enforce-no-privileged: "true"
+              policyName: no-privileged-containers
+              validationActions:
+              - Deny
+        remediationAction: enforce
+        severity: critical
+  remediationAction: enforce
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: CM Configuration Management
+    policy.open-cluster-management.io/controls: CM-6 Configuration Settings,CM-7 Least
+      Functionality,SC-7 Boundary Protection,PCI-DSS-1.3 Network Access Controls,PCI-DSS-1.4
+      Network Connections Between Trusted and Untrusted Networks
+    policy.open-cluster-management.io/description: 'Equivalent of netpol-compliance-scan
+      without the Compliance Operator. Uses object-templates-raw with a lookup to
+      dynamically find all namespaces labelled ''complience-netpol-demo: true'' at
+      evaluation time and require at least one NetworkPolicy in each. No additional
+      operators required — evaluated directly by the ACM hub. Addresses CIS-OCP 5.3.2
+      / 5.7.1 and PCI DSS 1.3 / 1.4.'
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: netpol-compliance-acm
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: netpol-acm-labelled-ns
+      spec:
+        object-templates-raw: |
+          {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
+          {{- if and (index $ns.metadata "labels") (eq (index $ns.metadata.labels "complience-netpol-demo") "true") }}
+          - complianceType: musthave
+            objectDefinition:
+              apiVersion: networking.k8s.io/v1
+              kind: NetworkPolicy
+              metadata:
+                namespace: '{{ $ns.metadata.name }}'
+          {{- end }}
+          {{- end }}
+        remediationAction: inform
+        severity: high
+  remediationAction: inform
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: CM Configuration Management
+    policy.open-cluster-management.io/controls: CM-6 Configuration Settings,CM-7 Least
+      Functionality,SC-7 Boundary Protection,PCI-DSS-1.3 Network Access Controls,PCI-DSS-1.4
+      Network Connections Between Trusted and Untrusted Networks
+    policy.open-cluster-management.io/description: 'Deploys a TailoredProfile extending
+      ocp4-cis and a ScanSettingBinding scoped to namespaces labelled ''complience-netpol-demo:
+      true''. Uses the OpenShift Compliance Operator to evaluate the ocp4-configure-network-
+      policies-namespaces rule. Requires Compliance Operator in openshift-compliance.
+      Addresses CIS-OCP 5.3.2 / 5.7.x and PCI DSS 1.3 / 1.4.'
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: netpol-compliance-scan
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: netpol-compliance-scan
+      spec:
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: compliance.openshift.io/v1alpha1
+            kind: TailoredProfile
+            metadata:
+              name: demo-targeted-profile
+              namespace: openshift-compliance
+            spec:
+              description: 'Exempts everything except namespaces with the ''complience-netpol-demo:
+                true'' label.'
+              enableRules:
+              - name: ocp4-configure-network-policies-namespaces
+                rationale: Ensures network isolation is enforced only on the demo-scoped
+                  namespaces.
+              extends: ocp4-cis
+              setValues:
+              - name: ocp4-var-network-policies-namespaces-exempt-regex
+                rationale: Dynamically excludes all namespaces that do not carry the
+                  demo label.
+                value: '{{- $list := list "openshift-.*" "kube-.*" "default" -}}{{-
+                  range $ns := (lookup "v1" "Namespace" "" "").items -}}{{- if not
+                  (and (index $ns.metadata "labels") (eq (index $ns.metadata.labels
+                  "complience-netpol-demo") "true")) -}}{{- $list = append $list $ns.metadata.name
+                  -}}{{- end -}}{{- end -}}^({{ $list | join "|" }})$'
+              title: Targeted Demo Compliance Profile
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: compliance.openshift.io/v1alpha1
+            kind: ScanSettingBinding
+            metadata:
+              name: demo-cis-binding
+              namespace: openshift-compliance
+            profiles:
+            - apiGroup: compliance.openshift.io/v1alpha1
+              kind: TailoredProfile
+              name: demo-targeted-profile
+            settingsRef:
+              apiGroup: compliance.openshift.io/v1alpha1
+              kind: ScanSetting
+              name: default
+        remediationAction: enforce
+        severity: low
+  remediationAction: enforce
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: SC System and Communications Protection
+    policy.open-cluster-management.io/controls: SC-2 Application Partitioning,SC-7
+      Boundary Protection,CM-6 Configuration Settings,PCI-DSS-1.3.1 Inbound and Outbound
+      Traffic Restriction,PCI-DSS-2.2.1 System Hardening Standards,PCI-DSS-6.3.3 Security
+      Patch and Component Management
+    policy.open-cluster-management.io/description: Ensures workloads are not deployed
+      into the 'default' namespace and that user namespaces carry Pod Security Standards
+      labels at the 'restricted' level (seccomp RuntimeDefault, no privilege escalation,
+      all caps dropped). Addresses CIS-OCP 5.7.1–5.7.4 and PCI DSS 1.3.1 (inbound/outbound
+      traffic restriction) / 2.2.1 (system hardening) / 6.3.3 (security components).
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: ns-workload-isolation
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: no-workloads-default-ns
+      spec:
+        namespaceSelector:
+          include:
+          - default
+        object-templates:
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: v1
+            kind: Pod
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: apps/v1
+            kind: Deployment
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: apps/v1
+            kind: DaemonSet
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: apps/v1
+            kind: StatefulSet
+        remediationAction: inform
+        severity: medium
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: ns-pod-security-standards
+      spec:
+        namespaceSelector:
+          exclude:
+          - kube-*
+          - openshift-*
+          - open-cluster-management*
+          - default
+          include:
+          - '*'
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              labels:
+                pod-security.kubernetes.io/audit: restricted
+                pod-security.kubernetes.io/warn: restricted
+        remediationAction: enforce
+        severity: high
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: SC System and Communications Protection,CM
+      Configuration Management
+    policy.open-cluster-management.io/controls: CM-6 Configuration Settings,CM-7 Least
+      Functionality,SC-39 Process Isolation,PCI-DSS-2.2.1 System Hardening Standards,PCI-DSS-7.2.1
+      Least Privilege Access
+    policy.open-cluster-management.io/description: 'Flags Pods running with securityContext.privileged:
+      true (both regular and init containers) in user namespaces. Infra namespaces
+      (kube-*, openshift-*, open-cluster-management*) are excluded. Addresses CIS-OCP
+      5.2.1 / 5.2.2 and PCI DSS 2.2.1 / 7.2.1.'
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: privileged-containers
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: no-privileged-containers
+      spec:
+        namespaceSelector:
+          exclude:
+          - kube-*
+          - openshift-*
+          - open-cluster-management*
+          - stackrox
+          include:
+          - '*'
+        object-templates:
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+              - securityContext:
+                  privileged: true
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: v1
+            kind: Pod
+            spec:
+              initContainers:
+              - securityContext:
+                  privileged: true
+        remediationAction: inform
+        severity: critical
+  remediationAction: inform
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: AC Access Control
+    policy.open-cluster-management.io/controls: AC-6 Least Privilege,AC-3 Access Enforcement,CM-7
+      Least Functionality,PCI-DSS-7.2 Access Control Systems,PCI-DSS-7.3 Access Control
+      Mechanisms
+    policy.open-cluster-management.io/description: 'Audit-only checks that flag dangerous
+      RBAC patterns: ClusterRoleBindings granting access to unauthenticated or anonymous
+      users, and wildcard Roles in user namespaces. Addresses CIS-OCP 5.1.1 / 5.1.2
+      / 5.1.4 / 5.2.10 and PCI DSS 7.3 (deny-all default access control) / 7.2 (least
+      privilege). Remediation is inform-only — RBAC changes require deliberate human
+      review.'
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: rbac-controls
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: rbac-no-unauth-access
+      spec:
+        object-templates-raw: |
+          {{- $allowedCRBs := list "system:openshift:public-info-viewer" "system:public-info-viewer" }}
+          {{- range $crb := (lookup "rbac.authorization.k8s.io/v1" "ClusterRoleBinding" "" "").items }}
+          {{- if not (has $crb.metadata.name $allowedCRBs) }}
+          {{- range $subj := $crb.subjects }}
+          {{- if or (and (eq $subj.kind "Group") (eq $subj.name "system:unauthenticated")) (and (eq $subj.kind "User") (eq $subj.name "system:anonymous")) }}
+          - complianceType: mustnothave
+            objectDefinition:
+              apiVersion: rbac.authorization.k8s.io/v1
+              kind: ClusterRoleBinding
+              metadata:
+                name: '{{ $crb.metadata.name }}'
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+        remediationAction: inform
+        severity: critical
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: rbac-no-wildcard-roles
+      spec:
+        namespaceSelector:
+          exclude:
+          - kube-*
+          - openshift-*
+          - open-cluster-management*
+          include:
+          - '*'
+        object-templates:
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: rbac.authorization.k8s.io/v1
+            kind: Role
+            rules:
+            - apiGroups:
+              - '*'
+              resources:
+              - '*'
+              verbs:
+              - '*'
+        remediationAction: inform
+        severity: high
+  remediationAction: inform
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: AC Access Control
+    policy.open-cluster-management.io/controls: AC-2 Account Management,AC-3 Access
+      Enforcement,AC-6 Least Privilege,PCI-DSS-7.2 Access Control Systems,PCI-DSS-7.3
+      Access Control Mechanisms
+    policy.open-cluster-management.io/description: Flags service accounts in user
+      namespaces that hold cluster-admin via a ClusterRoleBinding or RoleBinding,
+      or are bound to a ClusterRole/Role whose rules contain wildcard verbs or resources
+      (*). Infra namespace SAs (kube-*, openshift-*, open-cluster-management*) are
+      excluded. Addresses CIS-OCP 5.1.1 / 5.1.2 / 5.1.4 / 5.2.10 and PCI DSS 7.2 /
+      7.3.
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: rbac-privileged-bindings
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: cluster-admin-binding
+      spec:
+        object-templates-raw: |
+          {{- range $crb := (lookup "rbac.authorization.k8s.io/v1" "ClusterRoleBinding" "" "").items }}
+          {{- if eq $crb.roleRef.name "cluster-admin" }}
+          {{- range $subj := $crb.subjects }}
+          {{- if eq $subj.kind "ServiceAccount" }}
+          {{- $ns := $subj.namespace }}
+          {{- if not (or (hasPrefix "kube-" $ns) (hasPrefix "openshift-" $ns) (hasPrefix "open-cluster-management" $ns) (eq $ns "stackrox")) }}
+          - complianceType: mustnothave
+            objectDefinition:
+              apiVersion: rbac.authorization.k8s.io/v1
+              kind: ClusterRoleBinding
+              metadata:
+                name: '{{ $crb.metadata.name }}'
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
+          {{- $nsName := $ns.metadata.name }}
+          {{- if not (or (hasPrefix "kube-" $nsName) (hasPrefix "openshift-" $nsName) (hasPrefix "open-cluster-management" $nsName) (eq $nsName "stackrox")) }}
+          {{- range $rb := (lookup "rbac.authorization.k8s.io/v1" "RoleBinding" $nsName "").items }}
+          {{- if eq $rb.roleRef.name "cluster-admin" }}
+          {{- range $subj := $rb.subjects }}
+          {{- if eq $subj.kind "ServiceAccount" }}
+          - complianceType: mustnothave
+            objectDefinition:
+              apiVersion: rbac.authorization.k8s.io/v1
+              kind: RoleBinding
+              metadata:
+                name: '{{ $rb.metadata.name }}'
+                namespace: '{{ $nsName }}'
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+        remediationAction: inform
+        severity: critical
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: wildcard-crole-binding
+      spec:
+        object-templates-raw: |
+          {{- $allowedCRBs := list "hive-controllers" "hypershift-operator" "open-cluster-management:cluster-proxy-addon:addon-manager" "open-cluster-management:hive-operator:hive-operator" }}
+          {{- range $crb := (lookup "rbac.authorization.k8s.io/v1" "ClusterRoleBinding" "" "").items }}
+          {{- if not (eq $crb.roleRef.name "cluster-admin") }}
+          {{- if not (has $crb.metadata.name $allowedCRBs) }}
+          {{- if not (or (hasPrefix "multicluster-engine." $crb.metadata.name) (hasPrefix "rhacs-operator." $crb.metadata.name)) }}
+          {{- range $subj := $crb.subjects }}
+          {{- if eq $subj.kind "ServiceAccount" }}
+          {{- $ns := $subj.namespace }}
+          {{- if not (or (hasPrefix "kube-" $ns) (hasPrefix "openshift-" $ns) (hasPrefix "open-cluster-management" $ns) (eq $ns "stackrox")) }}
+          {{- $cr := lookup "rbac.authorization.k8s.io/v1" "ClusterRole" "" $crb.roleRef.name }}
+          {{- range $rule := $cr.rules }}
+          {{- if or (has "*" $rule.verbs) (has "*" $rule.resources) }}
+          - complianceType: mustnothave
+            objectDefinition:
+              apiVersion: rbac.authorization.k8s.io/v1
+              kind: ClusterRoleBinding
+              metadata:
+                name: '{{ $crb.metadata.name }}'
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+        remediationAction: inform
+        severity: high
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: wildcard-role-binding
+      spec:
+        object-templates-raw: |
+          {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
+          {{- $nsName := $ns.metadata.name }}
+          {{- if not (or (hasPrefix "kube-" $nsName) (hasPrefix "openshift-" $nsName) (hasPrefix "open-cluster-management" $nsName) (eq $nsName "stackrox") (eq $nsName "hypershift") (eq $nsName "multicluster-engine") (eq $nsName "local-cluster")) }}
+          {{- range $rb := (lookup "rbac.authorization.k8s.io/v1" "RoleBinding" $nsName "").items }}
+          {{- if eq $rb.roleRef.kind "Role" }}
+          {{- range $subj := $rb.subjects }}
+          {{- if eq $subj.kind "ServiceAccount" }}
+          {{- $role := lookup "rbac.authorization.k8s.io/v1" "Role" $nsName $rb.roleRef.name }}
+          {{- range $rule := $role.rules }}
+          {{- if or (has "*" $rule.verbs) (has "*" $rule.resources) }}
+          - complianceType: mustnothave
+            objectDefinition:
+              apiVersion: rbac.authorization.k8s.io/v1
+              kind: RoleBinding
+              metadata:
+                name: '{{ $rb.metadata.name }}'
+                namespace: '{{ $nsName }}'
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- if eq $subj.kind "User" }}
+          {{- $role := lookup "rbac.authorization.k8s.io/v1" "Role" $nsName $rb.roleRef.name }}
+          {{- range $rule := $role.rules }}
+          {{- if or (has "*" $rule.verbs) (has "*" $rule.resources) }}
+          - complianceType: mustnothave
+            objectDefinition:
+              apiVersion: rbac.authorization.k8s.io/v1
+              kind: RoleBinding
+              metadata:
+                name: '{{ $rb.metadata.name }}'
+                namespace: '{{ $nsName }}'
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+        remediationAction: inform
+        severity: high
+  remediationAction: inform
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: CM Configuration Management
+    policy.open-cluster-management.io/controls: CM-6 Configuration Settings,CM-7 Least
+      Functionality,SC-5 Resource Availability,PCI-DSS-2.2.1 System Hardening Standards,PCI-DSS-6.3.3
+      Security Patch and Component Management
+    policy.open-cluster-management.io/description: Flags containers in user namespaces
+      that do not specify a CPU request or a memory limit. Containers without a CPU
+      request may be starved of CPU time under contention; containers without a memory
+      limit can cause node over-provisioning and OOM kills. Uses a dynamic lookup
+      over all running Pods in user namespaces. Addresses CIS-OCP 5.7.5 / 5.7.6 and
+      PCI DSS 2.2.1 (system hardening) / 6.3.3 (resource management).
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: resource-requirements
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: container-resource-requirements
+      spec:
+        object-templates-raw: |
+          {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
+          {{- $n := $ns.metadata.name }}
+          {{- if and (not (hasPrefix "kube-" $n)) (not (hasPrefix "openshift-" $n)) (not (hasPrefix "open-cluster-management" $n)) (ne $n "default") }}
+          {{- range $pod := (lookup "v1" "Pod" $n "").items }}
+          {{- range $c := $pod.spec.containers }}
+          {{- $res  := $c.resources | default (dict) }}
+          {{- $reqs := (index $res "requests") | default (dict) }}
+          {{- $lims := (index $res "limits") | default (dict) }}
+          {{- $cpuReq := index $reqs "cpu"    | default "" }}
+          {{- $memLim := index $lims "memory" | default "" }}
+          {{- if or (eq $cpuReq "") (eq $memLim "") }}
+          - complianceType: musthave
+            objectDefinition:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: {{ $pod.metadata.name }}
+                namespace: {{ $n }}
+              spec:
+                containers:
+                  - name: {{ $c.name }}
+                    resources:
+                      requests:
+                        cpu: "{{ if eq $cpuReq "" }}100m{{ else }}{{ $cpuReq }}{{ end }}"
+                      limits:
+                        memory: "{{ if eq $memLim "" }}128Mi{{ else }}{{ $memLim }}{{ end }}"
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+        remediationAction: inform
+        severity: high
+  remediationAction: inform
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: AC Access Control
+    policy.open-cluster-management.io/controls: AC-2 Account Management,AC-6 Least
+      Privilege,PCI-DSS-7.2 Access Control Systems,PCI-DSS-8.2.2 Service Account Management,PCI-DSS-8.6
+      Application Account Controls
+    policy.open-cluster-management.io/description: Disables automatic service account
+      token mounting on the 'default' service account in every user namespace and
+      ensures workloads use dedicated service accounts. Addresses CIS-OCP 5.1.5 /
+      5.1.6 and PCI DSS 7.2 / 8.2.2 / 8.6 (least-privilege access and service account
+      management).
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: sa-least-privilege
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: sa-token-restriction
+      spec:
+        namespaceSelector:
+          exclude:
+          - kube-*
+          - openshift-*
+          - open-cluster-management*
+          include:
+          - '*'
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            apiVersion: v1
+            automountServiceAccountToken: false
+            kind: ServiceAccount
+            metadata:
+              name: default
+        remediationAction: enforce
+        severity: high
+  remediationAction: enforce
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  annotations:
+    policy.open-cluster-management.io/categories: AC Access Control,SC System and
+      Communications Protection
+    policy.open-cluster-management.io/controls: AC-6 Least Privilege,AC-2 Account
+      Management,CM-6 Configuration Settings,SC-39 Process Isolation,PCI-DSS-2.2.1
+      System Hardening Standards,PCI-DSS-7.2.1 Least Privilege Access,PCI-DSS-8.6.1
+      Service Account Controls
+    policy.open-cluster-management.io/description: Verifies the restricted-v2 SCC
+      integrity (key security fields must not be weakened), flags default SA RoleBindings
+      in user namespaces, and flags workloads explicitly using the default service
+      account. Addresses CIS-OCP 5.1.5 / 5.3.2 / 5.7.3 and PCI DSS 2.2.1 (system hardening)
+      / 7.2.1 (least-privilege access) / 8.6.1 (service account controls). Workloads
+      omitting serviceAccountName require a validating webhook (e.g. Kyverno).
+    policy.open-cluster-management.io/standards: CIS OpenShift Container Platform
+      4 Benchmark,PCI DSS v4.0
+  name: scc-sa-isolation
+  namespace: open-cluster-management-policies
+spec:
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: scc-restricted-v2-integrity
+      spec:
+        object-templates:
+        - complianceType: musthave
+          objectDefinition:
+            allowHostDirVolumePlugin: false
+            allowHostIPC: false
+            allowHostNetwork: false
+            allowHostPID: false
+            allowHostPorts: false
+            allowPrivilegeEscalation: false
+            allowPrivilegedContainer: false
+            apiVersion: security.openshift.io/v1
+            kind: SecurityContextConstraints
+            metadata:
+              name: restricted-v2
+            requiredDropCapabilities:
+            - ALL
+            seccompProfiles:
+            - runtime/default
+        remediationAction: inform
+        severity: high
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: default-sa-no-rolebindings
+      spec:
+        namespaceSelector:
+          exclude:
+          - kube-*
+          - openshift-*
+          - open-cluster-management*
+          include:
+          - '*'
+        object-templates:
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: rbac.authorization.k8s.io/v1
+            kind: RoleBinding
+            subjects:
+            - kind: ServiceAccount
+              name: default
+        remediationAction: inform
+        severity: high
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: workloads-dedicated-sa
+      spec:
+        namespaceSelector:
+          exclude:
+          - kube-*
+          - openshift-*
+          - open-cluster-management*
+          include:
+          - '*'
+        object-templates:
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: apps/v1
+            kind: Deployment
+            spec:
+              template:
+                spec:
+                  serviceAccountName: default
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: apps/v1
+            kind: StatefulSet
+            spec:
+              template:
+                spec:
+                  serviceAccountName: default
+        - complianceType: mustnothave
+          objectDefinition:
+            apiVersion: apps/v1
+            kind: DaemonSet
+            spec:
+              template:
+                spec:
+                  serviceAccountName: default
+        remediationAction: inform
+        severity: medium
+  remediationAction: inform
+---
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: PolicySet
+metadata:
+  name: access-controls
+  namespace: open-cluster-management-policies
+spec:
+  description: Audits identity and RBAC posture for least-privilege compliance. Flags
+    over-privileged service accounts, dangerous ClusterRoleBindings, and wildcard
+    role grants across all user namespaces.
+  policies:
+  - sa-least-privilege
+  - rbac-controls
+  - rbac-privileged-bindings
+---
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: PolicySet
+metadata:
+  name: network-controls
+  namespace: open-cluster-management-policies
+spec:
+  description: Verifies network policy enforcement across managed clusters. Covers
+    both Compliance Operator scanning (ocp4-cis) and ACM-native NetworkPolicy detection.
+  policies:
+  - netpol-compliance-scan
+  - netpol-compliance-acm
+---
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: PolicySet
+metadata:
+  name: workload-hardening
+  namespace: open-cluster-management-policies
+spec:
+  description: Detects and prevents workload privilege escalation and host escape.
+    Combines detective ConfigurationPolicies (inform) with preventive ValidatingAdmissionPolicies
+    (enforce/opt-in) to layer runtime and admission-time controls.
+  policies:
+  - ns-workload-isolation
+  - scc-sa-isolation
+  - privileged-containers
+  - block-privileged-containers
+  - block-host-escape
+  - resource-requirements

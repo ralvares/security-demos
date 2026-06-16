@@ -1,0 +1,43 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: block-risky-netpol
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["networking.k8s.io"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["networkpolicies"]
+  validations:
+    - expression: |
+        !(
+          has(object.spec.podSelector) && size(object.spec.podSelector) == 0 &&
+          (
+            (has(object.spec.ingress) && object.spec.ingress.exists(r, 
+              size(r) == 0 || 
+              (has(r.from) && r.from.exists(p, has(p.ipBlock) && p.ipBlock.cidr == '0.0.0.0/0'))
+            )) ||
+            (has(object.spec.egress) && object.spec.egress.exists(r, 
+              size(r) == 0 || 
+              (has(r.to) && r.to.exists(p, has(p.ipBlock) && p.ipBlock.cidr == '0.0.0.0/0'))
+            ))
+          )
+        )
+      message: "Security Violation: Global Allow-All rules (empty '{}' or '0.0.0.0/0') are forbidden. You must define specific traffic sources."
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: block-risky-netpol-binding
+spec:
+  policyName: block-risky-netpol
+  validationActions: ["Deny"]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+      - key: custom.security/enforce
+        operator: In
+        values: ["true"]

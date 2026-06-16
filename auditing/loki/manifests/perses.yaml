@@ -1,0 +1,160 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: perses
+  namespace: loki-audit
+  labels:
+    app: perses
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: perses
+  template:
+    metadata:
+      labels:
+        app: perses
+    spec:
+      serviceAccountName: loki-sa
+      initContainers:
+      - name: provisioner
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          # 1. Create directory structure
+          mkdir -p /data/database /data/plugins 
+          mkdir -p /data/provisioning/globaldatasources
+          mkdir -p /data/provisioning/projects
+          mkdir -p /data/provisioning/dashboards
+          
+          # 2. Provision the Loki Datasource
+          cat <<EOF > /data/provisioning/globaldatasources/loki.json
+          {
+            "kind": "GlobalDatasource",
+            "metadata": { "name": "Loki" },
+            "spec": {
+              "display": { "name": "Loki Audit Logs" },
+              "plugin": {
+                "kind": "LokiDatasource",
+                "spec": { "directUrl": "http://loki:3100" }
+              }
+            }
+          }
+          EOF
+
+          # 3. Provision the "Forensics" Project
+          cat <<EOF > /data/provisioning/projects/forensics.json
+          {
+            "kind": "Project",
+            "metadata": { "name": "Forensics" },
+            "spec": { "display": { "name": "Security Forensics" } }
+          }
+          EOF
+
+          # 4. Provision a Starter Dashboard
+          cat <<EOF > /data/provisioning/dashboards/audit-viewer.json
+          {
+            "kind": "Dashboard",
+            "metadata": { 
+              "name": "AuditViewer",
+              "project": "Forensics" 
+            },
+            "spec": {
+              "display": { "name": "Audit Log Explorer" },
+              "panels": {
+                "logs": {
+                  "kind": "LogChart",
+                  "display": { "name": "All Audit Logs" },
+                  "spec": {
+                    "queries": [
+                      {
+                        "kind": "LokiQuery",
+                        "spec": { "query": "{job=\"audit-logs\"}" }
+                      }
+                    ]
+                  }
+                }
+              },
+              "layouts": [
+                {
+                  "kind": "Grid",
+                  "spec": { "items": [ { "x": 0, "y": 0, "width": 24, "height": 12, "content": { "kind": "PanelRef", "name": "logs" } } ] }
+                }
+              ]
+            }
+          }
+          EOF
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      containers:
+      - name: perses
+        image: persesdev/perses:latest
+        args: ["--config=/etc/config/perses-conf.yaml"]
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: config
+        configMap:
+          name: perses-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: perses-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: perses
+  namespace: loki-audit
+spec:
+  selector:
+    app: perses
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: perses-pvc
+  namespace: loki-audit
+  labels:
+    app: perses
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: perses-config
+  namespace: loki-audit
+  labels:
+    app: perses
+data:
+  perses-conf.yaml: |
+    database:
+      file:
+        folder: "/data/database"
+        extension: "json"
+    # We use 'plugin' (singular) for the 0.53.x schema
+    plugin:
+      archive_path: "/etc/perses/plugins-archive"
+      path: "/data/plugins"
+    provisioning:
+      interval: 5s
+      folders:
+        - "/data/provisioning"
+    security:
+      readonly: false

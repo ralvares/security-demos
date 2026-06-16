@@ -1,0 +1,669 @@
+#!/usr/bin/env python3
+import argparse
+import yaml
+import json
+import sys
+import os
+import shutil
+from datetime import datetime, timezone
+
+# ==============================================================================
+# CONFIGURATION
+# ==============================================================================
+
+RESOURCE_ALIASES = {
+    'po': 'pods', 'pod': 'pods', 'pods': 'pods',
+    'svc': 'services', 'service': 'services', 'services': 'services',
+    'cm': 'configmaps', 'configmap': 'configmaps', 'configmaps': 'configmaps',
+    'sa': 'serviceaccounts', 'serviceaccount': 'serviceaccounts', 'serviceaccounts': 'serviceaccounts',
+    'ns': 'namespaces', 'namespace': 'namespaces', 'namespaces': 'namespaces',
+    'no': 'nodes', 'node': 'nodes', 'nodes': 'nodes',
+    'se': 'secrets', 'secret': 'secrets', 'secrets': 'secrets',
+    'pv': 'persistentvolumes', 'persistentvolume': 'persistentvolumes', 'persistentvolumes': 'persistentvolumes',
+    'pvc': 'persistentvolumeclaims', 'persistentvolumeclaim': 'persistentvolumeclaims', 'persistentvolumeclaims': 'persistentvolumeclaims',
+    'deploy': 'deployments', 'deployment': 'deployments', 'deployments': 'deployments',
+    'ds': 'daemonsets', 'daemonset': 'daemonsets', 'daemonsets': 'daemonsets',
+    'sts': 'statefulsets', 'statefulset': 'statefulsets', 'statefulsets': 'statefulsets',
+    'rs': 'replicasets', 'replicaset': 'replicasets', 'replicasets': 'replicasets',
+    'job': 'jobs', 'jobs': 'jobs',
+    'cj': 'cronjobs', 'cronjob': 'cronjobs', 'cronjobs': 'cronjobs',
+    'ing': 'ingresses', 'ingress': 'ingresses', 'ingresses': 'ingresses',
+    'rt': 'routes', 'route': 'routes', 'routes': 'routes',
+    'netpol': 'networkpolicies', 'networkpolicy': 'networkpolicies',
+    'vm': 'virtualmachines', 'virtualmachine': 'virtualmachines', 'virtualmachines': 'virtualmachines',
+    'vmi': 'virtualmachineinstances', 'virtualmachineinstance': 'virtualmachineinstances', 'virtualmachineinstances': 'virtualmachineinstances',
+    'all': 'all'
+}
+
+CLUSTER_SCOPED = {
+    'namespaces', 'nodes', 'persistentvolumes', 
+    'clusterrolebindings', 'clusterroles'
+}
+
+REDACTED_RESOURCES = {
+    'secrets', 'routes', 'oauthaccesstokens', 
+    'oauthauthorizetokens', 'nodes'
+}
+
+# --- HISTORY MODE CONFIGURATION ---
+HTTP_STATUS_MAP = {
+    101: "Stream", 200: "OK", 201: "Created", 202: "Accepted", 204: "No Content",
+    304: "Not Modified", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden",
+    404: "Not Found", 409: "Conflict", 422: "Invalid", 429: "Throttled",
+    500: "Server Error", 503: "Unavailable", 504: "Timeout"
+}
+
+NOISY_USERS = [
+    'system:node:', 'system:kube-scheduler', 'system:apiserver', 'system:kube-controller-manager',
+    'system:multus', 'openshift-sdn', 'openshift-multus', 'openshift-machine-config-operator',
+    ':deployment-controller', ':replicaset-controller', ':statefulset-controller',
+    ':daemonset-controller', ':job-controller', ':cronjob-controller',
+    ':horizontal-pod-autoscaler', ':generic-garbage-collector', 'system:ovn-node'
+]
+
+# ==============================================================================
+# UTILS & ARGS
+# ==============================================================================
+
+def setup_args():
+    parser = argparse.ArgumentParser(
+        description="timemachine: Forensic Digital Twin for Kubernetes",
+        usage="%(prog)s [flags] <command> <resource> [name]"
+    )
+    
+    parser.add_argument("--auditlog-file", default="audit.log", help="Path to audit.log file")
+    parser.add_argument("--time", help="Snapshot time (ISO8601 or YYYY-MM-DD)")
+    parser.add_argument("-n", "--namespace", help="Namespace scope")
+    parser.add_argument("-A", "--all-namespaces", action="store_true", help="List in all namespaces")
+    parser.add_argument("-o", "--output", choices=["yaml", "json", "table", "wide"], default="table", help="Output format")
+    parser.add_argument("-l", "--selector", help="Selector (label query) to filter on")
+    parser.add_argument("--show-labels", action="store_true", help="Show all labels as the last column")
+    parser.add_argument("--history", action="store_true", help="Trace the full lineage (User -> Deployment -> Pod)")
+
+    parser.add_argument("args", nargs="*", help="Command and Resource")
+    return parser
+
+def normalize_time(time_str):
+    if not time_str: return None
+    if len(time_str) == 10 and '-' in time_str and 'T' not in time_str: time_str += "T23:59:59"
+    try:
+        if time_str.endswith('Z'): return time_str
+        fmt = "%Y-%m-%dT%H:%M:%S"
+        if len(time_str) == 16: fmt = "%Y-%m-%dT%H:%M"
+        local_dt = datetime.strptime(time_str, fmt).astimezone()
+        utc_dt = local_dt.astimezone(timezone.utc)
+        utc_str = utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        if sys.stdout.isatty():
+            print(f"--- 🕒 Snapshot: {time_str.replace('T', ' ')} (Local) → {utc_str} (UTC) ---")
+        return utc_str
+    except Exception:
+        return time_str if time_str.endswith('Z') else time_str + 'Z'
+
+def safe_parse_json(obj):
+    if isinstance(obj, dict): return obj
+    if not isinstance(obj, str): return {}
+    try:
+        parsed = json.loads(obj)
+        if isinstance(parsed, str): return json.loads(parsed)
+        return parsed
+    except: return {}
+
+def get_path(d, *keys, default=None):
+    current = d
+    for k in keys:
+        if not isinstance(current, dict): return default
+        current = current.get(k)
+        if current is None: return default
+    return current
+
+def calculate_age(creation_ts, snapshot_time_utc):
+    if not creation_ts: return "?"
+    try:
+        ts = creation_ts.replace(' ', 'T')
+        if not ts.endswith('Z'): ts += 'Z'
+        fmt = "%Y-%m-%dT%H:%M:%SZ"
+        if "." in ts: fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
+        created = datetime.strptime(ts, fmt).replace(tzinfo=timezone.utc)
+        if snapshot_time_utc:
+            now = datetime.strptime(snapshot_time_utc, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        else:
+            now = datetime.now(timezone.utc)
+        delta = now - created
+        if delta.total_seconds() < 0: return "0s" 
+        if delta.days > 0: return f"{delta.days}d"
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        if hours > 0: return f"{hours}h{minutes}m"
+        return f"{minutes}m"
+    except: return "?"
+
+# ==============================================================================
+# EXTRACTION LOGIC
+# ==============================================================================
+
+def extract_status(obj):
+    if not obj: return "Unknown"
+    metadata = obj.get('metadata', {})
+    if metadata.get('deletionTimestamp'): return "Terminating"
+    status = obj.get('status', {})
+    if not isinstance(status, dict): return str(status)
+    phase = status.get('phase', 'Unknown')
+    container_statuses = status.get('containerStatuses', [])
+    if not isinstance(container_statuses, list): container_statuses = []
+    for cs in container_statuses:
+        state = cs.get('state', {})
+        if 'waiting' in state: return state['waiting'].get('reason', phase)
+        if 'terminated' in state:
+            exit_code = state['terminated'].get('exitCode')
+            if exit_code != 0: return state['terminated'].get('reason', "Error")
+    return phase
+
+def extract_pod_ip(obj):
+    ip = get_path(obj, 'status', 'podIP')
+    if ip: return ip
+    try:
+        ovn_annot = get_path(obj, 'metadata', 'annotations', 'k8s.ovn.org/pod-networks')
+        if ovn_annot:
+            ovn_data = json.loads(ovn_annot)
+            if 'default' in ovn_data: return ovn_data['default'].get('ip_address', '').split('/')[0]
+    except: pass
+    return '<none>'
+
+def extract_labels(obj):
+    labels = get_path(obj, 'metadata', 'labels')
+    if not labels or not isinstance(labels, dict): return "" 
+    return ",".join([f"{k}={v}" for k, v in sorted(labels.items())])
+
+def extract_wide_info(resource, obj):
+    if not obj: return []
+    info = []
+    if resource == 'pods':
+        ip = extract_pod_ip(obj)
+        node = get_path(obj, 'spec', 'nodeName', default='<none>')
+        info = [ip, node]
+    elif resource == 'services':
+        svc_type = get_path(obj, 'spec', 'type', default='ClusterIP')
+        cluster_ip = get_path(obj, 'spec', 'clusterIP', default='<none>')
+        selector = ",".join([f"{k}={v}" for k, v in get_path(obj, 'spec', 'selector', default={}).items()]) if get_path(obj, 'spec', 'selector') else "<none>"
+        info = [svc_type, cluster_ip, selector]
+    elif resource == 'nodes':
+        os_img = get_path(obj, 'status', 'nodeInfo', 'osImage', default='<none>')
+        kernel = get_path(obj, 'status', 'nodeInfo', 'kernelVersion', default='<none>')
+        runtime = get_path(obj, 'status', 'nodeInfo', 'containerRuntimeVersion', default='<none>')
+        info = [os_img, kernel, runtime]
+    return info
+
+def matches_selector(obj, selector):
+    if not selector: return True
+    labels = get_path(obj, 'metadata', 'labels') or {}
+    parts = selector.split(',')
+    for part in parts:
+        if '=' in part:
+            k, v = part.split('=', 1)
+            if labels.get(k) != v: return False
+    return True
+
+# ==============================================================================
+# FORENSIC HISTORY LOGIC (ISOLATED)
+# ==============================================================================
+
+def is_noisy_user(username):
+    for noise in NOISY_USERS:
+        if noise in username: return True
+    return False
+
+def extract_state_signature(obj):
+    """
+    Deep Forensic State Extractor.
+    Captures: Metadata, Workload Specs, Security, Network, and Persistence.
+    """
+    sig = {}
+    if not obj: return sig
+    
+    metadata = obj.get('metadata', {})
+    kind = obj.get('kind', '')
+    spec = obj.get('spec', {})
+
+    # --- 0. Metadata ---
+    if metadata.get('labels'):
+        sig['labels'] = str(metadata.get('labels'))
+
+    if metadata.get('annotations'):
+        anns = metadata.get('annotations', {}).copy()
+        for k in ['kubectl.kubernetes.io/last-applied-configuration', 'deployment.kubernetes.io/revision']:
+            anns.pop(k, None)
+        if anns: sig['annotations'] = str(anns)
+    
+    # --- 1. Workloads ---
+    pod_spec = spec if kind == 'Pod' else spec.get('template', {}).get('spec', {})
+    if pod_spec:
+        # Lateral Movement & Network
+        if pod_spec.get('nodeName'): sig['node_pinned'] = pod_spec.get('nodeName')
+        if pod_spec.get('nodeSelector'): sig['node_selector'] = str(pod_spec.get('nodeSelector'))
+        if pod_spec.get('serviceAccountName'): sig['sa'] = pod_spec.get('serviceAccountName')
+        if pod_spec.get('hostAliases'): sig['host_aliases'] = str(pod_spec.get('hostAliases'))
+        if pod_spec.get('dnsPolicy') and pod_spec.get('dnsPolicy') != 'ClusterFirst':
+            sig['dns_policy'] = pod_spec.get('dnsPolicy')
+        
+        # Namespace Breakouts
+        host_acc = []
+        if pod_spec.get('hostNetwork'): host_acc.append('HostNetwork')
+        if pod_spec.get('hostPID'): host_acc.append('HostPID')
+        if pod_spec.get('hostIPC'): host_acc.append('HostIPC')
+        if host_acc: sig['host_access'] = str(host_acc)
+
+        # Containers
+        containers = pod_spec.get('containers', [])
+        init_containers = pod_spec.get('initContainers', [])
+        all_containers = containers + init_containers
+        
+        if all_containers:
+            images = [c.get('image', '') for c in all_containers if isinstance(c, dict)]
+            if any(images): sig['images'] = images
+            
+            cmds = [c.get('command') for c in all_containers if isinstance(c, dict) and c.get('command')]
+            if cmds: sig['commands'] = str(cmds)
+            args = [c.get('args') for c in all_containers if isinstance(c, dict) and c.get('args')]
+            if args: sig['args'] = str(args)
+            
+            hooks = []
+            for c in all_containers:
+                if isinstance(c, dict):
+                    lc = c.get('lifecycle', {})
+                    if get_path(lc, 'postStart', 'exec', 'command'): hooks.append(f"{c['name']}:postStart")
+                    if get_path(lc, 'preStop', 'exec', 'command'): hooks.append(f"{c['name']}:preStop")
+            if hooks: sig['hooks'] = str(hooks)
+
+            sec_ctx = []
+            for c in all_containers:
+                if isinstance(c, dict) and c.get('securityContext'):
+                    sc = c['securityContext']
+                    if sc.get('privileged'): sec_ctx.append(f"{c['name']}:privileged")
+                    if sc.get('allowPrivilegeEscalation'): sec_ctx.append(f"{c['name']}:allowEscalation")
+                    if sc.get('runAsUser') == 0: sec_ctx.append(f"{c['name']}:root")
+                    if sc.get('capabilities'): sec_ctx.append(f"{c['name']}:caps={sc['capabilities']}")
+            if sec_ctx: sig['security'] = str(sec_ctx)
+
+            envs = []
+            for c in all_containers:
+                if isinstance(c, dict) and c.get('env'):
+                    envs.append([e.get('name') for e in c.get('env', [])])
+            if envs: sig['env_vars'] = str(envs)
+
+        host_paths = []
+        for v in pod_spec.get('volumes', []):
+            if v.get('hostPath'): host_paths.append(f"{v['name']}->{v['hostPath'].get('path')}")
+        if host_paths: sig['host_mounts'] = str(host_paths)
+
+    # Persistence
+    if kind == 'CronJob':
+        sig['schedule'] = spec.get('schedule')
+        sig['suspend'] = str(spec.get('suspend'))
+
+    if spec.get('replicas') is not None: sig['replicas'] = spec.get('replicas')
+
+    # Networking
+    if kind == 'Service':
+        if spec.get('type'): sig['type'] = spec.get('type')
+        if spec.get('externalIPs'): sig['ext_ips'] = str(spec.get('externalIPs'))
+        ports = [f"{p.get('port')}:{p.get('targetPort')}" for p in spec.get('ports', [])]
+        if ports: sig['ports'] = ports
+    
+    if kind == 'Route':
+        if spec.get('host'): sig['host'] = spec.get('host')
+        if spec.get('to'): sig['to'] = spec.get('to', {}).get('name')
+
+    # Config/RBAC
+    if kind in ['ConfigMap', 'Secret']:
+        keys = list(obj.get('data', {}).keys())
+        if keys: sig['keys'] = keys
+        
+    if kind in ['RoleBinding', 'ClusterRoleBinding']:
+        subjects = [f"{s.get('kind')}:{s.get('name')}" for s in obj.get('subjects', [])]
+        if subjects: sig['subjects'] = subjects
+        if obj.get('roleRef'): sig['role'] = obj.get('roleRef', {}).get('name')
+
+    return sig
+
+def format_diff(old_sig, new_sig):
+    changes = []
+    all_keys = set(old_sig.keys()) | set(new_sig.keys())
+    for k in sorted(all_keys):
+        old_val = old_sig.get(k)
+        new_val = new_sig.get(k)
+        if old_val != new_val:
+            label = k.capitalize()
+            if old_val is None:
+                if new_val and str(new_val) not in ["[]", "{}", "None", ""]:
+                    changes.append(f"{label}: {new_val}")
+            elif new_val is None: 
+                changes.append(f"{label}: cleared")
+            else: 
+                changes.append(f"{label}: {old_val} -> {new_val}")
+    return ", ".join(changes)
+
+def build_ownership_map(log_file):
+    ownership = {}
+    try:
+        with open(log_file, 'r') as f:
+            for line in f:
+                if not line.strip(): continue
+                try: entry = json.loads(line)
+                except: continue
+                if entry.get('verb') not in ['create', 'update', 'patch']: continue
+                obj_ref = entry.get('objectRef', {})
+                res, ns, name = obj_ref.get('resource'), obj_ref.get('namespace'), obj_ref.get('name')
+                if not res or not name: continue
+                
+                raw_obj = entry.get('responseObject') or entry.get('requestObject')
+                obj = safe_parse_json(raw_obj)
+                owner_refs = get_path(obj, 'metadata', 'ownerReferences')
+                if owner_refs and isinstance(owner_refs, list) and len(owner_refs) > 0:
+                    owner_kind = owner_refs[0].get('kind', '').lower() + 's'
+                    if owner_kind == 'replicasetss': owner_kind = 'replicasets'
+                    if owner_kind == 'deployments': owner_kind = 'deployments'
+                    ownership[(res, ns, name)] = (owner_kind, owner_refs[0].get('name'))
+    except: pass
+    return ownership
+
+def print_lineage_history(log_file, start_res, namespace, start_name, time_limit, output_fmt):
+    if output_fmt != 'json' and sys.stdout.isatty():
+        print("--- 🔍 Analyzing Lineage (this may take a moment) ---")
+    
+    ownership_map = build_ownership_map(log_file)
+    relevant_objects = set()
+    curr_res, curr_name = start_res, start_name
+    
+    # Trace Ancestry
+    visited = set()
+    while True:
+        key = (curr_res, namespace, curr_name)
+        if key in visited: break
+        visited.add(key)
+        relevant_objects.add(key)
+        
+        parent = ownership_map.get(key)
+        if not parent: break
+        curr_res, curr_name = parent
+        if curr_res in CLUSTER_SCOPED: 
+            relevant_objects.add((curr_res, None, curr_name)); break
+
+    history = []
+    object_state_cache = {} 
+    
+    try:
+        with open(log_file, 'r') as f:
+            for line in f:
+                if not line.strip(): continue
+                try: entry = json.loads(line)
+                except: continue
+                ts = entry.get('requestReceivedTimestamp')
+                if time_limit and ts and ts > time_limit: continue
+                verb = entry.get('verb')
+                if verb not in ['create', 'update', 'patch', 'delete']: continue
+                
+                obj_ref = entry.get('objectRef', {})
+                res, ns, name = obj_ref.get('resource'), obj_ref.get('namespace'), obj_ref.get('name')
+                if (res, ns, name) not in relevant_objects: continue
+                
+                user = entry.get('user', {}).get('username', 'unknown')
+                if is_noisy_user(user): continue
+
+                code = entry.get('responseStatus', {}).get('code', 0)
+                sub = obj_ref.get('subresource')
+                display_name = f"{RESOURCE_ALIASES.get(res, res)}/{name}"
+                if sub: display_name += f"/{sub}"
+                
+                if user.startswith('system:serviceaccount:'): user = f"sa:{user.split(':')[-1]}"
+                
+                code_str = HTTP_STATUS_MAP.get(code, str(code))
+                details = ""
+                obj_key = (res, ns, name)
+                
+                raw_obj = entry.get('responseObject') or entry.get('requestObject')
+                obj = safe_parse_json(raw_obj)
+
+                show_event = False
+
+                if verb == 'delete':
+                    code_str = "DELETED"
+                    if obj_key in object_state_cache: del object_state_cache[obj_key]
+                    show_event = True
+                
+                elif verb == 'create':
+                    new_state = extract_state_signature(obj)
+                    object_state_cache[obj_key] = new_state
+                    details = format_diff({}, new_state)
+                    show_event = True
+                    
+                elif verb in ['update', 'patch']:
+                    if sub:
+                        if code == 101 and sub in ['exec', 'portforward', 'attach']: 
+                            code_str = sub.capitalize()
+                            show_event = True
+                    else:
+                        old_state = object_state_cache.get(obj_key, {})
+                        new_state = extract_state_signature(obj)
+                        
+                        if old_state != new_state:
+                            details = format_diff(old_state, new_state)
+                            object_state_cache[obj_key] = new_state
+                            show_event = True
+                        
+                if show_event:
+                    history.append({
+                        'timestamp': ts, 'verb': verb.upper(), 'object': display_name, 
+                        'user': user, 'status': code_str, 'details': details
+                    })
+    except Exception as e:
+        if output_fmt != 'json': print(f"Error parsing log: {e}")
+
+    history.sort(key=lambda x: x.get('timestamp', ''))
+    
+    # --- OUTPUT HANDLER ---
+    if output_fmt == 'json':
+        print(json.dumps(history, indent=2))
+    else:
+        print(f"\n--- HISTORY & LINEAGE: {start_res}/{start_name} ---")
+        term_width = shutil.get_terminal_size().columns
+        max_obj_len = max([len(h['object']) for h in history]) if history else 45
+        max_obj_len = min(max_obj_len, 60)
+        
+        headers = ["TIMESTAMP", "VERB", "OBJECT", "USER", "STATUS", "DETAILS"]
+        print("{:<27}  {:<8}  {:<{obj_w}}  {:<30}  {:<12}  {:<40}".format(*headers, obj_w=max_obj_len))
+        
+        for h in history:
+            obj = h['object']
+            if len(obj) > max_obj_len: obj = "..." + obj[-(max_obj_len-3):]
+            print("{:<27}  {:<8}  {:<{obj_w}}  {:<30}  {:<12}  {:<40}".format(
+                h['timestamp'], h['verb'], obj, h['user'][:28], h['status'], h['details'], obj_w=max_obj_len
+            ))
+
+# ==============================================================================
+# MAIN LOGIC (STANDARD)
+# ==============================================================================
+
+def process_audit_log(log_file, resources_to_fetch, target_ns, target_name, time_limit, selector, all_namespaces):
+    state = {} 
+    target_resources_set = set(resources_to_fetch)
+    valid_events = []
+    
+    try:
+        with open(log_file, 'r') as f:
+            for line in f:
+                if not line.strip(): continue
+                try: entry = json.loads(line)
+                except: continue
+                
+                ts = entry.get('requestReceivedTimestamp')
+                if time_limit and ts and ts > time_limit: continue
+                
+                verb = entry.get('verb')
+                if verb not in ['create', 'update', 'patch', 'delete']: continue
+                if entry.get('responseStatus', {}).get('status') == 'Failure': continue
+                
+                obj_ref = entry.get('objectRef', {})
+                resource = obj_ref.get('resource')
+                ns = obj_ref.get('namespace')
+                name = obj_ref.get('name')
+                
+                if not resource or not name: continue
+                if resource not in target_resources_set: continue
+                
+                # --- SAFETY CHECK FOR STANDARD MODE ---
+                sub = obj_ref.get('subresource')
+                if sub in ['exec', 'attach', 'portforward', 'proxy', 'logs', 'metrics']: continue
+
+                is_global = resource in CLUSTER_SCOPED
+                if not is_global:
+                    if not all_namespaces:
+                        if target_ns and ns != target_ns: continue
+                        if not target_ns and ns != 'default': continue
+                
+                if target_name and name != target_name: continue
+                valid_events.append(entry)
+
+    except FileNotFoundError:
+        print(f"Error: File '{log_file}' not found."); sys.exit(1)
+
+    valid_events.sort(key=lambda x: x.get('requestReceivedTimestamp', ''))
+
+    for entry in valid_events:
+        obj_ref = entry.get('objectRef', {})
+        resource = obj_ref.get('resource')
+        ns = obj_ref.get('namespace')
+        name = obj_ref.get('name')
+        verb = entry.get('verb')
+        ts = entry.get('requestReceivedTimestamp')
+        
+        key = (resource, ns, name)
+        
+        if verb == 'delete':
+            state.pop(key, None)
+        else:
+            raw_obj = entry.get('responseObject') or entry.get('requestObject')
+            obj = safe_parse_json(raw_obj)
+            
+            if not obj:
+                if resource in REDACTED_RESOURCES:
+                    obj = {'kind': resource, 'metadata': {'name': name, 'namespace': ns, 'creationTimestamp': ts, 'labels': {}}, 'spec': {}, 'status': {}}
+                else: continue 
+            
+            if key in state:
+                old_created = get_path(state[key], 'metadata', 'creationTimestamp')
+                if old_created and not get_path(obj, 'metadata', 'creationTimestamp'):
+                    if 'metadata' not in obj: obj['metadata'] = {}
+                    obj['metadata']['creationTimestamp'] = old_created
+
+                if resource == 'pods':
+                    old_ip = extract_pod_ip(state[key])
+                    new_ip = extract_pod_ip(obj)
+                    if old_ip != '<none>' and new_ip == '<none>':
+                        if 'status' not in obj: obj['status'] = {}
+                        if isinstance(obj['status'], str): obj['status'] = safe_parse_json(obj['status'])
+                        obj['status']['podIP'] = old_ip
+            state[key] = obj
+
+    results = []
+    for (res, ns, name), obj in state.items():
+        if matches_selector(obj, selector):
+            results.append((ns, name, obj, res))
+    results.sort(key=lambda x: (x[0] or "", x[1]))
+    return results
+
+def main():
+    parser = setup_args()
+    args, unknown = parser.parse_known_args()
+    for u in unknown:
+        if u.startswith("-"): print(f"Error: unrecognized argument {u}"); sys.exit(1)
+        args.args.append(u)
+    
+    if not args.args: parser.print_help(); sys.exit(1)
+    if args.args[0] != "get": print(f"Error: Only 'get' is supported."); sys.exit(1)
+    if len(args.args) < 2: print("Error: Specify resource."); sys.exit(1)
+
+    resource_input = args.args[1]
+    name_input = args.args[2] if len(args.args) > 2 else None
+    
+    if not os.path.exists(args.auditlog_file): print(f"Error: File '{args.auditlog_file}' not found."); sys.exit(1)
+    args.time = normalize_time(args.time)
+
+    req_res = RESOURCE_ALIASES.get(resource_input.lower(), resource_input.lower())
+    
+    # --- HISTORY MODE ---
+    if args.history:
+        if not name_input:
+            print("Error: --history requires a specific object name.")
+            sys.exit(1)
+        if req_res == 'all':
+            print("Error: --history cannot be used with 'all'.")
+            sys.exit(1)
+        print_lineage_history(args.auditlog_file, req_res, args.namespace, name_input, args.time, args.output)
+        sys.exit(0)
+
+    # --- STANDARD MODE ---
+    if req_res == 'all':
+        resources_to_fetch = ['nodes', 'pods', 'services', 'daemonsets', 'deployments', 'replicasets', 'statefulsets', 'jobs', 'cronjobs', 'routes', 'ingresses', 'networkpolicies', 'virtualmachines', 'virtualmachineinstances', 'all']
+    else:
+        resources_to_fetch = [req_res]
+
+    all_results = process_audit_log(args.auditlog_file, resources_to_fetch, args.namespace, name_input, args.time, args.selector, args.all_namespaces)
+    
+    results_by_resource = {r: [] for r in resources_to_fetch}
+    for ns, name, obj, res in all_results:
+        if res in results_by_resource: results_by_resource[res].append((ns, name, obj))
+
+    for resource in resources_to_fetch:
+        results = results_by_resource.get(resource, [])
+        if not results: continue
+
+        if len(resources_to_fetch) > 1: print(f"\n--- {resource.upper()} ---")
+
+        if args.output == "yaml":
+            for _, _, obj in results: print("---"); print(yaml.dump(safe_parse_json(obj)))
+        elif args.output == "json":
+            for _, _, obj in results: print(json.dumps(obj, indent=2))
+        else:
+            is_cluster_scoped = resource in CLUSTER_SCOPED
+            headers = ["NAMESPACE", "NAME", "AGE"]
+            if is_cluster_scoped: headers = ["NAME", "AGE"]
+            
+            if resource == 'pods':
+                headers.insert(2 if not is_cluster_scoped else 1, "STATUS")
+
+            if args.output == "wide":
+                if resource == 'pods': headers.extend(["IP", "NODE"])
+                elif resource == 'services': headers.extend(["TYPE", "CLUSTER-IP", "SELECTOR"])
+                elif resource == 'nodes': headers.extend(["OS-IMAGE", "KERNEL-VERSION", "RUNTIME"])
+            if args.show_labels: headers.append("LABELS")
+
+            rows_to_print = []
+            for ns, name, obj in results:
+                payload = safe_parse_json(obj)
+                created = get_path(payload, 'metadata', 'creationTimestamp')
+                age = calculate_age(created, args.time)
+                display_name = name
+                
+                row = []
+                if is_cluster_scoped:
+                    row = [display_name, age]
+                    if resource == 'pods': row.insert(1, extract_status(payload))
+                else:
+                    row = [ns if ns else "-", display_name, age]
+                    if resource == 'pods': row.insert(2, extract_status(payload))
+                
+                if args.output == "wide": row.extend(extract_wide_info(resource, payload))
+                if args.show_labels: row.append(extract_labels(payload))
+                rows_to_print.append(row)
+
+            widths = [len(h) for h in headers]
+            for row in rows_to_print:
+                for i, val in enumerate(row):
+                    if i < len(widths): widths[i] = max(widths[i], len(str(val)))
+
+            header_fmt = "  ".join([f"{{:<{w}}}" for w in widths])
+            print(header_fmt.format(*headers))
+            for row in rows_to_print: print(header_fmt.format(*row))
+
+if __name__ == "__main__":
+    main()

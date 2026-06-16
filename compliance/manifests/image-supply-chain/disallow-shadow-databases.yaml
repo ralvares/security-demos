@@ -1,0 +1,38 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: CustomRule
+metadata:
+  name: disallow-shadow-databases
+  namespace: openshift-compliance
+spec:
+  title: Disallow Unapproved Database Pods in App Namespaces
+  description: Ensures application teams do not deploy 'shadow' database instances.
+  failureReason: One or more pods are running disallowed DB images in unapproved namespaces.
+  severity: high
+  id: disallow_shadow_databases
+  checkType: Platform
+  scannerType: CEL
+  inputs:
+    - name: pods
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: pods
+    - name: namespaces
+      kubernetesInputSpec:
+        apiVersion: v1
+        resource: namespaces
+  expression: |
+    pods.items.all(pod,
+      (
+        !has(pod.metadata.namespace) ||
+        !namespaces.items.exists(ns,
+          ns.metadata.name == pod.metadata.namespace &&
+          has(ns.metadata.labels) &&
+          ns.metadata.labels.exists(k, k == 'custom.security/database') &&
+          ns.metadata.labels['custom.security/database'] == 'true'
+        ) ||
+        pod.spec.containers.all(container,
+          !['postgres','mysql','mariadb','mongo','redis']
+            .exists(db, container.image.contains(db))
+        )
+      )
+    )

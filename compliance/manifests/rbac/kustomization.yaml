@@ -1,0 +1,4 @@
+resources:
+  - cluster-admin-allow-list.yaml
+  - rbac-profile.yaml
+  - rbac-scan-binding.yaml

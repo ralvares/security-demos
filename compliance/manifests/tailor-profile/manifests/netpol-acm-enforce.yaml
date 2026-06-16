@@ -1,0 +1,31 @@
+# Pure ACM equivalent of the TailoredProfile netpol-compliance-scan policy.
+# No Compliance Operator required — ACM evaluates this directly on the hub.
+#
+# CIS-OCP 5.3.2 / 5.7.1 — Ensure namespaces are protected by NetworkPolicies
+# PCI DSS 1.3            — Restrict inbound/outbound network traffic to only what is necessary
+# PCI DSS 1.4            — Controls between trusted and untrusted network zones
+#
+# Logic mirrors the TailoredProfile: only namespaces carrying the label
+# 'complience-netpol-demo: true' are required to have at least one NetworkPolicy.
+# All other namespaces are ignored.
+#
+# Uses object-templates-raw + lookup so the check is scoped dynamically at
+# evaluation time — no hard-coded namespace list needed.
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: netpol-acm-labelled-ns
+spec:
+  remediationAction: inform
+  severity: high
+  object-templates-raw: |
+    {{- range $ns := (lookup "v1" "Namespace" "" "").items }}
+    {{- if and (index $ns.metadata "labels") (eq (index $ns.metadata.labels "complience-netpol-demo") "true") }}
+    - complianceType: musthave
+      objectDefinition:
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          namespace: '{{ $ns.metadata.name }}'
+    {{- end }}
+    {{- end }}

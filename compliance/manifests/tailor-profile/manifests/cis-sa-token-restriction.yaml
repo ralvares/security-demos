@@ -1,0 +1,46 @@
+# CIS-OCP 5.1.5 — Ensure default service accounts are not bound to active cluster roles
+# CIS-OCP 5.1.6 — Ensure service account tokens are not automatically mounted where not needed
+# PCI DSS 7.2   — Access to system components assigned based on least privilege / need-to-know
+# PCI DSS 8.2.2 — Service/system/application accounts managed and cannot be used interactively
+# PCI DSS 8.6   — System/application account credentials strictly controlled
+#
+# Enforced: sets automountServiceAccountToken: false on the 'default' SA in every
+# user namespace so tokens are not injected unless a pod explicitly requests them.
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: sa-token-restriction
+spec:
+  remediationAction: enforce
+  severity: high
+  namespaceSelector:
+    exclude:
+      - kube-*
+      - openshift*
+      - open-cluster-management*
+      - multicluster*
+      - cert-*
+      - catalogd-*
+      - costmanagement-*
+      - external-dns-*
+      - node-observability-*
+      - redhat-*
+      - rhdh-*
+      - submariner-*
+      - hive
+      - stackrox
+      - aap
+      - ack-system
+      - metallb-system
+      - mtr
+      - service-telemetry
+    include:
+      - "*"
+  object-templates:
+    - complianceType: musthave
+      objectDefinition:
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: default
+        automountServiceAccountToken: false

@@ -1,0 +1,5 @@
+resources:
+  - netpol-disallow-allow-all-in-labeled-namespaces.yaml
+  - netpol-require-deny-all-in-labeled-namespaces.yaml
+  - networkpolicy-security-checks-profile.yaml
+  - networkpolicy-security-scan-binding.yaml

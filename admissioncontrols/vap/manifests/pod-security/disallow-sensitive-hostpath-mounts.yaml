@@ -1,0 +1,41 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: disallow-sensitive-hostpath-mounts
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+  validations:
+  - expression: |
+      !has(object.spec.volumes) ||
+      !object.spec.volumes.exists(vol,
+        has(vol.hostPath) &&
+        (
+          vol.hostPath.path.startsWith("/etc/kubernetes") ||
+          vol.hostPath.path.startsWith("/var/lib/etcd") ||
+          vol.hostPath.path.contains("docker.sock") ||
+          vol.hostPath.path.contains("crio.sock")
+        )
+      )
+    message: "Pod cannot mount sensitive host paths (/etc/kubernetes, /var/lib/etcd, docker.sock, crio.sock)"
+    reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: disallow-sensitive-hostpath-mounts-binding
+spec:
+  policyName: disallow-sensitive-hostpath-mounts
+  validationActions: ["Deny"]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+      - key: custom.security/enforce
+        operator: In
+        values: ["true"]

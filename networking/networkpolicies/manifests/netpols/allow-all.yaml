@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all
+  namespace: team-a
+spec:
+  podSelector: {}          # Selects all pods in the namespace
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - {}                     # Allow from anywhere
+  egress:
+  - {}                     # Allow to anywhere

@@ -1,0 +1,17 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: TailoredProfile
+metadata:
+  name: demo-targeted-profile
+  namespace: openshift-compliance
+spec:
+  extends: ocp4-cis
+  title: "Targeted Demo Compliance Profile"
+  description: "Exempts everything except namespaces with the 'complience-netpol-demo: true' label."
+  enableRules:
+    # Keep ONLY this one. It is the only one verified on your cluster.
+    - name: ocp4-configure-network-policies-namespaces
+      rationale: "Ensures network isolation is enforced only on the demo-scoped namespaces."
+  setValues:
+    - name: ocp4-var-network-policies-namespaces-exempt-regex
+      rationale: "Dynamically excludes all namespaces that do not carry the demo label."
+      value: '{{- $list := list "openshift-.*" "kube-.*" "default" -}}{{- range $ns := (lookup "v1" "Namespace" "" "").items -}}{{- if not (and (index $ns.metadata "labels") (eq (index $ns.metadata.labels "complience-netpol-demo") "true")) -}}{{- $list = append $list $ns.metadata.name -}}{{- end -}}{{- end -}}^({{ $list | join "|" }})$'
