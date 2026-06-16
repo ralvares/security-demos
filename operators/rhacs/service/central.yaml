@@ -25,7 +25,7 @@ spec:
       - name: ROX_SBOM_SCANNING
         value: 'true'
       - name: ROX_INIT_CONTAINER_SUPPORT
-        value: true
+        value: 'true'
   central:
     db:
       connectionPoolSize:
