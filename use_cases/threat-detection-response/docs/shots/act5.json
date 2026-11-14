@@ -1,0 +1,8 @@
+[
+ {"name":"25-term-act5","terminal":"/work/raw/act5.ansi","title":"scripts/demo.sh act5 — kill first, then close the door"},
+ {"name":"26-term-c2-dead","terminal":"/work/raw/c2-act5.ansi","title":"scripts/attacker.sh c2 — the attacker's shell dies"},
+ {"name":"27-term-events","terminal":"/work/raw/events.txt","title":"oc get events -n unhackable — StackRox enforcement"},
+ {"name":"28-rhacs-policy-enforcement","url":"https://central-stackrox.apps-crc.testing/main/policy-management/policies?s[Policy]=TDR","rhacs":true,"delay":5000},
+ {"name":"29-rhacs-violations-enforced","url":"https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable","rhacs":true,"delay":5000},
+ {"name":"30-rhacs-violation-enforcement-detail","url":"https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable","rhacs":true,"wait":"TDR - Unauthorized process","click":["a:has-text('TDR - Unauthorized process')","force:role=tab[name='Enforcement']"],"delay":4000}
+]

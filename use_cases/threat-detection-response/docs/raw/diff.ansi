@@ -1,0 +1,13 @@
+[1mlinkcheck_v1.go  →  linkcheck_v2.go      [0m[2mthe fix: stop evaluating untrusted input[0m
+
+[31m- // v1 — run each "rule" through an embedded Go interpreter (yaegi)[0m
+[31m- i.Use(stdlib.Symbols)[0m
+[31m- i.Use(interp.Exports{"os/exec/exec": {"Command": exec.Command}})  [0m[2m// handed the sandbox exec.Command[0m
+[31m- v, err := i.Eval(input)                                            [0m[2m// evaluate untrusted Go  ← RCE (CWE-94)[0m
+
+[32m+ // v2 — parse and validate the URL, never evaluate it[0m
+[32m+ u, err := url.Parse(raw)[0m
+[32m+ if u.Scheme != "http" && u.Scheme != "https" || u.Host == "" {[0m
+[32m+     return LinkResult{Status: "rejected"}[0m
+[32m+ }[0m
+[32m+ resp, err := client.Head(u.String())  [0m[2m// native HTTP client: no interpreter, no child process[0m

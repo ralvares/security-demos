@@ -1,0 +1,31 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: tdr-reverse-shell
+  namespace: stackrox
+  labels: { tdr-demo: policy }
+spec:
+  policyName: "TDR - Reverse shell tool executed"
+  description: A network relay tool (netcat/ncat/socat) was executed — the classic way to open a reverse shell.
+  rationale: Production web apps never run netcat. An attacker uses it to get an interactive shell back to their C2 server.
+  remediation: Kill the pod, block egress to the C2 address, investigate how code execution was obtained.
+  categories: [Network Tools]
+  lifecycleStages: [RUNTIME]
+  eventSource: DEPLOYMENT_EVENT
+  severity: CRITICAL_SEVERITY
+  enforcementActions: []
+  disabled: false
+  scope:
+    - cluster: production
+      namespace: unhackable
+  policySections:
+    - sectionName: netcat-like binary
+      policyGroups:
+        - fieldName: Process Name
+          values: [{ value: "nc|ncat|netcat|socat" }]
+  mitreAttackVectors:
+    - tactic: TA0011          # Command and Control
+      techniques: [T1095]     # Non-application layer protocol
+  criteriaLocked: false
+  mitreVectorsLocked: false
+  isDefault: false

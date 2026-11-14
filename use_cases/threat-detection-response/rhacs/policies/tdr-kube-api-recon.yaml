@@ -1,0 +1,40 @@
+# Kubernetes API reconnaissance from the blog.
+#
+# The blog has no service-account token (automountServiceAccountToken: false) and never talks
+# to the Kubernetes API. A process that names the in-cluster API service — kubernetes.default —
+# is an attacker probing the control plane for lateral movement / privilege escalation. Matching
+# on process arguments gives zero false positives: a link checker never "checks" an in-cluster
+# service name, and the public kubernetes.io site does not match kubernetes.default.
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: tdr-kube-api-recon
+  namespace: stackrox
+  labels: { tdr-demo: policy }
+spec:
+  policyName: "TDR - Kubernetes API reconnaissance from the blog"
+  description: A process in the blog container contacted the in-cluster Kubernetes API (kubernetes.default). The blog has no service-account token and never calls the API.
+  rationale: >-
+    A public-facing web app probing the Kubernetes API is reconnaissance toward the control
+    plane — a precursor to privilege escalation and lateral movement across the cluster.
+  remediation: Treat the workload as compromised; confirm automountServiceAccountToken is false and restrict egress to the API server with a NetworkPolicy.
+  categories: [Anomalous Activity]
+  lifecycleStages: [RUNTIME]
+  eventSource: DEPLOYMENT_EVENT
+  severity: HIGH_SEVERITY
+  enforcementActions: []
+  disabled: false
+  scope:
+    - cluster: production
+      namespace: unhackable
+  policySections:
+    - sectionName: in-cluster Kubernetes API named on a command line
+      policyGroups:
+        - fieldName: Process Arguments
+          values: [{ value: ".*kubernetes\\.default.*" }]
+  mitreAttackVectors:
+    - tactic: TA0007          # Discovery
+      techniques: [T1613]     # Container and Resource Discovery
+  criteriaLocked: false
+  mitreVectorsLocked: false
+  isDefault: false

@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RHACS Threat Detection and Response</title>
+<style>@font-face{font-family:"Red Hat Display";font-weight:400;font-style:normal;font-display:block;src:url("fonts/RedHatDisplay-Regular.otf") format("opentype"),local("Red Hat Display")}@font-face{font-family:"Red Hat Display";font-weight:500;font-style:normal;font-display:block;src:url("fonts/RedHatDisplay-Medium.otf") format("opentype"),local("Red Hat Display")}@font-face{font-family:"Red Hat Display";font-weight:700;font-style:normal;font-display:block;src:url("fonts/RedHatDisplay-Bold.otf") format("opentype"),local("Red Hat Display")}@font-face{font-family:"Red Hat Display";font-weight:900;font-style:normal;font-display:block;src:url("fonts/RedHatDisplay-Black.otf") format("opentype"),local("Red Hat Display")}@font-face{font-family:"Red Hat Text";font-weight:400;font-style:normal;font-display:block;src:url("fonts/RedHatText-Regular.otf") format("opentype"),local("Red Hat Text")}@font-face{font-family:"Red Hat Text";font-weight:500;font-style:normal;font-display:block;src:url("fonts/RedHatText-Medium.otf") format("opentype"),local("Red Hat Text")}@font-face{font-family:"Red Hat Text";font-weight:700;font-style:normal;font-display:block;src:url("fonts/RedHatText-Bold.otf") format("opentype"),local("Red Hat Text")}@font-face{font-family:"Red Hat Mono";font-weight:400;font-style:normal;font-display:block;src:url("fonts/RedHatMono-Regular.otf") format("opentype"),local("Red Hat Mono")}@font-face{font-family:"Red Hat Mono";font-weight:600;font-style:normal;font-display:block;src:url("fonts/RedHatMono-SemiBold.otf") format("opentype"),local("Red Hat Mono")}</style>
+<style>
+:root{--bg:#f6f5f2;--panel:#fff;--side:#fbfaf8;--ink:#151515;--muted:#5e6168;--line:#e2dfd9;--accent:#ee0000;--accent-ink:#fff;--soft:#fdeceb;--code:#f0eee9;--key:#fff5dc;--keyline:#d99a00;--do:#eef4fb;--doline:#3b7dd8;
+  --disp:"Red Hat Display","Red Hat Text",Inter,system-ui,sans-serif;--text:"Red Hat Text",Inter,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:"Red Hat Mono","Adwaita Mono","DejaVu Sans Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--panel:#1b1b1d;--side:#171719;--ink:#ececec;--muted:#a3a3a8;--line:#323236;--accent:#ff4d4d;--accent-ink:#111;--soft:#2b1b1c;--code:#26262a;--key:#2b2513;--keyline:#c99700;--do:#16222f;--doline:#5b9cf0}}
+:root[data-theme="dark"]{--bg:#121212;--panel:#1b1b1d;--side:#171719;--ink:#ececec;--muted:#a3a3a8;--line:#323236;--accent:#ff4d4d;--accent-ink:#111;--soft:#2b1b1c;--code:#26262a;--key:#2b2513;--keyline:#c99700;--do:#16222f;--doline:#5b9cf0}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 var(--text);display:grid;grid-template-rows:auto 1fr;grid-template-columns:290px minmax(0,1fr)}
+body.presenting{overflow:hidden}
+header{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header .brand{font:700 15px var(--disp);display:flex;gap:10px;align-items:center}
+header .brand i{width:4px;height:20px;background:var(--accent);display:inline-block}
+header .sp{flex:1}
+button{font:inherit;font-size:14px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+#menu{display:none}
+.tabs{display:flex;gap:2px;margin-left:18px;background:var(--code);border-radius:9px;padding:3px}
+.tabs button{border:0;background:transparent;padding:5px 14px;border-radius:7px;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.ssbtn{position:relative;display:flex}
+.ssbtn #present{border-radius:8px 0 0 8px}
+.ssbtn .caret{border-radius:0 8px 8px 0;border-left:1px solid rgba(255,255,255,.35);padding:6px 9px}
+.menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:6px;min-width:250px;z-index:20}
+.menu button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:9px 12px;border-radius:7px;font-size:14px}
+.menu button:hover{background:var(--soft)}
+.menu small{display:block;color:var(--muted);font-size:12px}
+body.sv-on aside,body.sv-on main{display:none}
+#sv{grid-column:1/-1;display:grid;grid-template-columns:220px minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(170px,32%);height:calc(100vh - 53px)}
+#sv[hidden]{display:none}
+.film{grid-row:1/3;overflow:auto;padding:14px 12px 30px 8px;background:var(--side);border-right:1px solid var(--line)}
+.fi{display:flex;gap:8px;align-items:flex-start;margin:0 0 14px;cursor:pointer}
+.fi .no{font:600 12px var(--mono);color:var(--muted);width:18px;text-align:right;padding-top:4px;flex:none}
+.fi .mini{border:3px solid transparent;border-radius:6px}
+.fi:hover .mini{border-color:var(--line)}
+.fi.sel .mini{border-color:var(--accent)}
+.fi.sel .no{color:var(--accent)}
+.canvas{display:flex;align-items:center;justify-content:center;padding:22px 28px;min-height:0;min-width:0;overflow:hidden}
+.mini.big{width:900px;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,.25);border:0}
+.svnotes{border-top:1px solid var(--line);background:var(--panel);overflow:auto;padding:0 30px 24px;font-size:16.5px;line-height:1.6}
+.svh{position:sticky;top:0;background:var(--panel);display:flex;gap:12px;align-items:center;padding:10px 0 8px;font:700 12px var(--text);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);z-index:1}
+.svh .sp{flex:1}
+.svplan{color:var(--accent)}
+.svname{text-transform:none;letter-spacing:0;font-weight:500}
+#svbody .screens,#svbody .gallery,#svbody .slidevis,#svbody .crumb,#svbody>h2{display:none}
+#svbody p{margin:.45em 0}
+aside{background:var(--side);border-right:1px solid var(--line);overflow:auto;padding:12px 10px 40px;height:calc(100vh - 53px);position:sticky;top:53px}
+.search{width:100%;font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);margin-bottom:8px}
+.grp{margin:10px 0 6px}
+.gt{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:4px 10px}
+aside a{display:flex;gap:8px;align-items:baseline;padding:6px 10px;border-radius:7px;color:var(--ink);text-decoration:none;font-size:14.5px;line-height:1.35}
+aside a:hover{background:var(--soft)}
+aside a.on{background:var(--accent);color:#fff}
+aside a.on .tm{color:inherit;opacity:.85}
+aside a.hide{display:none}
+.tm{font:12px var(--mono);color:var(--muted);min-width:3.6ch}
+main{overflow:auto;padding:28px 40px 60px}
+.page{max-width:880px;margin:0 auto}
+.crumb{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;align-items:center}
+.pill{background:var(--soft);color:var(--accent);border-radius:999px;padding:2px 10px;letter-spacing:0;font-size:13px}
+h2{font:700 1.9rem/1.2 var(--disp);margin:.3rem 0 1.2rem}
+h3{font:700 1.15rem/1.3 var(--disp);margin:1.8rem 0 .6rem}
+a{color:var(--accent)}
+p{margin:.7rem 0}
+blockquote{margin:1rem 0;padding:.8rem 1.1rem;border-left:4px solid var(--line);background:var(--panel);border-radius:0 8px 8px 0}
+blockquote.key{border-left-color:var(--keyline);background:var(--key);font-size:1.05em}
+.do{display:flex;gap:10px;align-items:flex-start;margin:1rem 0;padding:.55rem .9rem;background:var(--do);border-left:4px solid var(--doline);border-radius:0 8px 8px 0;font-size:.92em}
+.do .tag{font:700 11px/1.9 var(--mono);color:var(--doline);letter-spacing:.06em}
+code{background:var(--code);padding:.1rem .35rem;border-radius:4px;font-size:.87em;font-family:var(--mono)}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow:auto}
+pre code{background:none;padding:0}
+kbd{font:600 .85em var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 .35em;background:var(--panel)}
+.tw{overflow-x:auto;margin:1rem 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--panel)}
+th,td{border-bottom:1px solid var(--line);padding:.55rem .7rem;text-align:left;vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{background:var(--code);font-size:.85rem}
+li{margin:.25rem 0}
+li.cb{list-style:none;margin-left:-1.3rem}
+li.cb label{display:flex;gap:.55rem;align-items:flex-start;cursor:pointer}
+li.cb input{margin-top:.35rem;transform:scale(1.2);accent-color:var(--accent)}
+li.cb input:checked+span{color:var(--muted);text-decoration:line-through}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:1rem 0}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px}
+figure img{width:100%;display:block;border-radius:4px;cursor:zoom-in}
+figcaption{font-size:.8rem;color:var(--muted);padding:4px 2px 0;line-height:1.35}
+.screens{margin-top:2.5rem;padding-top:.5rem;border-top:1px dashed var(--line)}
+.slidevis{margin:0 0 1.4rem;border-radius:12px;overflow:hidden;background:#0f0f0f;color:#fff;border:1px solid var(--line)}
+.slidevis img{display:block;width:100%}
+.slidevis.big{display:flex;align-items:center;justify-content:center;aspect-ratio:16/7;font:700 clamp(24px,4vw,52px)/1.2 var(--disp);text-align:center;padding:20px}
+.slidevis.words{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;aspect-ratio:16/6;padding:20px}
+.slidevis.words span{font:600 clamp(16px,2.2vw,30px)/1 var(--disp);padding:14px 18px;border:1px solid #333;border-radius:10px;background:#1a1a1a}
+.pager{max-width:880px;margin:2.5rem auto 0;display:flex;gap:12px}
+.pager button{flex:1;text-align:left;padding:12px 14px}
+.pager button.next{text-align:right}
+.pager small{display:block;color:var(--muted);font-size:12px}
+.pager button:disabled{visibility:hidden}
+.hint{max-width:880px;margin:14px auto 0;font-size:12px;color:var(--muted);text-align:center}
+#zoom{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:90;cursor:zoom-out;padding:16px}
+#zoom img{max-width:100%;max-height:100%}
+
+/* ---------------------------------------------------------------- deck (audience) */
+#deck{position:fixed;inset:0;z-index:50;background:#000;cursor:default;color-scheme:dark}
+#deck[hidden]{display:none}
+#deck.idle .stage{cursor:none}
+.stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%) scale(var(--k,.5));transform-origin:center;background:#151515;color:#fff;overflow:hidden;font-family:var(--text)}
+.slide{position:absolute;inset:0;padding:110px 150px 130px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex}
+.slide .kicker{font:700 28px/1 var(--disp);letter-spacing:.14em;text-transform:uppercase;color:#ee0000;margin-bottom:34px}
+.slide h1{font:900 150px/1.02 var(--disp);margin:0 0 40px;letter-spacing:-.02em}
+.slide h2{font:700 84px/1.08 var(--disp);margin:0 0 60px;letter-spacing:-.01em;color:#fff}
+.slide .lead{font:400 54px/1.3 var(--text);color:#d2d2d2;margin:0}
+.slide .byline{position:absolute;left:150px;bottom:90px;font:500 28px var(--text);color:#a3a3a3}
+.slide em{font-style:normal;color:#ee0000}
+.slide .rbar{position:absolute;left:0;top:0;bottom:0;width:22px;background:#ee0000}
+.slide .foot{position:absolute;left:150px;right:150px;bottom:54px;display:flex;justify-content:space-between;font:500 22px var(--text);color:#a3a3a3;border-top:2px solid #383838;padding-top:20px;align-items:center}
+.slide.title{padding-left:190px}
+.slide.title .byline{left:190px}
+.slide.statement .big{font:900 128px/1.08 var(--disp);margin:0 0 60px;max-width:1500px;letter-spacing:-.02em}
+.slide.shotslide{justify-content:flex-start}
+.slide.shotslide h2{margin-bottom:36px}
+.slide .shot{display:block;height:620px;width:auto;max-width:100%;border-radius:18px;border:2px solid #2a2a2a;box-shadow:0 30px 80px rgba(0,0,0,.6);align-self:center}
+.slide .f{opacity:0;transform:translateY(24px);transition:opacity .35s ease,transform .35s ease}
+.slide .f.on{opacity:1;transform:none}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:44px}
+.card{background:#1f1f1f;border-top:6px solid #ee0000;border-radius:6px;padding:44px 42px 48px}
+.card .n{font:900 64px/1 var(--disp);color:#ee0000;margin-bottom:26px}
+.card h3{font:700 46px/1.15 var(--disp);margin:0 0 22px;color:#fff}
+.card p{font:400 34px/1.4 var(--text);color:#c9c9c9;margin:0}
+.slide.statement .lead+.lead{margin-top:24px}
+.slide .ico{fill:currentColor;display:block;flex:none}
+.card .ico{width:84px;height:84px;color:#ee0000;margin-bottom:28px}
+.word .ico{width:72px;height:72px;color:#c7c7c7;margin-bottom:24px}
+.word.act .ico{color:#ee0000}
+.recap .ico{width:60px;height:60px;color:#ee0000}
+.ticks.icons li{padding-left:96px}
+.ticks.icons li::before{display:none}
+.ticks.icons .ico{position:absolute;left:0;top:-.02em;width:66px;height:66px;color:#ee0000}
+.slide .lead.withico{display:flex;align-items:center;gap:30px}
+.slide .lead.withico .ico{width:76px;height:76px;color:#ee0000}
+.slide .rhlogo{position:absolute;right:150px;bottom:84px;height:56px;width:auto}
+.slide .note{font:500 40px var(--text);color:#d2d2d2;margin:60px 0 0}
+.ticks{list-style:none;margin:0 0 60px;padding:0}
+.ticks li{font:400 50px/1.35 var(--text);color:#e6e6e6;margin:0 0 26px;padding-left:76px;position:relative}
+.ticks li::before{content:"";position:absolute;left:0;top:.42em;width:40px;height:22px;border-left:7px solid #ee0000;border-bottom:7px solid #ee0000;transform:rotate(-45deg)}
+.punch{font:700 64px/1.2 var(--disp);margin:0}
+.words{display:grid;grid-template-columns:repeat(5,1fr);gap:26px}
+.word{background:#1f1f1f;border-radius:6px;padding:40px 30px 44px;border-top:6px solid #4d4d4d}
+.word h3{font:700 50px/1.1 var(--disp);margin:0 0 22px;color:#fff}
+.word p{font:400 32px/1.5 var(--text);color:#bdbdbd;margin:0}
+.word.act{border-top-color:#ee0000;background:#3f0000}
+.word.act h3{color:#ee0000}
+.recap{display:flex;flex-direction:column;gap:18px}
+.recap .row{display:grid;grid-template-columns:72px 300px 1fr;gap:0 28px;align-items:center;background:#1f1f1f;border-left:8px solid #ee0000;border-radius:6px;padding:26px 40px}
+.recap b{font:700 46px var(--disp);color:#fff}
+.recap span{font:400 42px var(--text);color:#d6d6d6}
+.qs{margin:0;padding:0;list-style:none;counter-reset:q}
+.qs li{counter-increment:q;font:500 56px/1.3 var(--text);color:#f0f0f0;margin:0 0 46px;padding-left:120px;position:relative}
+.qs li::before{content:counter(q);position:absolute;left:0;top:-4px;font:900 80px/1 var(--disp);color:#ee0000}
+.termph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0b0b}
+.termph span{font:700 70px var(--disp);color:#555}
+#black{position:absolute;inset:0;background:#000;z-index:20}
+#black[hidden]{display:none}
+.dctl{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(20,20,20,.92);border:1px solid #333;border-radius:12px;padding:8px 10px;color:#ddd;font:14px var(--text);opacity:0;transition:opacity .25s;z-index:30}
+#deck.show-ctl .dctl,.dctl:hover{opacity:1}
+.dctl button,.tbar button{background:#262626;border-color:#3a3a3a;color:#eee}
+.dctl button:hover,.tbar button:hover{border-color:#777}
+.dctl .clk,.tbar .clk{font:600 16px var(--mono);min-width:4.6ch;text-align:right;color:#fff}
+.dctl .num{font:13px var(--mono);color:#aaa;padding:0 6px}
+
+/* live terminals slide */
+#terms{position:absolute;inset:0;z-index:10;background:#0b0b0b;display:flex;flex-direction:column}
+#terms[hidden]{display:none}
+.tbar{height:54px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;background:#151515;border-bottom:4px solid #ee0000;color:#fff}
+.tbar .ttl{font:700 19px var(--disp);display:flex;gap:12px;align-items:center}
+.tbar .ttl::before{content:"";width:4px;height:22px;background:#ee0000}
+.tbar .sp{flex:1}
+.tbar .tip{font:13px var(--text);color:#9a9a9a}
+.tgrid{flex:1;min-height:0;position:relative;overflow:hidden;margin:4px}
+.tp{position:absolute;display:flex;flex-direction:column;min-height:0;border-radius:8px;overflow:hidden;background:var(--bgc);border:1px solid #333;transition:left .25s,top .25s,width .25s,height .25s,opacity .2s}
+.tp.src{opacity:.55}
+.split{position:absolute;z-index:40;touch-action:none}
+.split.v{width:12px;margin-left:-6px;cursor:col-resize}
+.split.h{height:12px;margin-top:-6px;cursor:row-resize}
+.split::after{content:"";position:absolute;background:transparent;border-radius:2px;transition:background .15s}
+.split.v::after{left:5px;width:2px;top:8px;bottom:8px}
+.split.h::after{top:5px;height:2px;left:8px;right:8px}
+.split:hover::after,.split.on::after{background:#ee0000}
+#drop{position:absolute;z-index:60;border:3px solid #ee0000;background:rgba(238,0,0,.16);border-radius:8px;pointer-events:none;transition:left .08s,top .08s,width .08s,height .08s}
+#drop[hidden]{display:none}
+.th .wb button.wrst.arm{background:#ee0000;border-color:#ee0000;color:#fff;width:auto;padding:0 8px;font-size:12px}
+.tp.front{border-color:#666}
+.tgrid.dragging .tp{transition:none}
+.tgrid.dragging iframe{pointer-events:none}
+.tp.min{opacity:0;visibility:hidden;pointer-events:none}
+.tp.maxed{left:4px!important;top:4px!important;width:calc(100% - 8px)!important;height:calc(100% - 8px)!important;z-index:900!important}
+.th{flex:none;display:flex;align-items:center;gap:10px;padding:6px 8px 6px 14px;background:rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.08);color:#fff;white-space:nowrap;overflow:hidden;cursor:grab;user-select:none;touch-action:none}
+.tgrid.dragging .th{cursor:grabbing}
+.th .wb{margin-left:auto;display:flex;gap:6px;flex:none}
+.th .wb button{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.18);color:#eee;width:30px;height:26px;padding:0;font-size:15px;line-height:1;border-radius:6px;cursor:pointer}
+.th .wb button:hover{background:rgba(255,255,255,.15)}
+.th .wb button.wfm,.th .wb button.wfp{width:34px;font:700 12px var(--text)}
+.tdock{flex:none;height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#151515;border-top:1px solid #2a2a2a;color:#888;font:13px var(--text);overflow-x:auto}
+.tdock .dl{flex:none}
+.tdock button{display:flex;align-items:center;gap:8px;background:#222;border:1px solid #3a3a3a;color:#eee;font:600 13px var(--text);padding:5px 12px;border-radius:7px;white-space:nowrap}
+.tdock button i{width:9px;height:9px;border-radius:50%;background:var(--dot)}
+.tdock:not(.has){display:none}
+.lays,.slays{display:flex;gap:6px;flex-wrap:wrap}
+.lays button{font-size:13px;padding:5px 11px}
+.lays button.on,.slays button.on{background:#ee0000;border-color:#ee0000;color:#fff}
+.slays button{background:#262626;border-color:#3a3a3a;color:#eee;font-size:13px}
+.th .dot{width:11px;height:11px;border-radius:50%;background:var(--dot);flex:none}
+.th b{font:700 16px var(--disp)}
+.th small{font:13px var(--mono);color:#bdbdbd;overflow:hidden;text-overflow:ellipsis}
+.tb{flex:1;min-height:0;position:relative}
+.tb iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bgc)}
+.term-off{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#d0d0d0;font:15px var(--text);text-align:center;padding:16px}
+.term-off code{background:rgba(0,0,0,.35);color:#fff;font-size:15px;padding:.3em .6em}
+.term-off button{background:#262626;border-color:#3a3a3a;color:#eee}
+
+/* ---------------------------------------------------------------- speaker view */
+#spk{color-scheme:dark;position:fixed;inset:0;z-index:60;background:#0f0f0f;color:#eee;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(340px,1fr);grid-template-rows:auto 1fr;font-family:var(--text)}
+#spk[hidden]{display:none}
+.sbar{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:10px 18px;background:#151515;border-bottom:4px solid #ee0000;flex-wrap:wrap}
+.sbar .ttl{font:700 16px var(--disp);letter-spacing:.06em;text-transform:uppercase;color:#bbb}
+.sbar .sp{flex:1}
+.sbar .clk{font:700 34px/1 var(--mono);color:#fff}
+.sbar .clk.late{color:#ff4d4d}
+.sbar .plan{font:600 15px var(--mono);color:#aaa}
+.sbar .num{font:14px var(--mono);color:#aaa}
+.sbar .link{font:13px var(--text);color:#8a8a8a}
+.sbar .link.ok{color:#3fb950}
+.sbar button{background:#262626;border-color:#3a3a3a;color:#eee}
+.snotes{overflow:auto;padding:26px 34px 60px;font-size:var(--nf,23px);line-height:1.55;background:#141414}
+.snotes .nh{display:flex;align-items:center;gap:12px;margin-bottom:6px;color:#999;font:700 13px var(--text);letter-spacing:.08em;text-transform:uppercase}
+.snotes .nh button{background:#262626;border-color:#3a3a3a;color:#eee;font-size:13px;padding:3px 10px;letter-spacing:0;text-transform:none}
+.snotes h2{color:#fff;font-size:1.5em;margin:.2rem 0 1rem}
+.snotes p{margin:.55em 0}
+.snotes .do{background:#13202e;color:#cfe3ff;border-left-color:#5b9cf0;font-size:.78em}
+.snotes .do .tag{color:#5b9cf0}
+.snotes blockquote.key{background:#2b2513;border-left-color:#c99700;color:#fff}
+.snotes code{background:#262626;color:#fff}
+.snotes .screens,.snotes .gallery,.snotes .slidevis,.snotes .crumb{display:none}
+.snotes table{font-size:.7em;background:#1b1b1b;color:#ddd}
+.snotes th{background:#262626}
+.snotes td,.snotes th{border-color:#333}
+.sside{overflow:auto;padding:18px;display:flex;flex-direction:column;gap:14px;border-left:1px solid #262626}
+.sside .lbl{font:700 12px var(--text);letter-spacing:.1em;text-transform:uppercase;color:#888}
+.mini{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:8px;border:1px solid #333;background:#000}
+.mini .stage{--k:.2}
+.mini.next{opacity:.8;cursor:pointer}
+.mini.next:hover{opacity:1;outline:3px solid #ee0000}
+#mcur{cursor:pointer}
+.sstrip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.sstrip .st{position:relative;cursor:pointer}
+.sstrip .st .mini{border:2px solid #333}
+.sstrip .st.on .mini{border-color:#ee0000}
+.sstrip .st b{position:absolute;left:4px;top:2px;font:700 11px var(--mono);color:#fff;text-shadow:0 0 3px #000;z-index:2}
+.mini .slide .f{transition:none}
+.skeys{font:13px/1.7 var(--text);color:#888}
+@media (max-width:900px){
+  body{grid-template-columns:1fr}
+  #menu{display:inline-block}
+  aside{position:fixed;top:53px;left:0;bottom:0;width:min(320px,88vw);height:auto;z-index:6;transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 30px rgba(0,0,0,.25)}
+  body.nav-open aside{transform:none}
+  main{padding:20px 16px 50px}
+  h2{font-size:1.5rem}
+  #spk{grid-template-columns:1fr;grid-template-rows:auto auto 1fr}
+  .sside{order:-1;border-left:0;flex-direction:row;overflow-x:auto}
+  .sside>div{min-width:260px}
+}
+@media print{header,aside,.pager,.hint,#deck,#spk{display:none}body{display:block}main{overflow:visible;padding:0}.page[hidden]{display:block!important}.page{break-after:page}}
+</style></head>
+<body>
+<header>
+  <button id="menu" aria-label="Menu">☰</button>
+  <div class="brand"><i></i>RHACS - Threat Detection and Response</div>
+  <nav class="tabs" role="tablist"><button id="tab-slides" role="tab">Slides</button><button id="tab-guide" role="tab">Guide</button></nav>
+  <span class="sp"></span>
+  <div class="ssbtn"><button id="present" class="primary" title="Present from the current slide (p)">▶ Slideshow</button><button id="ssmenu" class="primary caret" aria-label="More slideshow options" aria-haspopup="menu">▾</button>
+    <div class="menu" id="ssm" hidden role="menu"><button data-ss="current" role="menuitem">Present from current slide</button><button data-ss="start" role="menuitem">Present from beginning</button><button data-ss="presenter" role="menuitem">Presenter view <small>notes, timer, next slide</small></button></div></div>
+  <button id="speaker" hidden></button>
+  <button id="theme" title="Light / dark" aria-label="Toggle theme">◐</button>
+</header>
+<div id="sv" hidden>
+  <div class="film" id="film" aria-label="Slides"></div>
+  <div class="canvas" id="canvas"><div class="mini big" id="bigslide"></div></div>
+  <div class="svnotes"><div class="svh"><span>Speaker notes</span><span class="svplan" id="svplan"></span><span class="sp"></span><span class="svname" id="svname"></span></div><div id="svbody"></div></div>
+</div>
+<aside><input id="q" class="search" type="search" placeholder="Search…  ( / )"><div class="grp"><div class="gt">Start</div><a href="#start-here" data-id="start-here"><span>Start here</span></a><a href="#the-arc" data-id="the-arc"><span>The arc</span></a><a href="#the-three-threads" data-id="the-three-threads"><span>The three threads</span></a><a href="#the-three-slides" data-id="the-three-slides"><span>The three slides</span></a><a href="#the-close" data-id="the-close"><span>The close</span></a></div><div class="grp"><div class="gt">Prepare</div><a href="#how-to-speak-to-this-room" data-id="how-to-speak-to-this-room"><span>How to speak to this room</span></a><a href="#before-you-walk-on-stage" data-id="before-you-walk-on-stage"><span>Before you walk on stage</span></a></div><div class="grp"><div class="gt">Deliver</div><a href="#run-of-show" data-id="run-of-show"><span>Run of show</span></a><a href="#the-attack-chain" data-id="the-attack-chain"><span>The attack chain</span></a></div><div class="grp"><div class="gt">Speaker notes</div><a href="#about-the-notes" data-id="about-the-notes"><span>About the notes</span></a><a href="#slide-1-the-pipeline" data-id="slide-1-the-pipeline"><span class="tm">0:00</span><span>Slide 1: the pipeline</span></a><a href="#slide-2-the-timestamp" data-id="slide-2-the-timestamp"><span class="tm">1:30</span><span>Slide 2: the timestamp</span></a><a href="#slide-3-what-s-watching" data-id="slide-3-what-s-watching"><span class="tm">3:30</span><span>Slide 3: what's watching</span></a><a href="#demo-time" data-id="demo-time"><span class="tm">5:00</span><span>Demo time</span></a><a href="#act-1-unhackable" data-id="act-1-unhackable"><span class="tm">5:00</span><span>Act 1: Unhackable</span></a><a href="#the-pivot" data-id="the-pivot"><span class="tm">8:00</span><span>The pivot</span></a><a href="#act-2-day-zero" data-id="act-2-day-zero"><span class="tm">8:30</span><span>Act 2: Day zero</span></a><a href="#act-3-loot" data-id="act-3-loot"><span class="tm">12:00</span><span>Act 3: Loot</span></a><a href="#act-4-persistence-and-profit" data-id="act-4-persistence-and-profit"><span class="tm">17:00</span><span>Act 4: Persistence and profit</span></a><a href="#act-5-respond" data-id="act-5-respond"><span class="tm">23:00</span><span>Act 5: Respond</span></a><a href="#act-6-fix-forward" data-id="act-6-fix-forward"><span class="tm">29:00</span><span>Act 6: Fix forward</span></a><a href="#the-tour" data-id="the-tour"><span class="tm">32:00</span><span>The tour</span></a><a href="#the-close-2" data-id="the-close-2"><span class="tm">37:00</span><span>The close</span></a></div><div class="grp"><div class="gt">Q&amp;A</div><a href="#questions-you-ll-get" data-id="questions-you-ll-get"><span>Questions you'll get</span></a><a href="#q-a-longer-answers" data-id="q-a-longer-answers"><span>Q&amp;A — longer answers</span></a></div></aside>
+<main>
+<section class="page" id="start-here" data-i="0" hidden><div class="crumb">Start </div><h2>Start here</h2><p><strong>40 minutes · 3 intro slides · everything else live in RHACS</strong></p>
+<blockquote class="note"><strong>A clean scan is a timestamp.</strong><br>You can't patch faster than they discover — but you can see, and stop, faster.</blockquote>
+<p>Audience: teams that think of RHACS (or container security in general) as <em>vulnerability management</em>. The goal is not to dismiss that — it's to show it is the <strong>first chapter</strong>, and that the product they already own does the rest.</p>
+<ul><li><strong>The full talk, word for word (speaker notes): <a href="SCRIPT.md" target="_blank" rel="noopener">SCRIPT.md</a></strong></li><li>This page: how to speak to the room, run of show, Q&amp;A and checklist. Same content as a web page: <a href="TALK.html" target="_blank" rel="noopener">TALK.html</a></li><li>Setup and the demo mechanics: <a href="../README.md" target="_blank" rel="noopener">../README.md</a></li><li>What every act looks like on screen: <a href="WALKTHROUGH.md" target="_blank" rel="noopener">WALKTHROUGH.md</a></li></ul></section>
+<section class="page" id="the-arc" data-i="1" hidden><div class="crumb">Start </div><h2>The arc</h2><ol><li><strong>The promise</strong> — a release pipeline where every job is green: zero CVEs, every best practice.</li><li><strong>The timestamp</strong> — everything checked before deployment is true <em>only at the moment you checked</em>. New vulnerabilities are disclosed every day, faster than ever, and the window to fix keeps shrinking. Every CVE was a zero-day once, misconfiguration isn't on anyone's scanner, and supply-chain attacks plant holes that scan clean and get signed by your own pipeline.</li><li><strong>What's watching</strong> — something that knows every application: what it's made of, how it's deployed, who it talks to, how it behaves — and acts when that changes.</li><li><strong>The proof</strong> — break in live, without a single CVE. Watch RHACS see everything.</li><li><strong>The response</strong> — kill to shrink the blast radius <em>now</em>; network enforcement to close the door.</li><li><strong>The fix</strong> — fix forward. The scanner was right all along — and saw none of it.</li></ol></section>
+<section class="page" id="the-three-threads" data-i="2" hidden><div class="crumb">Start </div><h2>The three threads</h2><div class="tw"><table><thead><tr><th>Thread</th><th>Where it shows</th><th>Line</th></tr></thead><tbody><tr><td><strong>What nobody knows yet</strong> — zero-days, unknown vulnerabilities</td><td>Act 2: evaluating untrusted input as code has no CVE, no advisory, no signature</td><td><em>"This is a zero-day. Ours. And it stands in for every zero-day you'll ever have."</em></td></tr><tr><td><strong>What nobody noticed</strong> — misconfiguration</td><td>Act 3: no NetworkPolicy — and no pipeline step that checks for one — so the public blog can reach payments, the Kubernetes API and the internet</td><td><em>"Nobody decided that. Nobody noticed it."</em></td></tr><tr><td><strong>What somebody hid</strong> — supply-chain attacks</td><td>Slide 2 (xz, signed backdoors) and Act 2: the injectable line could just as well be a malicious PR or a poisoned dependency</td><td><em>"You cannot tell, from the code, whether this is a mistake or a backdoor. And neither can any scanner."</em></td></tr></tbody></table></div>
+<p>Alongside the threads: <strong>know where your components come from</strong> — trusted sources and trusted vendors, signed and verified images. That lowers the risk a lot; it doesn't remove it (xz came from a trusted project). That is why you also watch behavior.</p>
+<p>All three are answered the same way: RHACS watches <strong>behavior</strong>, so intent doesn't matter — a mistake and a backdoor both have to <em>do</em> something. In Act 5 the <strong>kill</strong> buys time against the unknown and the planted, and the <strong>NetworkPolicy</strong> fixes the misconfiguration.</p></section>
+<section class="page" id="the-three-slides" data-i="3" hidden><div class="crumb">Start </div><h2>The three slides</h2><div class="tw"><table><thead><tr><th>Slide</th><th>What's on it</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>1 — The pipeline</strong></td><td><code>slides/release.png</code> — a release pipeline run (build, image-scan, policy-check, security-approval, deploy-production), every job green; security approval: <em>"Looks unhackable. Ship it."</em></td><td>The promise. Note what's <strong>missing</strong>: no step about network policy. You come back to that in Act 3.</td></tr><tr><td><strong>2 — The timestamp</strong></td><td>one line: <strong>A clean scan is a timestamp.</strong></td><td>Zero-days, unknown vulnerabilities, a shrinking window to fix — and misconfiguration nobody checks.</td></tr><tr><td><strong>3 — What's watching</strong></td><td><strong>Made of → Deployed → Talks to → Behaves → Acts</strong></td><td>What RHACS knows, without naming features ("made of" includes <em>where it comes from</em>: registry, signature). Each word pays off in an act.</td></tr></tbody></table><figure><img loading="lazy" src="slides/release.png" alt="Slide 1 — the release pipeline"><figcaption>Slide 1 — the release pipeline</figcaption></figure></div>
+<p>The full spoken text for every slide, act, the tour and the close is in <strong><a href="SCRIPT.md" target="_blank" rel="noopener">SCRIPT.md</a></strong> — written in simple English for audiences that aren't all native speakers.</p></section>
+<section class="page" id="the-close" data-i="4" hidden><div class="crumb">Start </div><h2>The close</h2><blockquote class="key">*"Your pipeline can check everything you know. It can't check for what nobody knows yet. It can't<br>check for what nobody noticed. And it can't check for what somebody hid. … A clean scan is a<br>timestamp."*</blockquote></section>
+<section class="page" id="how-to-speak-to-this-room" data-i="5" hidden><div class="crumb">Prepare </div><h2>How to speak to this room</h2><p>The people in the room are CISOs, directors and architects. They decide budgets and architecture. They know security very well. They do not need deep technical words. And for many of them, English is a second or third language. So:</p>
+<ul><li><strong>Short sentences.</strong> One idea per sentence. Then a pause.</li><li><strong>Repeat the key messages.</strong> For people who listen in a second language, repeating is not boring. It helps.</li><li><strong>Say what it means for the business.</strong> Not only "the pod was killed". Say "the attacker lost everything, in less than one second".</li><li><strong>No idioms.</strong> They do not translate. Use the plain words below.</li><li><strong>Slow down on numbers and names.</strong> "Zero. CVEs." "Less than. One. Second."</li><li><strong>Say the step, then run the command.</strong> People must know what to look for before it appears on the screen.</li><li><strong>Point at the screen.</strong> Show the one line that matters on each RHACS page. Do not read the whole page.</li></ul>
+<h3 id="words-to-use">Words to use</h3>
+<div class="tw"><table><thead><tr><th>Instead of…</th><th>Say…</th></tr></thead><tbody><tr><td>blast radius</td><td>the damage</td></tr><tr><td>lateral movement, pivot</td><td>moving to other systems</td></tr><tr><td>exfiltrate, loot</td><td>steal</td></tr><tr><td>persistence</td><td>staying inside</td></tr><tr><td>C2, command and control</td><td>the attacker's computer</td></tr><tr><td>RCE, remote code execution</td><td>running commands from outside</td></tr><tr><td>process baseline</td><td>the normal list of programs</td></tr><tr><td>network baseline</td><td>the normal list of connections</td></tr><tr><td>drift</td><td>a change inside the container</td></tr><tr><td>enforcement</td><td>an automatic action</td></tr><tr><td>shift-left</td><td>checks before deployment</td></tr><tr><td>fix forward</td><td>ship the fix</td></tr><tr><td><em>stop the bleeding, crown jewels, game over, cash out</em></td><td><em>(no idioms — say the plain thing)</em></td></tr></tbody></table></div>
+<h3 id="terms-to-explain-once-the-first-time-you-use-them">Terms to explain once, the first time you use them</h3>
+<div class="tw"><table><thead><tr><th>Term</th><th>Say it like this</th></tr></thead><tbody><tr><td><strong>CVE</strong></td><td>A known, published vulnerability. It has a number. Scanners look for these numbers.</td></tr><tr><td><strong>Zero-day</strong></td><td>A security hole that nobody knows about yet. No number. No patch. A scanner cannot find it.</td></tr><tr><td><strong>Container / pod</strong></td><td>The box the application runs in. Kubernetes can throw it away and start a new, clean one in seconds.</td></tr><tr><td><strong>Supply-chain attack</strong></td><td>The attacker does not attack you. They attack something you use: a library, a build tool, a base image.</td></tr><tr><td><strong>Honeytoken</strong></td><td>A trap. Fake keys that the application never uses. Only an intruder touches them.</td></tr><tr><td><strong>Baseline</strong></td><td>The normal list: the programs an application runs, and who it talks to. Anything outside the list is an alarm.</td></tr><tr><td><strong>Network policy</strong></td><td>A firewall rule for one application: who it may talk to, and nothing else.</td></tr><tr><td><strong>Policy as code</strong></td><td>The security rules are files in Git. They are reviewed and deployed like application code.</td></tr></tbody></table></div>
+<h3 id="what-it-means-for-the-business">What it means for the business</h3>
+<p>Say these in the tour and the close. This is what a CISO takes back to the board.</p>
+<div class="tw"><table><thead><tr><th>Question from the board</th><th>Answer from the demo</th></tr></thead><tbody><tr><td>How fast do we <strong>see</strong> an attack?</td><td>In seconds. Every step was an alert, with the exact command, user and time.</td></tr><tr><td>How fast do we <strong>stop</strong> it?</td><td>Automatically. The pod was killed in less than one second, without a person.</td></tr><tr><td>Do we need to know the attack in advance?</td><td>No. RHACS only needs to know what is <strong>normal</strong> for each application.</td></tr><tr><td>Are we safe while the fix is not ready?</td><td>Yes. The kill and the network policy protect us until the fix ships.</td></tr><tr><td>Do we have evidence for the investigation?</td><td>Yes. Every alert, every kill, every connection is recorded.</td></tr><tr><td>Is this a new tool?</td><td>No. It is the same RHACS you use for vulnerability scanning — the other four words.</td></tr></tbody></table></div></section>
+<section class="page" id="before-you-walk-on-stage" data-i="6" hidden><div class="crumb">Prepare </div><h2>Before you walk on stage</h2><p><strong>The day before</strong></p>
+<ul><li class="cb"><label><input type="checkbox"> <span>Full dry run, all six acts, with the clock</span></label></li><li class="cb"><label><input type="checkbox"> <span><code>scripts/demo.sh reset</code> works and leaves no violations</span></label></li><li class="cb"><label><input type="checkbox"> <span>Slides 1–3 ready. <code>slides/release.png</code> is up to date (re-render it if you changed <code>slides/release.html</code>)</span></label></li></ul>
+<p><strong>One hour before</strong></p>
+<ul><li class="cb"><label><input type="checkbox"> <span>Laptop <strong>plugged in</strong> (on battery, the CPU slows down and CRC gets slow)</span></label></li><li class="cb"><label><input type="checkbox"> <span><code>scripts/demo.sh reset</code> → <code>scripts/demo.sh status</code> shows v1, enforcement <code>[]</code>, no network policies, no violations</span></label></li><li class="cb"><label><input type="checkbox"> <span><code>scripts/attacker.sh status</code> → attacker up, firewall <code>open-for-crc</code></span></label></li><li class="cb"><label><input type="checkbox"> <span>VPN off, or <code>nordvpn whitelist add subnet 192.168.130.0/24</code> done once</span></label></li><li class="cb"><label><input type="checkbox"> <span>Projector test: terminal font readable from the last row</span></label></li></ul>
+<p><strong>Five minutes before</strong></p>
+<ul><li class="cb"><label><input type="checkbox"> <span><strong>Terminal A</strong> (large font) in the demo folder. <strong>Terminal B</strong> ready for <code>scripts/attacker.sh c2</code></span></label></li><li class="cb"><label><input type="checkbox"> <span>Browser tabs, logged in (<code>rox-ui</code>): blog <code>/write</code> · RHACS Violations (<code>unhackable</code>) · Network Graph · Vulnerability Management · Risk</span></label></li><li class="cb"><label><input type="checkbox"> <span><code>release.png</code> full screen</span></label></li><li class="cb"><label><input type="checkbox"> <span><code>make web-terminal</code> running. Open <code>docs/TALK.html</code> → <strong>▶ Present</strong> on the projector, <strong>Speaker view</strong> on your laptop screen</span></label></li><li class="cb"><label><input type="checkbox"> <span>Do not disturb on. Notifications off. Other apps closed</span></label></li><li class="cb"><label><input type="checkbox"> <span>Water on the table</span></label></li><li class="cb"><label><input type="checkbox"> <span><strong>Backup:</strong> <a href="WALKTHROUGH.md" target="_blank" rel="noopener">WALKTHROUGH.md</a> or <a href="TALK.html" target="_blank" rel="noopener">TALK.html</a> open in a tab. If anything breaks live, say <em>"Let me show you this morning's run"</em>, use the screenshots, and keep going</span></label></li></ul></section>
+<section class="page" id="run-of-show" data-i="7" hidden><div class="crumb">Deliver </div><h2>Run of show</h2><div class="tw"><table><thead><tr><th>Time</th><th>Segment</th><th>Screen</th><th>Key line</th></tr></thead><tbody><tr><td>0:00</td><td><strong>Slide 1 — the pipeline</strong></td><td>slide</td><td><em>"Let's find out what a green pipeline is actually worth."</em></td></tr><tr><td>1:30</td><td><strong>Slide 2 — the timestamp</strong></td><td>slide</td><td><em>"True at 9 a.m. Is it still true now?"</em></td></tr><tr><td>3:30</td><td><strong>Slide 3 — what's watching</strong></td><td>slide</td><td><em>"That's what we're going to put to the test today."</em></td></tr><tr><td>5:00</td><td><strong>Act 1 — Unhackable</strong></td><td>blog, RHACS</td><td><em>"The pipeline was right. So — is it secure?"</em></td></tr><tr><td>8:30</td><td><strong>Act 2 — Day zero</strong></td><td>terminal, Violations</td><td><em>"One clean dependency. Zero CVEs. One evaluated rule."</em></td></tr><tr><td>12:00</td><td><strong>Act 3 — Loot</strong></td><td>terminal, Violations, Network Graph</td><td><em>"Not one step in the pipeline about who this app may talk to."</em></td></tr><tr><td>17:00</td><td><strong>Act 4 — Persistence &amp; profit</strong></td><td>2 terminals, Violations, Network Graph</td><td><em>"That's an interactive shell, inside your 'unhackable' app, from outside your cluster."</em></td></tr><tr><td>23:00</td><td><strong>Act 5 — Respond</strong></td><td>Policies, terminal, Violations</td><td><em>"The kill stopped this attacker. The NetworkPolicy stops the next one."</em></td></tr><tr><td>29:00</td><td><strong>Act 6 — Fix forward</strong></td><td>diff, terminal, image page</td><td><em>"Runtime didn't replace patching. It kept us safe until the patch was ready."</em></td></tr><tr><td>32:00</td><td><strong>Live recap — the tour</strong></td><td>RHACS only</td><td><em>"…and this page still says zero."</em></td></tr><tr><td>37:00</td><td><strong>Close</strong></td><td>network graph or black</td><td><em>"A clean scan is a timestamp."</em></td></tr><tr><td>38:00</td><td>Q&amp;A</td><td></td><td></td></tr></tbody></table></div>
+<p><strong>If time runs short:</strong> shorten Act 3 (the honeytoken alone is enough). <strong>Never cut Act 4 or Act 5</strong> — they're what people retell.</p></section>
+<section class="page" id="the-attack-chain" data-i="8" hidden><div class="crumb">Deliver </div><h2>The attack chain</h2><p>The scripts are deliberately quiet: they run the commands and show the output, nothing else. <strong>You narrate.</strong> As each command lands, say — in plain words — what the attacker is <em>doing</em> and why it matters. Every stage below maps to a real ATT&amp;CK tactic and to the exact policy that lights up in the RHACS feed (pane 3 in <code>make live</code>), so what you say, what they see on the terminal, and what RHACS flags all line up.</p>
+<blockquote class="note">Rule of thumb: <strong>say the stage, then run the command.</strong> "Now the attacker goes looking for<br>credentials…" <em>(run it)</em> → RHACS fires → "…and RHACS already knows the app never touches that file."</blockquote>
+<div class="tw"><table><thead><tr><th>Act</th><th>Stage — say this</th><th>ATT&amp;CK tactic</th><th>What the attacker does</th><th>RHACS flags (pane 3)</th></tr></thead><tbody><tr><td><strong>2</strong></td><td><strong>Initial access + execution</strong> — "they turn a feature into a shell"</td><td>Execution (T1059)</td><td>The "Check links" rule engine evaluates their input as Go (yaegi, handed exec.Command) — remote code execution. No CVE, our own bug.</td><td><code>TDR - Unauthorized process</code></td></tr><tr><td><strong>3a</strong></td><td><strong>Discovery</strong> — "first thing in, they look around"</td><td>Discovery</td><td>List the service-account dir, grep the environment for secrets. Hardening pays off: nothing there.</td><td><em>(baseline recon — quiet)</em></td></tr><tr><td><strong>3b</strong></td><td><strong>Credential access</strong> — "they go hunting for keys"</td><td>Credential Access (T1552.001)</td><td>They check the obvious spots — <code>~/.aws/credentials</code>, the app's <code>.env</code> — and find both: <strong>honeytokens</strong> we planted. The app never reads them, so any touch = intruder.</td><td><code>TDR - Honeytoken touched</code></td></tr><tr><td><strong>3c</strong></td><td><strong>Control-plane recon</strong> — "can they reach Kubernetes itself?"</td><td>Discovery (T1613)</td><td>They probe the in-cluster Kubernetes API (<code>kubernetes.default</code>). No service-account token, so it goes nowhere — but the attempt is the tell.</td><td><code>TDR - Kubernetes API reconnaissance</code></td></tr><tr><td><strong>3d</strong></td><td><strong>Lateral movement</strong> — "pivot from the blog to the money"</td><td>Lateral Movement</td><td>From the public blog they reach <code>payments-api</code> and pull card data. The blog has <strong>never</strong> talked to payments before.</td><td><code>TDR - Unexpected network flow to payments-api</code></td></tr><tr><td><strong>4a</strong></td><td><strong>Persistence + C2</strong> — "they stop knocking and move in"</td><td>Persistence / Command &amp; Control</td><td>A reverse shell calls home to the attacker's laptop — a live, interactive shell from outside the cluster.</td><td><code>TDR - Reverse shell tool executed</code></td></tr><tr><td><strong>4b</strong></td><td><strong>Impact</strong> — "now they get paid"</td><td>Impact (T1496, resource hijacking)</td><td>They download and run a crypto miner into <code>/tmp</code> (root FS is read-only).</td><td><code>TDR - Crypto miner</code>, <code>TDR - Container drift</code></td></tr><tr><td><strong>5a</strong></td><td><strong>Respond — contain now</strong> — "shrink the blast radius"</td><td>—</td><td>Turn on RHACS <strong>Kill Pod</strong> enforcement. The attacker's next command kills the pod; Kubernetes replaces it clean in seconds.</td><td>enforcement kill (<code>✖ POD KILLED</code>)</td></tr><tr><td><strong>5b</strong></td><td><strong>Respond — close the door</strong> — "stop the next one"</td><td>—</td><td>Apply a <strong>NetworkPolicy</strong>: the blog keeps DNS + internet on 80/443 and nothing else. Even an allowed binary can't reach the attacker.</td><td>flows blocked</td></tr><tr><td><strong>6</strong></td><td><strong>Fix forward</strong> — "the real fix, no drama"</td><td>—</td><td>Ship v2: the rule engine is gone — links are validated natively, nothing is evaluated. Still zero CVEs.</td><td>silence — the exploit is gone</td></tr></tbody></table></div>
+<p><strong>The one-sentence spine:</strong> <em>they got in with no CVE (Act 2), looted and pivoted (Act 3), moved in and cashed out (Act 4) — and RHACS saw every move within seconds (the feed), then stopped it two ways (Act 5), before we even shipped the fix (Act 6).</em></p></section>
+<section class="page" id="about-the-notes" data-i="9" hidden><div class="crumb">Speaker notes </div><h2>About the notes</h2><p><strong>40 minutes.</strong> Spoken text is plain. Stage directions are in <em>[italics in brackets]</em>. ⏱ marks where you should be on the clock. Pauses are part of the script — take them.</p>
+<p>Written in simple English: short sentences, common words, no idioms. The key messages repeat on purpose — it helps people who are listening in a second language.</p>
+<p><strong>The three threads</strong> — three ways a security hole gets into an application with a green pipeline:</p>
+<ul><li><strong>What nobody knows yet</strong> — a zero-day. There is no CVE yet, so a scanner cannot find it.</li><li><strong>What nobody noticed</strong> — a misconfiguration. Here: no network policy.</li><li><strong>What somebody hid</strong> — a supply-chain attack. A bad library, a broken build tool, a hidden change.</li></ul>
+<p>And one piece of advice that runs alongside: <strong>know where your components come from.</strong> Trusted sources lower the risk. They do not remove it. That is why you also watch what your applications do.</p>
+<p>Companion docs: <a href="TALK.md" target="_blank" rel="noopener">TALK.md</a> (run of show, speaking guide, Q&amp;A, checklist) · <a href="WALKTHROUGH.md" target="_blank" rel="noopener">WALKTHROUGH.md</a> (what every screen looks like) · <a href="../README.md" target="_blank" rel="noopener">../README.md</a> (setup).</p></section>
+<section class="page" id="slide-1-the-pipeline" data-i="10" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 0:00</span></div><h2>Slide 1: the pipeline</h2><div class="slidevis"><img src="slides/release.png" alt="Slide 1 — the release pipeline"></div><div class="do"><span class="tag">DO</span><span>Slide 1 up: <code>slides/release.png</code> — the release pipeline, every job green. Wait a few seconds. Let people read. They will smile at "Looks unhackable. Ship it."</span></div>
+<p>This is a release pipeline. I think it looks a lot like yours.</p>
+<p>We built a small blog. Before it went to production, it passed every step.</p>
+<div class="do"><span class="tag">DO</span><span>Point along the jobs.</span></div>
+<p>Build. Image scan. Policy check. Security approval. Deploy.</p>
+<div class="do"><span class="tag">DO</span><span>Point down the summary.</span></div>
+<p>The image scan found zero vulnerabilities. Zero. Not low. Zero.</p>
+<p>The application uses one small open-source library — and it has zero CVEs. The base image is up to date. There is no package manager inside.</p>
+<p>It runs without root. Its files are read-only. It has no extra privileges. It has no Kubernetes token.</p>
+<p>The policy check found no problems. It has the lowest risk in the whole cluster.</p>
+<div class="do"><span class="tag">DO</span><span>Point at the security approval.</span></div>
+<p>And the security team said: "Looks unhackable. Ship it."</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>Everything on this slide is true. In a few minutes, you will see it all in the console.</p>
+<p>So today, we will find out what a green pipeline is really worth.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>And one more thing. Remember this slide. Not for what is on it. For what is missing.</p><section class="screens"><h3>On screen — backup screenshots</h3><blockquote class="key"><em>"Every job green. Zero CVEs. Let's find out what a green pipeline is actually worth."</em></blockquote>
+<div class="gallery"><figure><img loading="lazy" src="slides/release.png" alt="Slide 1 — the release pipeline, every job green"><figcaption>Slide 1 — the release pipeline, every job green</figcaption></figure></div></section></section>
+<section class="page" id="slide-2-the-timestamp" data-i="11" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 1:30</span></div><h2>Slide 2: the timestamp</h2><div class="slidevis big"><div>A clean scan is a timestamp.</div></div><div class="do"><span class="tag">DO</span><span>Slide 2: one line — "A clean scan is a timestamp."</span></div>
+<p>Here is the problem with everything in that pipeline.</p>
+<p>We checked it all <em>before</em> we deployed. The libraries. The base image. The settings.</p>
+<p>So every green check is true at one moment. The moment we checked.</p>
+<p>If we scanned at nine o'clock this morning, the application was clean at nine o'clock this morning.</p>
+<p>Is it still clean now?</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>We don't know. Because new vulnerabilities are found every day. In libraries. In base images. In our own code. They are found faster than ever. And the time to fix them is getting shorter.</p>
+<p>Your image did not change. What the world knows about it did.</p>
+<p>Here is a simple fact: every CVE was a zero-day once. On the day of the attack, there is no CVE. So there is nothing for a scanner to find. The scanner is not wrong. It just cannot see what nobody knows yet.</p>
+<p>Second problem: misconfiguration. The things nobody checked, because they were not on the list.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>And the third problem is the one that worries me most. Supply-chain attacks.</p>
+<p>Today, attackers often don't attack your application directly. They attack what your application is built from. A library. A base image. A build tool. A step in your pipeline.</p>
+<p>You may know the story of xz. It is a small library, inside almost every Linux system. One person worked on it for more than two years. They became a trusted maintainer. And then they hid a backdoor inside it.</p>
+<p>It was found by luck. An engineer noticed that his logins were half a second slower. He looked closer, and he found the backdoor.</p>
+<p>So what does our pipeline do with a hidden backdoor? The scanner looks for <em>known</em> problems. A hidden backdoor is not known. So the scan is clean. The pipeline signs the image. So the backdoor is signed too.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>So, what can we do?</p>
+<p>First: know where your components come from. Use trusted sources. Use trusted vendors — people who build, check, sign and maintain their software for years. Sign your own images, and check signatures before you run anything.</p>
+<p>That lowers the risk a lot.</p>
+<p>But it does not remove it. xz came from a trusted project. It was in trusted distributions.</p>
+<p>So you need one more thing. You need to watch what your applications actually <em>do</em>.</p>
+<p>Because a clean scan is not a guarantee. A clean scan is a timestamp.</p></section>
+<section class="page" id="slide-3-what-s-watching" data-i="12" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 3:30</span></div><h2>Slide 3: what's watching</h2><div class="slidevis words"><span>Made of</span><span>Deployed</span><span>Talks to</span><span>Behaves</span><span>Acts</span></div><div class="do"><span class="tag">DO</span><span>Slide 3: "Made of → Deployed → Talks to → Behaves → Acts". Show one word at a time.</span></div>
+<p>So before I break anything, let me tell you what is watching this cluster.</p>
+<p>Imagine a tool that knows your applications better than the people who wrote them.</p>
+<div class="do"><span class="tag">DO</span><span>Show: Made of.</span></div>
+<p>It knows what each application is made of. Every library. Every package. And where it comes from — which registry, and if the image is signed. And it knows which parts have vulnerabilities. Not only on the day you built it. Every day.</p>
+<div class="do"><span class="tag">DO</span><span>Show: Deployed.</span></div>
+<p>It knows how each application was deployed. Which user. Which privileges. Which secrets it can read. If it can write files. If it is open to the internet.</p>
+<div class="do"><span class="tag">DO</span><span>Show: Talks to.</span></div>
+<p>It knows who each application talks to. Which services. Which namespaces. Which addresses on the internet. And also — who it has never talked to.</p>
+<div class="do"><span class="tag">DO</span><span>Show: Behaves.</span></div>
+<p>And it knows how each application behaves. Which programs it runs. Which files it changes. It learns what is normal for that one application.</p>
+<div class="do"><span class="tag">DO</span><span>Show: Acts.</span></div>
+<p>So when something changes, it knows. A program that never ran before. A new file that should not exist. A connection to a new place.</p>
+<p>It also knows the context. How exposed the application is. What it can reach. So it can tell you how serious the change is.</p>
+<p>And it can act. It can stop the workload. It can close the network. Fast — before a person even reads the alert.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>Today, we will test that.</p>
+<div class="do"><span class="tag">DO</span><span>Switch to the browser. No more slides — only one quick look back at slide 1 in Act 3.</span></div></section>
+<section class="page" id="demo-time" data-i="13" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 5:00</span></div><h2>Demo time</h2><div class="do"><span class="tag">DO</span><span>Before the talk, run <code>make web-terminal</code>. In the deck, the slide after "Let's test it." is the live demo: the five terminals, full screen. Click a terminal to type in it. While you type, the keyboard goes to the shell — change slides from the <b>presenter view</b> window, or click a window title bar first (the keyboard comes back to the slides).</span></div><p>That is the theory. Now let's test it.</p><p>On the left: the attacker. On the right: what RHACS sees, live. Watch the right side.</p></section>
+<section class="page" id="act-1-unhackable" data-i="14" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 5:00</span></div><h2>Act 1: Unhackable</h2><div class="do"><span class="tag">DO</span><span>Browser: the blog home page.</span></div>
+<p>This is our blog. The Unhackable Blog. Our marketing team chose the name. Not me.</p>
+<div class="do"><span class="tag">DO</span><span>Point at the third post.</span></div>
+<p>This post is about our newest feature.</p>
+<div class="do"><span class="tag">DO</span><span>Click Write.</span></div>
+<p>This is the editor. A writer pastes a text and clicks Check links —</p>
+<div class="do"><span class="tag">DO</span><span>Click Check links. Results appear, all green.</span></div>
+<p>— and the blog checks every link before it is published. It is useful. The writers love it. The team built it in one afternoon.</p>
+<p>Now let's check what the pipeline told us.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Vulnerability Management → Images without CVEs.</span></div>
+<p>First word: <strong>made of</strong>.</p>
+<p>This page shows images with no vulnerabilities. Here is our blog.</p>
+<div class="do"><span class="tag">DO</span><span>Click unhackable/blog:v1.</span></div>
+<p>Zero critical. Zero important. Zero moderate. Zero low. Nothing to fix.</p>
+<div class="do"><span class="tag">DO</span><span>Point at the labels at the top: registry, OS, "No signature found", scan time.</span></div>
+<p>It also shows where the image comes from. Which registry. Which operating system. And if it is signed. Ours is not signed. In a real production system, you should sign it — and check the signature before it runs.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Risk → blog.</span></div>
+<p>Second word: <strong>deployed</strong>.</p>
+<p>This is everything about the deployment that adds risk. The list is very short. Two writable folders. One secret. One port inside the cluster. That's all.</p>
+<p>No root. Read-only files. No extra privileges. No Kubernetes token. So even if someone gets in, there is no key to the cluster.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Violations, filtered to the namespace.</span></div>
+<p>And violations: none.</p>
+<div class="do"><span class="tag">DO</span><span>Turn to the audience.</span></div>
+<p>So the pipeline was right. If this was your application, you would ship it. Every check is green.</p>
+<p>So — is it secure?</p>
+<div class="do"><span class="tag">DO</span><span>Pause. Three full seconds.</span></div><section class="screens"><h3>On screen — backup screenshots</h3><blockquote class="key"><em>"The pipeline was right. 0 CVEs, hardened, lowest risk in the cluster. So — is it secure?"</em></blockquote>
+<div class="gallery"><figure><img loading="lazy" src="img/01-blog-home.png" alt="The Unhackable Blog"><figcaption>The Unhackable Blog</figcaption></figure> <figure><img loading="lazy" src="img/03-rhacs-images-without-cves.png" alt="RHACS — images without CVEs"><figcaption>RHACS — images without CVEs</figcaption></figure> <figure><img loading="lazy" src="img/05-rhacs-risk.png" alt="RHACS — risk: the blog is the lowest"><figcaption>RHACS — risk: the blog is the lowest</figcaption></figure> <figure><img loading="lazy" src="img/06-rhacs-violations-empty.png" alt="RHACS — Violations: empty"><figcaption>RHACS — Violations: empty</figcaption></figure></div></section></section>
+<section class="page" id="the-pivot" data-i="15" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 8:00</span></div><h2>The pivot</h2><p>Let's look at that link checker again. It was built in one afternoon. Power users wanted more than a yes/no, so it lets them attach a little <em>rule</em> to validate a link.</p>
+<p>How do you run a rule? With an embedded Go interpreter — a library called yaegi. It scans perfectly clean: zero CVEs. One line of go.mod — and the scanner stayed green.</p>
+<p>So the developer used it, and to make rules useful, handed it one more thing: the ability to run a command. When you submit a "rule", the blog evaluates it as code.</p>
+<p>That is a normal shortcut. Every team here has done something like it, under time pressure. It is fast. One clean library. Zero CVEs.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>And one big security hole.</p>
+<p>So what happens if the "link" I send is not a link — but a rule?</p></section>
+<section class="page" id="act-2-day-zero" data-i="16" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 8:30</span></div><h2>Act 2: Day zero</h2><div class="do"><span class="tag">DO</span><span>Terminal A, large font.</span></div>
+<pre><code>scripts/demo.sh act2</code></pre>
+<div class="do"><span class="tag">DO</span><span>The commands run. <code>id</code>, <code>uname</code>, <code>/etc/os-release</code> come back. Let people read.</span></div>
+<p>I just ran my own commands inside the application. From outside. Through the website. With one form.</p>
+<p>And this is not a CVE. There is no package to update. No security notice. Nobody in the world knows about it — except me.</p>
+<p>This is a zero-day. Our own zero-day. Tomorrow, it could be a library in your image. It could be a problem nobody will discover until next month. On the day of the attack, the scanner says zero. The scanner is right. And it does not help.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>Now a harder question. What if this was not a mistake?</p>
+<p>What if someone added it on purpose? A bad pull request. A changed library. A hacked build step.</p>
+<p>The code would look exactly the same. The scan would say zero. The review would see a small shortcut.</p>
+<p>From the code alone, you cannot see if this is a mistake or a backdoor. And no scanner can.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Violations.</span></div>
+<p>So — did anyone notice?</p>
+<div class="do"><span class="tag">DO</span><span>Point at "TDR – Unauthorized process in the Unhackable Blog", Critical.</span></div>
+<p>Yes. In seconds.</p>
+<div class="do"><span class="tag">DO</span><span>Click it.</span></div>
+<p>Here are my exact commands. <code>id</code>. <code>uname</code>. <code>cat</code>. <code>head</code>. In which container. As which user. At what time.</p>
+<p>This is the fourth word: <strong>behaves</strong>.</p>
+<p>RHACS has watched this application since it started. And this application runs exactly one program: itself. It checks links by itself. It runs rules inside itself. It never starts another program. So the normal list has one line. And we locked that list.</p>
+<p>So anything else is someone else, running code inside our container.</p>
+<p>And look at what the attacker used. <code>id</code>. <code>cat</code>. Normal Linux tools. Nothing an antivirus would call "bad". RHACS does not care. It does not need to know what an attack looks like. For a zero-day, nobody knows that. It only needs to know what normal looks like.</p>
+<p>And it does not care who wrote the code, or why. A mistake or a backdoor — to be useful to an attacker, it must <em>do</em> something. Run a program. Write a file. Open a connection. And that is exactly what RHACS watches.</p>
+<p>Remember how xz was found? Somebody noticed strange behavior. That was luck. This is not luck.</p><section class="screens"><h3>On screen — backup screenshots</h3><blockquote class="key"><em>"One clean dependency (yaegi, 0 CVEs). One evaluated rule. No scanner on earth reports this."</em></blockquote>
+<div class="gallery"><figure><img loading="lazy" src="img/08-term-act2.png" alt="Terminal — the link checker becomes RCE"><figcaption>Terminal — the link checker becomes RCE</figcaption></figure> <figure><img loading="lazy" src="img/09-rhacs-violations-act2.png" alt="RHACS — Unauthorized process violation"><figcaption>RHACS — Unauthorized process violation</figcaption></figure> <figure><img loading="lazy" src="img/10-rhacs-violation-process.png" alt="RHACS — the process that ran"><figcaption>RHACS — the process that ran</figcaption></figure></div></section></section>
+<section class="page" id="act-3-loot" data-i="17" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 12:00</span></div><h2>Act 3: Loot</h2><div class="do"><span class="tag">DO</span><span>Terminal A.</span></div>
+<pre><code>scripts/demo.sh act3</code></pre>
+<p>Now think like an attacker. You are inside. What do you do first?</p>
+<p>You look for passwords and keys.</p>
+<div class="do"><span class="tag">DO</span><span>The token check and environment check come back empty.</span></div>
+<p>And here, the hardening works. There is no Kubernetes token. There are no secrets in the environment. The pipeline did a good job.</p>
+<p>But wait —</p>
+<div class="do"><span class="tag">DO</span><span>The <code>.aws/credentials</code> file appears, then the keys.</span></div>
+<p>Cloud keys! In a hidden folder. An access key, a secret key, and a note about where the backups are. For an attacker, this is perfect.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>We put them there.</p>
+<p>These keys are fake. The application never reads this file. Never. So the only one who will ever read it is someone who should not be there.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Violations → TDR – Honeytoken touched.</span></div>
+<p>This is a honeytoken. A trap. It has no false alarms, because nobody normal touches it. The attacker took the bait. And here is the exact command.</p>
+<div class="do"><span class="tag">DO</span><span>Back to the terminal output.</span></div>
+<p>Next, the attacker goes further. Can they reach the Kubernetes API? Yes, it answers. And the payment service?</p>
+<div class="do"><span class="tag">DO</span><span>Point at the card data.</span></div>
+<p>Credit card numbers. From the payment service. Read by our blog.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>Now — remember the pipeline slide? And what was missing?</p>
+<div class="do"><span class="tag">DO</span><span>Quick switch to slide 1, or just say it.</span></div>
+<p>Build. Scan. Policy check. Approval. Deploy. Nothing about the network. Nothing that says who this application may talk to.</p>
+<p>There is no network policy. And in Kubernetes, the default is simple: everything can talk to everything. So our public blog can reach the payment service. It can reach the Kubernetes API. It can reach the whole internet.</p>
+<p>Nobody decided that. Nobody noticed it. That is a misconfiguration.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Violations → TDR – Unexpected network flow to payments-api.</span></div>
+<p>Third word: <strong>talks to</strong>.</p>
+<p>The payment service has a normal list of connections too. And it is empty. Nobody ever calls it. So the first call from the blog is clearly someone moving through your cluster — toward your most important data.</p>
+<div class="do"><span class="tag">DO</span><span>Network Graph.</span></div>
+<p>And here it is on the map. The blog, reaching the payments.</p><section class="screens"><h3>On screen — backup screenshots</h3><blockquote class="key"><em>"Not one step in the pipeline about who this app may talk to."</em></blockquote>
+<div class="gallery"><figure><img loading="lazy" src="img/11-term-act3.png" alt="Terminal — honeytoken + probe + lateral movement"><figcaption>Terminal — honeytoken + probe + lateral movement</figcaption></figure> <figure><img loading="lazy" src="img/12-rhacs-violation-honeytoken.png" alt="RHACS — Honeytoken touched"><figcaption>RHACS — Honeytoken touched</figcaption></figure> <figure><img loading="lazy" src="img/13-rhacs-violation-lateral.png" alt="RHACS — Unexpected network flow to payments-api"><figcaption>RHACS — Unexpected network flow to payments-api</figcaption></figure> <figure><img loading="lazy" src="img/14-rhacs-network-graph-act3.png" alt="RHACS — network graph: blog → payments is anomalous"><figcaption>RHACS — network graph: blog → payments is anomalous</figcaption></figure></div>
+<blockquote class="note">The <strong>Kubernetes API reconnaissance</strong> violation (the control-plane probe, beat 3c) fires here<br>too — it's a recent addition, so there's no capture of it yet; grab one next dry run.</blockquote></section></section>
+<section class="page" id="act-4-persistence-and-profit" data-i="18" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 17:00</span></div><h2>Act 4: Persistence and profit</h2><p>Until now, the attacker sent one command at a time, through the website. That is slow. An attacker wants a real shell.</p>
+<div class="do"><span class="tag">DO</span><span>Turn to Terminal B. Make it visible.</span></div>
+<p>This terminal is the attacker's computer. It is outside the cluster. Its name is <code>attacker.example.local</code>. It is waiting for a call.</p>
+<div class="do"><span class="tag">DO</span><span>Terminal B:</span></div>
+<pre><code>scripts/attacker.sh c2</code></pre>
+<div class="do"><span class="tag">DO</span><span>Terminal A:</span></div>
+<pre><code>scripts/demo.sh act4</code></pre>
+<div class="do"><span class="tag">DO</span><span>The reverse shell connects. Terminal B receives it.</span></div>
+<p>And the blog called the attacker. Out to the internet. Because nothing said it could not.</p>
+<div class="do"><span class="tag">DO</span><span>Type slowly in Terminal B:</span></div>
+<pre><code>id
+hostname
+ps</code></pre>
+<p>This is a live shell. Inside our "unhackable" application. Typed by a person on a computer outside our data center.</p>
+<p>Now the attacker wants money.</p>
+<div class="do"><span class="tag">DO</span><span>Terminal A continues: the miner is downloaded and started.</span></div>
+<p>The files of the application are read-only. So they cannot install anything there. But there is one folder they can write to: <code>/tmp</code>. So they download a crypto miner into <code>/tmp</code>, make it executable, and start it.</p>
+<div class="do"><span class="tag">DO</span><span>In Terminal B, type <code>ps</code> again. The miner is there.</span></div>
+<p>That is your cloud bill, mining money for someone else.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<div class="do"><span class="tag">DO</span><span>RHACS → Violations.</span></div>
+<p>So what did RHACS see? Everything.</p>
+<div class="do"><span class="tag">DO</span><span>Point down the list.</span></div>
+<p>A reverse shell tool. A crypto miner. A program outside the normal list.</p>
+<div class="do"><span class="tag">DO</span><span>Click TDR – Container drift.</span></div>
+<p>And look at this one. This is about <strong>files</strong>. The image never changes. The application writes to only one folder — its own cache. So when a new file appears in <code>/tmp</code> —</p>
+<div class="do"><span class="tag">DO</span><span>Point at "created", then "permission changed".</span></div>
+<p>— dropped into /tmp, and then made executable — someone is preparing tools inside the container. Download, make executable, run. We did not write a rule for "miner". We wrote a rule for "this container changed".</p>
+<div class="do"><span class="tag">DO</span><span>Network Graph. Click attacker.example.local.</span></div>
+<p>And here is the attacker on the map. Outside the cluster. Three connections from our blog: one download, one mining pool, one shell. All new. All flagged.</p>
+<div class="do"><span class="tag">DO</span><span>Turn to the audience.</span></div>
+<p>So, in about fifteen minutes: one unknown hole — a mistake or a backdoor, it does not matter — and one missing network setting. And with that, the attacker ran commands, looked for keys, read card data, opened a shell from the internet, and started mining.</p>
+<p>RHACS saw every step. In seconds.</p>
+<p>But there is a problem.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>Seeing is not stopping. The miner is still running. The shell is still open.</p><section class="screens"><h3>On screen — backup screenshots</h3><blockquote class="key"><em>"That's an interactive shell, inside your 'unhackable' app, from outside your cluster."</em></blockquote>
+<div class="gallery"><figure><img loading="lazy" src="img/15-term-act4.png" alt="Terminal — reverse shell + crypto miner"><figcaption>Terminal — reverse shell + crypto miner</figcaption></figure> <figure><img loading="lazy" src="img/16-term-c2.png" alt="Terminal — the C2 listener catches the shell"><figcaption>Terminal — the C2 listener catches the shell</figcaption></figure> <figure><img loading="lazy" src="img/18-rhacs-violations-act4.png" alt="RHACS — the Act 4 violations stack up"><figcaption>RHACS — the Act 4 violations stack up</figcaption></figure> <figure><img loading="lazy" src="img/19-rhacs-violation-miner.png" alt="RHACS — Crypto miner"><figcaption>RHACS — Crypto miner</figcaption></figure> <figure><img loading="lazy" src="img/20-rhacs-violation-drift.png" alt="RHACS — Container drift"><figcaption>RHACS — Container drift</figcaption></figure> <figure><img loading="lazy" src="img/21-rhacs-violation-revshell.png" alt="RHACS — Reverse shell tool executed"><figcaption>RHACS — Reverse shell tool executed</figcaption></figure> <figure><img loading="lazy" src="img/22-rhacs-network-graph-attacker.png" alt="RHACS — network graph: flows to the external attacker"><figcaption>RHACS — network graph: flows to the external attacker</figcaption></figure></div></section></section>
+<section class="page" id="act-5-respond" data-i="19" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 23:00</span></div><h2>Act 5: Respond</h2><p>Last word: <strong>acts</strong>.</p>
+<p>When you respond to an attack, you do two things, in order. First, limit the damage, now. Then, close the way in.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Policy Management, filter TDR.</span></div>
+<p>These are the rules that found the attack. We did not click them together in a screen. They are Kubernetes files, in Git. They go through the same review and pipeline as our code.</p>
+<p>Step one: limit the damage.</p>
+<div class="do"><span class="tag">DO</span><span>Terminal A:</span></div>
+<pre><code>scripts/demo.sh act5</code></pre>
+<p>I am changing these rules from "tell me" to "act". If this application runs anything outside its normal list, kill the pod.</p>
+<div class="do"><span class="tag">DO</span><span>Enforcement on. The attacker comes back with <code>id</code>.</span></div>
+<p>The attacker comes back. They run a command —</p>
+<div class="do"><span class="tag">DO</span><span>Point at "pod KILLED by RHACS → replaced by clean …".</span></div>
+<p>— and the pod is gone.</p>
+<div class="do"><span class="tag">DO</span><span>Point at Terminal B.</span></div>
+<p>And look at the attacker's shell. Silent. Dead. Nobody is on the other side anymore.</p>
+<p>Let's think about what happened. We did not patch anything. We have not fixed the bug yet. RHACS removed the hacked pod. Kubernetes started a new, clean pod from the original image, in a few seconds. The miner is gone. The files in <code>/tmp</code> are gone. Everything the attacker built is gone.</p>
+<p>And every time they try again, the same thing happens. Every command costs them the pod.</p>
+<p>So the damage is now limited to one command. And we have time.</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>And time is what we were missing. Between "someone found the hole" and "the fix is in production", there is a gap. Hours. Sometimes days. With a zero-day, you don't even know the gap has started. This is how you stay safe during that gap.</p>
+<p>Step two: now that we have time, close the way in. And fix the misconfiguration.</p>
+<div class="do"><span class="tag">DO</span><span>Act 5 continues: the NetworkPolicy is applied.</span></div>
+<p>RHACS watched this application the whole time. So we know what it really needs: DNS, and the internet on the web ports. Nothing else. So that is all it gets.</p>
+<div class="do"><span class="tag">DO</span><span>The last call is made from inside the application itself — no new program. It times out.</span></div>
+<p>This last call is important. It does not start a new program. It runs inside the application itself. So the kill rule has nothing to see. But the network policy does not care how. The connection is not allowed. It times out. And the payment service now accepts no connections at all.</p>
+<p>The kill stopped this attacker. The network policy stops the next one, before the first packet leaves.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Violations → TDR – Unauthorized process → Enforcement tab.</span></div>
+<p>And it is all recorded. "Kill Pod" — once for every attempt.</p><section class="screens"><h3>On screen — backup screenshots</h3><blockquote class="key"><em>"The kill stopped this attacker. The NetworkPolicy stops the next one before the first packet leaves."</em></blockquote>
+<div class="gallery"><figure><img loading="lazy" src="img/28-rhacs-policy-enforcement.png" alt="RHACS — Kill Pod enforcement turned on"><figcaption>RHACS — Kill Pod enforcement turned on</figcaption></figure> <figure><img loading="lazy" src="img/25-term-act5.png" alt="Terminal — the attacker's command kills the pod"><figcaption>Terminal — the attacker's command kills the pod</figcaption></figure> <figure><img loading="lazy" src="img/26-term-c2-dead.png" alt="Terminal — the reverse shell dies"><figcaption>Terminal — the reverse shell dies</figcaption></figure> <figure><img loading="lazy" src="img/30-rhacs-violation-enforcement-detail.png" alt="RHACS — the enforcement, logged"><figcaption>RHACS — the enforcement, logged</figcaption></figure></div></section></section>
+<section class="page" id="act-6-fix-forward" data-i="20" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 29:00</span></div><h2>Act 6: Fix forward</h2><p>Now, finally, let's fix the real bug.</p>
+<div class="do"><span class="tag">DO</span><span>Show the diff of <code>linkcheck_v1.go</code> → <code>linkcheck_v2.go</code>.</span></div>
+<p>This is the old code. "Built in one afternoon." And here is the problem, in two lines: take the writer's "rule", and run it as code — with the power to start programs.</p>
+<p>And this is the fix. No more rules. Check that the link is a real web address. Use a proper web client. Nothing is run as code. No extra programs. Nothing for an attacker to use.</p>
+<p>We did not have to guess where the problem was. RHACS showed us which feature was attacked, how, and from where. The fix is about ten lines.</p>
+<div class="do"><span class="tag">DO</span><span>Terminal A:</span></div>
+<pre><code>scripts/demo.sh act6</code></pre>
+<div class="do"><span class="tag">DO</span><span>Version 2 starts. The scan still says 0 CVEs. The attack now returns only "not a valid http(s) URL".</span></div>
+<p>Version two. Still zero CVEs. And the attack is now rejected: it is not a valid web address.</p>
+<p>And remember: runtime security did not replace the fix. It kept us safe until the fix was ready. That is its job.</p><section class="screens"><h3>On screen — backup screenshots</h3><blockquote class="key"><em>"Runtime didn't replace patching. It kept us safe until the patch was ready."</em></blockquote>
+<div class="gallery"><figure><img loading="lazy" src="img/31-term-diff.png" alt="Terminal — v1 → v2 diff: no shell, native HTTP client"><figcaption>Terminal — v1 → v2 diff: no shell, native HTTP client</figcaption></figure> <figure><img loading="lazy" src="img/32-term-act6.png" alt="Terminal — v2 live, the exploit is dead"><figcaption>Terminal — v2 live, the exploit is dead</figcaption></figure> <figure><img loading="lazy" src="img/33-blog-v2-footer.png" alt="The blog, v2"><figcaption>The blog, v2</figcaption></figure> <figure><img loading="lazy" src="img/34-rhacs-image-blog-v2.png" alt="RHACS — v2 image: still zero CVEs"><figcaption>RHACS — v2 image: still zero CVEs</figcaption></figure></div></section></section>
+<section class="page" id="the-tour" data-i="21" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 32:00</span></div><h2>The tour</h2><p>Let's look back at what we saw. It is all still here.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Violations, filtered to <code>unhackable</code>.</span></div>
+<p>One attack. Many alerts. Programs, files, keys, network. Each one shows the command, the user and the time. This is not just an alert. The investigation is already done for you.</p>
+<div class="do"><span class="tag">DO</span><span>Network Graph → blog → attacker.example.local.</span></div>
+<p>Here is the whole attack as a map. Where it came from. Where it tried to go. Who the blog talked to for the first time.</p>
+<div class="do"><span class="tag">DO</span><span>RHACS → Risk → blog.</span></div>
+<p>Remember the application with the lowest risk in the cluster?</p>
+<div class="do"><span class="tag">DO</span><span>If the ranking moved, point at it. If not, go straight to the next stop.</span></div>
+<div class="do"><span class="tag">DO</span><span>RHACS → Vulnerability Management → blog:v1.</span></div>
+<p>And this page.</p>
+<div class="do"><span class="tag">DO</span><span>Pause. Let people look.</span></div>
+<p>Still zero. It was right the whole time. And it saw nothing.</p>
+<div class="do"><span class="tag">DO</span><span>Turn to the audience.</span></div>
+<p>Let's go back to the five words.</p>
+<p><strong>Made of</strong> — zero CVEs, and where it comes from. This is where most teams stop.</p>
+<p><strong>Deployed</strong> — hardened. And that helped. No token. Nothing real to steal.</p>
+<p><strong>Talks to</strong> — the call to payments. The calls to the attacker. The missing network policy.</p>
+<p><strong>Behaves</strong> — every command, every file. The zero-day — or the hidden backdoor.</p>
+<p><strong>Acts</strong> — the kill, and the network policy.</p>
+<p>One product. One console. The same agents you already use for vulnerability scanning. Most teams only use the first word. The other four stay dark.</p></section>
+<section class="page" id="the-close-2" data-i="22" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 37:00</span></div><h2>The close</h2><div class="do"><span class="tag">DO</span><span>Step away from the keyboard. Leave the network graph on screen, or show a black screen.</span></div>
+<p>So, what should you take home?</p>
+<p>First: know where your components come from. Use trusted sources and trusted vendors. Sign and check what you run. Scan everything. Keep doing all of it.</p>
+<p>But remember: your pipeline can only check what you know.</p>
+<p>It cannot check what nobody knows yet. It cannot check what nobody noticed. And it cannot check what somebody hid.</p>
+<p>So here are three questions for your team, on Monday morning.</p>
+<p>Do you know which programs your containers should run?</p>
+<p>Would you know, in one minute, if one of them ran something else?</p>
+<p>And how fast could you stop it — without waking anyone up?</p>
+<div class="do"><span class="tag">DO</span><span>Pause.</span></div>
+<p>A clean scan is a timestamp.</p>
+<p><em>[Click.]</em> See it, and stop it, while it happens. That is what you just saw — and you already have the tool to do it.</p>
+<p><em>[Click.]</em> And fix it, before the hole is public. Many holes are found by researchers long before anyone attacks with them. Imagine having the patched library in your hands before the rest of the world even knows the hole exists.</p>
+<p>Thank you.</p>
+<div class="do"><span class="tag">DO</span><span>Stop. No summary slide. Take questions.</span></div></section>
+<section class="page" id="questions-you-ll-get" data-i="23" hidden><div class="crumb">Q&amp;A </div><h2>Questions you'll get</h2><p>Short answers. Say the first sentence, then stop. If they want more, they will ask.</p>
+<div class="tw"><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody><tr><td><em>"Isn't this just a bad developer?"</em></td><td>No. It was a normal shortcut, made under time pressure, and it passed every check. If it was a library with an unknown bug, we would be in the same place. You cannot find unknown problems in advance.</td></tr><tr><td><em>"We only use trusted vendors and trusted libraries."</em></td><td>Good — please keep doing that. It is one of the best things you can do. But trusted sources lower the risk. They do not remove it. xz came from a trusted project. That is why you also watch behavior.</td></tr><tr><td><em>"We sign our images and create SBOMs."</em></td><td>Keep doing it. A signature proves who built the image. An SBOM shows what is inside. Neither proves that the code is honest. The SolarWinds backdoor was in a correctly signed update.</td></tr><tr><td><em>"How does RHACS catch a supply-chain backdoor?"</em></td><td>By behavior. A backdoor that does nothing is harmless. When it runs a program, writes a file or calls home, that is outside the normal list. It does not matter who wrote the code.</td></tr><tr><td><em>"We have a WAF."</em></td><td>Keep it. A WAF may block this request. Maybe not the next one. And it has no rule for a zero-day. RHACS does not care how the attacker got in. It watches what happens inside.</td></tr><tr><td><em>"Our images are distroless."</em></td><td>Good, keep doing that. Fewer tools in the image helps. But it does not fix the code, and it does not fix the network.</td></tr><tr><td><em>"We already have EDR on the servers."</em></td><td>EDR sees programs on a machine. RHACS sees them with context: which application, which image, what is normal for it, who it talks to. And it acts in Kubernetes terms: kill the pod, apply a network policy.</td></tr><tr><td><em>"Why not have a network policy from day one?"</em></td><td>You should. That is the misconfiguration part of the story. The hard part is knowing what the policy should say. RHACS learned what the application really needs — and we used that.</td></tr><tr><td><em>"Kill Pod will break production."</em></td><td>It kills one pod. Kubernetes starts a new, clean one in a few seconds. And you only turn it on when you know what normal looks like. First alert. Later, act. Like in the demo.</td></tr><tr><td><em>"Does the attacker get anything before the kill?"</em></td><td>For less than one second. We measured it: about seven tenths of a second. That is why step two is the network policy. It removes even that.</td></tr><tr><td><em>"What can trigger the kill?"</em></td><td>Programs and files. Network alerts do not kill — you answer them with a network policy. That is why there are two steps.</td></tr><tr><td><em>"What if the attacker uses port 443, like normal web traffic?"</em></td><td>Then this network policy lets it through, because the link checker needs the internet. You still get the alert for the new destination. In production, add an allow-list of destinations — an egress firewall or a proxy.</td></tr><tr><td><em>"How long does it take to learn what is normal?"</em></td><td>RHACS learns by watching. You can also declare the normal list yourself, like we did, and lock it on day one. Start with the applications that matter most.</td></tr><tr><td><em>"How much work is this for my team?"</em></td><td>The rules are files in Git, reviewed like code. Start with alerts only. Turn on automatic actions where the normal list is stable.</td></tr><tr><td><em>"Is this a separate product?"</em></td><td>No. It is part of RHACS. The same console and the same cluster components you already use for vulnerability scanning.</td></tr><tr><td><em>"What about false alarms?"</em></td><td>The normal list is per application, so it is very precise. A trap file, like the honeytoken, has no false alarms at all: nobody normal ever touches it.</td></tr></tbody></table></div></section>
+<section class="page" id="q-a-longer-answers" data-i="24" hidden><div class="crumb">Q&amp;A </div><h2>Q&amp;A — longer answers</h2><p><strong>"Isn't this just a bad developer?"</strong> "No. It is a normal shortcut, made under time pressure, and it passed every check. And if it was a library with an unknown bug, we would be in the same place. You cannot find unknown problems in advance."</p>
+<p><strong>"We only use trusted vendors and trusted libraries."</strong> "Good — please keep doing that. It is one of the best things you can do. But trusted sources lower the risk; they don't remove it. xz came from a trusted project. That is why you also watch behavior."</p>
+<p><strong>"We sign our images and create SBOMs."</strong> "Keep doing it. A signature proves who built the image. An SBOM shows what is inside. But neither proves the code is honest. The SolarWinds backdoor was in a correctly signed update."</p>
+<p><strong>"How does RHACS catch a supply-chain backdoor?"</strong> "By behavior. A backdoor that does nothing is harmless. When it runs a program, writes a file or calls home, that is outside the normal list. It does not matter who wrote the code."</p>
+<p><strong>"We have a WAF."</strong> "A WAF may block this attack. Maybe not the next one. And it has no rule for a zero-day. RHACS does not care how the attacker got in. It watches what they do inside."</p>
+<p><strong>"Our images are distroless."</strong> "Good, keep doing that. But the attacker in the demo downloaded their own tools. Fewer tools in the image helps. It does not fix the code, and it does not fix the network."</p>
+<p><strong>"Why not have a network policy from day one?"</strong> "You should. That is the misconfiguration part of the story. The hard part is knowing what the policy should say. RHACS learned what the application really needs — and we used that."</p>
+<p><strong>"Kill Pod will break production."</strong> "It kills one pod. Kubernetes starts a new one in a few seconds. And you only turn it on when you know what normal looks like. First alert, later enforce. Like in the demo."</p>
+<p><strong>"Does the attacker get a connection before the kill?"</strong> "Yes, for less than one second. We measured it: about seven tenths of a second. That is why step two is the network policy. It removes even that."</p>
+<p><strong>"What can trigger the kill?"</strong> "Programs and files. Network alerts don't kill — you answer them with a network policy. That is why there are two steps."</p>
+<p><strong>"We already have EDR on the nodes."</strong> "EDR sees programs on a machine. RHACS sees them with context: which application, which image, what is normal for it, who it talks to. And it responds in Kubernetes terms."</p></section>
+
+<div class="pager"><button id="prev"></button><button id="next" class="next"></button></div>
+<div class="hint">← → move · p slideshow · s presenter view · / search</div>
+</main>
+<div id="zoom"><img alt=""></div>
+
+<div id="deck" hidden role="dialog" aria-label="Slides">
+  <div class="stage" id="stage">
+<section class="slide title" data-notes="slide-1-the-pipeline"><div class="rbar"></div><img class="rhlogo" src="img/rh-logo-on-dark.svg" alt="Red Hat"><div class="kicker">Red Hat Advanced Cluster Security</div><h1>Threat Detection<br>and Response</h1><p class="lead">Zero CVEs. Still breached.<br>Caught in seconds.</p><div class="byline">A live demo</div></section>
+<section class="slide shotslide" data-notes="slide-1-the-pipeline"><div class="kicker">The promise</div><h2>Every step is green.</h2><img class="shot" src="slides/release.png" alt="A release pipeline where every step is green"><div class="foot"><span>Red Hat Advanced Cluster Security</span><span>2</span></div></section>
+<section class="slide statement" data-notes="slide-2-the-timestamp"><p class="big">A clean scan is a <em>timestamp</em>.</p><p class="lead f">True at 9:00 this morning.<br>Is it still true now?</p><div class="foot"><span>Red Hat Advanced Cluster Security</span><span>3</span></div></section>
+<section class="slide " data-notes="slide-2-the-timestamp"><div class="kicker">The problem</div><h2>Three things no scanner can see</h2><div class="cols"><div class="card f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M18 23.38a.63.63 0 0 0-.62.63.63.63 0 0 0 1.25 0 .63.63 0 0 0-.63-.63Zm0-2.76a.62.62 0 0 1-.62-.62v-8a.62.62 0 1 1 1.24 0v8a.62.62 0 0 1-.62.62Z"/><path d="M18 31.62A11.63 11.63 0 0 1 6.38 20V7.34a.61.61 0 0 1 .49-.61l11-2.34a.57.57 0 0 1 .26 0l11 2.34a.61.61 0 0 1 .49.61V20A11.63 11.63 0 0 1 18 31.62ZM7.62 7.84V20a10.38 10.38 0 0 0 20.76 0V7.84L18 5.64Z"/></svg><h3>What nobody knows yet</h3><p>Zero-days. No CVE yet, so there is nothing to find.</p></div><div class="card f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M32.36 15.29a.62.62 0 0 0-.61-.51h-3.34a10.58 10.58 0 0 0-.74-1.78L30 10.6a.62.62 0 0 0 .08-.79A14.72 14.72 0 0 0 26.3 6a.62.62 0 0 0-.8.08l-2.35 2.31a11 11 0 0 0-1.84-.77V4.26a.62.62 0 0 0-.51-.61 14.25 14.25 0 0 0-5.41 0 .62.62 0 0 0-.52.62v3.29a10.8 10.8 0 0 0-1.9.77L10.6 6a.63.63 0 0 0-.79-.08A14.72 14.72 0 0 0 6 9.7a.62.62 0 0 0 .08.8l2.35 2.35a10.48 10.48 0 0 0-.8 1.93H4.25a.62.62 0 0 0-.61.51 14.25 14.25 0 0 0 0 5.42.62.62 0 0 0 .61.51h3.34a10.48 10.48 0 0 0 .8 1.93L6 25.5a.62.62 0 0 0-.08.8 14.72 14.72 0 0 0 3.85 3.82.62.62 0 0 0 .83-.12l2.4-2.33a10.8 10.8 0 0 0 1.9.77v3.32a.62.62 0 0 0 .52.62 14.49 14.49 0 0 0 5.41 0 .62.62 0 0 0 .51-.61v-3.39a11 11 0 0 0 1.84-.77L25.5 30a.62.62 0 0 0 .8.08 14.72 14.72 0 0 0 3.82-3.85.62.62 0 0 0-.12-.83L27.67 23a10.58 10.58 0 0 0 .74-1.81h3.34a.62.62 0 0 0 .61-.51 14.25 14.25 0 0 0 0-5.42ZM31.22 20h-3.28a.62.62 0 0 0-.6.47 9.78 9.78 0 0 1-1 2.39.62.62 0 0 0 .1.75l2.33 2.33A13.13 13.13 0 0 1 26 28.7l-2.3-2.31a.64.64 0 0 0-.77-.1 9.49 9.49 0 0 1-2.41 1 .63.63 0 0 0-.46.61v3.29a12.69 12.69 0 0 1-3.94 0V28a.62.62 0 0 0-.47-.6 9.92 9.92 0 0 1-2.48-1 .62.62 0 0 0-.75.1l-2.33 2.33A13.13 13.13 0 0 1 7.3 26l2.31-2.32a.62.62 0 0 0 .1-.76 9.27 9.27 0 0 1-1.05-2.49.62.62 0 0 0-.6-.47H4.78a12.21 12.21 0 0 1 0-3.94h3.28a.62.62 0 0 0 .6-.47 9.27 9.27 0 0 1 1.05-2.49.64.64 0 0 0-.1-.77L7.3 10a13.13 13.13 0 0 1 2.79-2.78l2.33 2.33a.62.62 0 0 0 .75.1 9.92 9.92 0 0 1 2.48-1 .62.62 0 0 0 .47-.6V4.77a12.69 12.69 0 0 1 3.94 0v3.31a.63.63 0 0 0 .46.61 9.49 9.49 0 0 1 2.41 1 .64.64 0 0 0 .77-.1L26 7.3a13.13 13.13 0 0 1 2.78 2.79l-2.33 2.33a.62.62 0 0 0-.1.75 9.78 9.78 0 0 1 1 2.39.62.62 0 0 0 .6.47h3.28a12.21 12.21 0 0 1 0 3.94Z"/><path d="M18 13.38A4.62 4.62 0 1 0 22.62 18 4.62 4.62 0 0 0 18 13.38Zm0 8A3.38 3.38 0 1 1 21.38 18 3.39 3.39 0 0 1 18 21.38Z"/></svg><h3>What nobody noticed</h3><p>Misconfiguration. It is not on any checklist.</p></div><div class="card f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M21.69 29.15 18 31.28 6.5 24.64V11.36L18 4.72l11.5 6.64V22a.63.63 0 0 0 1.25 0V11a.63.63 0 0 0-.31-.54l-12.13-7a.62.62 0 0 0-.62 0l-12.13 7a.63.63 0 0 0-.31.54v14a.63.63 0 0 0 .31.54l12.13 7a.64.64 0 0 0 .62 0l4-2.31a.62.62 0 0 0-.62-1.08Z"/><path d="M24.38 29.09A3.64 3.64 0 0 0 28 32.72a3.54 3.54 0 0 0 1.27-.24l-4.9-4.91Zm7.34 2.29-.55-.55a3.67 3.67 0 0 0 .46-1.74v-3.45a.62.62 0 0 0-.49-.61l-3-.64a.57.57 0 0 0-.26 0l-2.6.55-.38-.38a.62.62 0 0 0-.88.88l.36.36 6 6 .46.45a.63.63 0 0 0 .88 0 .63.63 0 0 0 0-.87Z"/></svg><h3>What somebody hid</h3><p>Supply-chain attacks. Scanned, signed, and still bad.</p></div></div><p class="note f">Every CVE was a zero-day once.</p><div class="foot"><span>Red Hat Advanced Cluster Security</span><span>4</span></div></section>
+<section class="slide " data-notes="slide-2-the-timestamp"><div class="kicker">What helps</div><h2>Know where your components come from.</h2><ul class="ticks icons"><li><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M23 24.38H5.62V11.62H9c.35 0 .62-.28.62-.62V7.62h18.76V14c0 .82 1.25.82 1.25 0V7c0-.34-.28-.62-.62-.62H9s-.05.01-.08.02c-.03 0-.05 0-.08.02-.11.03-.2.07-.28.15l-4 4a.76.76 0 0 0-.15.28c0 .03-.01.05-.02.08 0 .03-.02.05-.02.08v14c0 .34.28.62.62.62H23c.82 0 .82-1.25 0-1.25ZM8.38 8.51v1.87H6.51l1.87-1.87Z"/><path d="M31.62 20.11c0-2-1.63-3.62-3.62-3.62-3.13-.07-4.82 3.93-2.62 6.11V29c0 .25.15.48.39.58.23.1.5.04.68-.13l1.56-1.56 1.56 1.56c.18.18.45.23.68.13.23-.1.39-.32.39-.58v-6.4c.62-.65 1-1.52 1-2.49ZM28 17.73c3.13.08 3.13 4.67 0 4.75-3.13-.08-3.13-4.67 0-4.75Zm.44 8.82a.628.628 0 0 0-.88 0l-.93.93v-4.03c.84.36 1.91.36 2.75 0v4.03l-.93-.93ZM19.62 18c0-.34-.28-.62-.62-.62H9c-.82 0-.82 1.25 0 1.25h10c.35 0 .62-.28.62-.62ZM9 20.38c-.82 0-.82 1.25 0 1.25h6c.82 0 .82-1.25 0-1.25H9Z"/></svg>Trusted sources and trusted vendors</li><li><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M21.69 29.15 18 31.28 6.5 24.64V11.36L18 4.72l11.5 6.64V22a.63.63 0 0 0 1.25 0V11a.63.63 0 0 0-.31-.54l-12.13-7a.62.62 0 0 0-.62 0l-12.13 7a.63.63 0 0 0-.31.54v14a.63.63 0 0 0 .31.54l12.13 7a.64.64 0 0 0 .62 0l4-2.31a.62.62 0 0 0-.62-1.08Z"/><path d="m31.13 25-3-.64a.57.57 0 0 0-.26 0l-3 .64a.61.61 0 0 0-.49.61v3.45a3.62 3.62 0 1 0 7.24 0v-3.42a.61.61 0 0 0-.49-.64Z"/></svg>Signed images, verified before they run</li><li><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M31 4.38H5a.62.62 0 0 0-.62.62v20a.76.76 0 0 0 .18.44l6 6a.67.67 0 0 0 .44.18h20a.62.62 0 0 0 .62-.62V5a.62.62 0 0 0-.62-.62Zm-.62 1.24v3.76h-4.76V8a.62.62 0 0 0-1.24 0v1.38H11.62V8a.62.62 0 1 0-1.24 0v1.38H5.62V5.62Zm-20 23.87-3.87-3.87h3.87Zm1.24.89V25a.62.62 0 0 0-.62-.62H5.62V10.62h4.76V12a.62.62 0 0 0 1.24 0v-1.38h12.76V12a.62.62 0 1 0 1.24 0v-1.38h4.76v19.76Z"/></svg>Scan every day, not only at build time</li></ul><p class="punch f">It lowers the risk. <em>It does not remove it.</em></p><div class="foot"><span>Red Hat Advanced Cluster Security</span><span>5</span></div></section>
+<section class="slide " data-notes="slide-3-what-s-watching"><div class="kicker">What is watching</div><h2>One tool that knows every application</h2><div class="words"><div class="word f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="m30.44 10.46-12.13-7a.62.62 0 0 0-.62 0l-12.13 7a.63.63 0 0 0-.31.54v14a.63.63 0 0 0 .31.54l12.13 7a.64.64 0 0 0 .62 0l12.13-7a.63.63 0 0 0 .31-.54V11a.63.63 0 0 0-.31-.54Zm-.94 14.18L18 31.28 6.5 24.64V11.36L18 4.72l11.5 6.64Z"/><path d="M16.76 20.79a.62.62 0 0 0 1.22.26l1.24-5.84A.62.62 0 0 0 18 15ZM21 21a.63.63 0 0 0 .88 0l2.56-2.56a.63.63 0 0 0 .18-.45.62.62 0 0 0-.18-.44L21.88 15c-.57-.58-1.47.32-.88.88L23.12 18 21 20.11a.62.62 0 0 0 0 .89Zm-6-6a.61.61 0 0 0-.88 0l-2.56 2.56a.62.62 0 0 0-.18.44.63.63 0 0 0 .18.45L14.12 21a.63.63 0 0 0 .88-.89L12.88 18 15 15.87a.61.61 0 0 0 0-.87Z"/></svg><h3>Made of</h3><p>Libraries<br>Packages<br>Where it comes from</p></div><div class="word f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="m24.31 14-6-3.47a.62.62 0 0 0-.62 0l-6 3.47a.6.6 0 0 0-.31.54v6.92a.6.6 0 0 0 .31.54l6 3.47a.64.64 0 0 0 .62 0l6-3.47a.6.6 0 0 0 .31-.54v-6.92a.6.6 0 0 0-.31-.54Zm-.93 7.1L18 24.21l-5.38-3.11v-6.2L18 11.79l5.38 3.11Z"/><path d="M18 3.38A14.62 14.62 0 1 0 32.62 18 14.64 14.64 0 0 0 18 3.38Zm0 28A13.38 13.38 0 1 1 31.38 18 13.39 13.39 0 0 1 18 31.38Z"/></svg><h3>Deployed</h3><p>User<br>Privileges<br>Secrets<br>Exposure</p></div><div class="word f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M27 24.375c-.497 0-.957.147-1.353.387l-4.685-4.684c.415-.59.663-1.304.663-2.078 0-.044-.011-.085-.013-.129l2.061-.438A3.628 3.628 0 0 0 27 19.625c1.999 0 3.625-1.626 3.625-3.625S28.999 12.375 27 12.375 23.375 14.001 23.375 16c0 .073.017.142.022.214l-2.04.433a3.63 3.63 0 0 0-2.122-2.041l.848-3.99A2.624 2.624 0 0 0 22.625 8c0-1.447-1.178-2.625-2.625-2.625S17.375 6.553 17.375 8a2.62 2.62 0 0 0 1.486 2.354l-.855 4.022-.006-.001c-.774 0-1.488.248-2.078.663l-3.96-3.96c.415-.59.663-1.304.663-2.078 0-1.999-1.626-3.625-3.625-3.625S5.375 7.001 5.375 9 7 12.625 9 12.625c.774 0 1.488-.248 2.078-.663l3.96 3.96A3.597 3.597 0 0 0 14.375 18c0 .044.011.085.013.129l-3.076.654A2.617 2.617 0 0 0 9 17.375c-1.447 0-2.625 1.178-2.625 2.625S7.553 22.625 9 22.625s2.625-1.178 2.625-2.625v-.006l3.017-.641a3.638 3.638 0 0 0 1.89 1.955l-.441 2.076c-.031 0-.06-.009-.091-.009-2 0-3.625 1.626-3.625 3.625S14 30.625 16 30.625 19.625 29 19.625 27c0-1.534-.96-2.84-2.309-3.369l.432-2.031c.085.005.166.025.252.025.774 0 1.488-.248 2.078-.663l4.684 4.685c-.24.396-.387.856-.387 1.353 0 1.447 1.178 2.625 2.625 2.625s2.625-1.178 2.625-2.625-1.178-2.625-2.625-2.625Zm0-10.75c1.31 0 2.375 1.065 2.375 2.375S28.31 18.375 27 18.375 24.625 17.31 24.625 16 25.69 13.625 27 13.625ZM18.625 8c0-.758.617-1.375 1.375-1.375s1.375.617 1.375 1.375S20.758 9.375 20 9.375 18.625 8.758 18.625 8ZM9 11.375c-1.31 0-2.375-1.065-2.375-2.375S7.69 6.625 9 6.625 11.375 7.69 11.375 9 10.31 11.375 9 11.375Zm0 10c-.758 0-1.375-.617-1.375-1.375S8.242 18.625 9 18.625s1.375.617 1.375 1.375S9.758 21.375 9 21.375ZM18.375 27c0 1.31-1.065 2.375-2.375 2.375S13.625 28.31 13.625 27 14.69 24.625 16 24.625 18.375 25.69 18.375 27Zm-2.75-9c0-1.31 1.065-2.375 2.375-2.375S20.375 16.69 20.375 18 19.31 20.375 18 20.375 15.625 19.31 15.625 18ZM27 28.375c-.758 0-1.375-.617-1.375-1.375s.617-1.375 1.375-1.375 1.375.617 1.375 1.375-.617 1.375-1.375 1.375Z"/></svg><h3>Talks to</h3><p>Services<br>Namespaces<br>The internet</p></div><div class="word f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M32.52 17.65c-6.74-10.18-22.3-10.18-29 0a.64.64 0 0 0 0 .7c6.74 10.18 22.3 10.18 29 0a.64.64 0 0 0 0-.7ZM18 24.78A16.31 16.31 0 0 1 4.76 18C11.05 9 25 9 31.24 18A16.31 16.31 0 0 1 18 24.78Z"/><path d="M18 13.38c-6.11.19-6.11 9 0 9.25 6.11-.2 6.11-9.06 0-9.25Zm0 8a3.38 3.38 0 0 1 0-6.75 3.38 3.38 0 0 1 0 6.75Z"/></svg><h3>Behaves</h3><p>Programs<br>Files<br>What is normal</p></div><div class="word f act"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="m29.13 6.73-11-2.34a.57.57 0 0 0-.26 0l-11 2.34a.61.61 0 0 0-.49.61V20a11.62 11.62 0 0 0 23.24 0V7.34a.61.61 0 0 0-.49-.61ZM18 5.64l10.38 2.2v5.61L7.62 17.86v-10Zm0 24.74A10.4 10.4 0 0 1 7.62 20v-.86l20.76-4.41V20A10.4 10.4 0 0 1 18 30.38Z"/></svg><h3>Acts</h3><p>Stops the workload<br>Closes the network</p></div></div><div class="foot"><span>Red Hat Advanced Cluster Security</span><span>6</span></div></section>
+<section class="slide title" data-notes="demo-time"><div class="rbar"></div><div class="kicker">Demo</div><h1>Let's test it.</h1><p class="lead">One application. Zero CVEs. Every check green.</p><div class="byline">Left: the attacker &nbsp;·&nbsp; Right: what RHACS sees</div></section>
+<section class="slide term" data-notes="act-1-unhackable"><div class="termph"><span>Live demo terminals</span></div></section>
+<section class="slide " data-notes="the-tour"><div class="kicker">What we saw</div><h2>One attack. Five words.</h2><div class="recap"><div class="row f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="m30.44 10.46-12.13-7a.62.62 0 0 0-.62 0l-12.13 7a.63.63 0 0 0-.31.54v14a.63.63 0 0 0 .31.54l12.13 7a.64.64 0 0 0 .62 0l12.13-7a.63.63 0 0 0 .31-.54V11a.63.63 0 0 0-.31-.54Zm-.94 14.18L18 31.28 6.5 24.64V11.36L18 4.72l11.5 6.64Z"/><path d="M16.76 20.79a.62.62 0 0 0 1.22.26l1.24-5.84A.62.62 0 0 0 18 15ZM21 21a.63.63 0 0 0 .88 0l2.56-2.56a.63.63 0 0 0 .18-.45.62.62 0 0 0-.18-.44L21.88 15c-.57-.58-1.47.32-.88.88L23.12 18 21 20.11a.62.62 0 0 0 0 .89Zm-6-6a.61.61 0 0 0-.88 0l-2.56 2.56a.62.62 0 0 0-.18.44.63.63 0 0 0 .18.45L14.12 21a.63.63 0 0 0 .88-.89L12.88 18 15 15.87a.61.61 0 0 0 0-.87Z"/></svg><b>Made of</b><span>Zero CVEs. Still zero.</span></div><div class="row f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="m24.31 14-6-3.47a.62.62 0 0 0-.62 0l-6 3.47a.6.6 0 0 0-.31.54v6.92a.6.6 0 0 0 .31.54l6 3.47a.64.64 0 0 0 .62 0l6-3.47a.6.6 0 0 0 .31-.54v-6.92a.6.6 0 0 0-.31-.54Zm-.93 7.1L18 24.21l-5.38-3.11v-6.2L18 11.79l5.38 3.11Z"/><path d="M18 3.38A14.62 14.62 0 1 0 32.62 18 14.64 14.64 0 0 0 18 3.38Zm0 28A13.38 13.38 0 1 1 31.38 18 13.39 13.39 0 0 1 18 31.38Z"/></svg><b>Deployed</b><span>Hardened. Nothing real to steal.</span></div><div class="row f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M27 24.375c-.497 0-.957.147-1.353.387l-4.685-4.684c.415-.59.663-1.304.663-2.078 0-.044-.011-.085-.013-.129l2.061-.438A3.628 3.628 0 0 0 27 19.625c1.999 0 3.625-1.626 3.625-3.625S28.999 12.375 27 12.375 23.375 14.001 23.375 16c0 .073.017.142.022.214l-2.04.433a3.63 3.63 0 0 0-2.122-2.041l.848-3.99A2.624 2.624 0 0 0 22.625 8c0-1.447-1.178-2.625-2.625-2.625S17.375 6.553 17.375 8a2.62 2.62 0 0 0 1.486 2.354l-.855 4.022-.006-.001c-.774 0-1.488.248-2.078.663l-3.96-3.96c.415-.59.663-1.304.663-2.078 0-1.999-1.626-3.625-3.625-3.625S5.375 7.001 5.375 9 7 12.625 9 12.625c.774 0 1.488-.248 2.078-.663l3.96 3.96A3.597 3.597 0 0 0 14.375 18c0 .044.011.085.013.129l-3.076.654A2.617 2.617 0 0 0 9 17.375c-1.447 0-2.625 1.178-2.625 2.625S7.553 22.625 9 22.625s2.625-1.178 2.625-2.625v-.006l3.017-.641a3.638 3.638 0 0 0 1.89 1.955l-.441 2.076c-.031 0-.06-.009-.091-.009-2 0-3.625 1.626-3.625 3.625S14 30.625 16 30.625 19.625 29 19.625 27c0-1.534-.96-2.84-2.309-3.369l.432-2.031c.085.005.166.025.252.025.774 0 1.488-.248 2.078-.663l4.684 4.685c-.24.396-.387.856-.387 1.353 0 1.447 1.178 2.625 2.625 2.625s2.625-1.178 2.625-2.625-1.178-2.625-2.625-2.625Zm0-10.75c1.31 0 2.375 1.065 2.375 2.375S28.31 18.375 27 18.375 24.625 17.31 24.625 16 25.69 13.625 27 13.625ZM18.625 8c0-.758.617-1.375 1.375-1.375s1.375.617 1.375 1.375S20.758 9.375 20 9.375 18.625 8.758 18.625 8ZM9 11.375c-1.31 0-2.375-1.065-2.375-2.375S7.69 6.625 9 6.625 11.375 7.69 11.375 9 10.31 11.375 9 11.375Zm0 10c-.758 0-1.375-.617-1.375-1.375S8.242 18.625 9 18.625s1.375.617 1.375 1.375S9.758 21.375 9 21.375ZM18.375 27c0 1.31-1.065 2.375-2.375 2.375S13.625 28.31 13.625 27 14.69 24.625 16 24.625 18.375 25.69 18.375 27Zm-2.75-9c0-1.31 1.065-2.375 2.375-2.375S20.375 16.69 20.375 18 19.31 20.375 18 20.375 15.625 19.31 15.625 18ZM27 28.375c-.758 0-1.375-.617-1.375-1.375s.617-1.375 1.375-1.375 1.375.617 1.375 1.375-.617 1.375-1.375 1.375Z"/></svg><b>Talks to</b><span>Every new connection is flagged.</span></div><div class="row f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M32.52 17.65c-6.74-10.18-22.3-10.18-29 0a.64.64 0 0 0 0 .7c6.74 10.18 22.3 10.18 29 0a.64.64 0 0 0 0-.7ZM18 24.78A16.31 16.31 0 0 1 4.76 18C11.05 9 25 9 31.24 18A16.31 16.31 0 0 1 18 24.78Z"/><path d="M18 13.38c-6.11.19-6.11 9 0 9.25 6.11-.2 6.11-9.06 0-9.25Zm0 8a3.38 3.38 0 0 1 0-6.75 3.38 3.38 0 0 1 0 6.75Z"/></svg><b>Behaves</b><span>Every command, every file. In seconds.</span></div><div class="row f"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="m29.13 6.73-11-2.34a.57.57 0 0 0-.26 0l-11 2.34a.61.61 0 0 0-.49.61V20a11.62 11.62 0 0 0 23.24 0V7.34a.61.61 0 0 0-.49-.61ZM18 5.64l10.38 2.2v5.61L7.62 17.86v-10Zm0 24.74A10.4 10.4 0 0 1 7.62 20v-.86l20.76-4.41V20A10.4 10.4 0 0 1 18 30.38Z"/></svg><b>Acts</b><span>Pod killed in under one second. Network closed.</span></div></div><div class="foot"><span>Red Hat Advanced Cluster Security</span><span>9</span></div></section>
+<section class="slide " data-notes="the-close-2"><div class="kicker">For Monday morning</div><h2>Three questions for your team</h2><ol class="qs"><li class="f">Do you know which programs your containers should run?</li><li class="f">Would you know, in one minute, if one of them ran something else?</li><li class="f">How fast could you stop it, without waking anyone up?</li></ol><div class="foot"><span>Red Hat Advanced Cluster Security</span><span>10</span></div></section>
+<section class="slide statement" data-notes="the-close-2"><p class="big">A clean scan is a <em>timestamp</em>.</p><p class="lead f withico"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M32.52 17.65c-6.74-10.18-22.3-10.18-29 0a.64.64 0 0 0 0 .7c6.74 10.18 22.3 10.18 29 0a.64.64 0 0 0 0-.7ZM18 24.78A16.31 16.31 0 0 1 4.76 18C11.05 9 25 9 31.24 18A16.31 16.31 0 0 1 18 24.78Z"/><path d="M18 13.38c-6.11.19-6.11 9 0 9.25 6.11-.2 6.11-9.06 0-9.25Zm0 8a3.38 3.38 0 0 1 0-6.75 3.38 3.38 0 0 1 0 6.75Z"/></svg><span>See it and stop it, <em>while it happens</em>.</span></p><p class="lead f withico"><svg class="ico" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M19.44 13.56c-.56-.58-1.46.32-.88.88l3 3a.62.62 0 0 0 .88-.88Z"/><path d="M31.61 10.05a.69.69 0 0 0-.17-.49l-2-2a.61.61 0 0 0-.88 0L23 13.12l-4.86-4.87 3.78-2.45 1.7 1.7-2.06 2.06a.62.62 0 0 0 .88.88l2.5-2.5a.61.61 0 0 0 0-.88l-2.5-2.5a.66.66 0 0 0-.73-.11c-.05 0-4.85 3.16-4.9 3.17a.66.66 0 0 0-.18.87s.69.72.75.77a6.61 6.61 0 0 0-1.58 7.06L5.06 27.06a2.74 2.74 0 0 0 3.88 3.88L19.68 20.2a6.29 6.29 0 0 0 5.89-.69l5.95-9.17a.75.75 0 0 0 .09-.29ZM19.79 18.9a.67.67 0 0 0-.7.13l-11 11a1.5 1.5 0 0 1-2.12-2.12l11-11a.65.65 0 0 0 .17-.34.74.74 0 0 0 0-.36 5.39 5.39 0 0 1 1.16-6.07l4.3 4.3a.61.61 0 0 0 .88 0L29 8.88l1.2 1.2-5.59 8.61a5.42 5.42 0 0 1-4.82.21Z"/><path d="M7 28.38a.63.63 0 1 0 .62.63.63.63 0 0 0-.62-.63Z"/></svg><span>Fix it, <em>before the hole is public</em>.</span></p><div class="foot"><span>Red Hat Advanced Cluster Security</span><span>11</span></div></section>
+<section class="slide title" data-notes="questions-you-ll-get"><div class="rbar"></div><img class="rhlogo" src="img/rh-logo-on-dark.svg" alt="Red Hat"><h1>Thank you.</h1><p class="lead">Questions?</p><div class="byline">Red Hat Advanced Cluster Security</div></section>
+  </div>
+  <div id="terms" hidden>
+    <div class="tgrid" id="ws"><div class="tp" data-name="attacker" data-port="7681" data-fs="20" data-label="1 · Attacker" style="--bgc:#2e1b1b;--dot:#ff6b6b"><div class="th" title="Drag to move · double-click to maximize"><i class="dot"></i><b>1 · Attacker</b><small>type here:  pwn &#x27;id&#x27;  ·  link https://…</small><span class="wb"><button class="wfm" title="Smaller text">A−</button><button class="wfp" title="Bigger text">A+</button><button class="wrst" title="Restart this terminal from zero (click twice)">↻</button><button class="wmin" title="Minimize">_</button><button class="wmax" title="Maximize / restore">□</button></span></div><div class="tb"></div></div><div class="tp" data-name="c2" data-port="7682" data-fs="18" data-label="2 · C2 - the attacker&#x27;s laptop" style="--bgc:#2b2318;--dot:#f5a623"><div class="th" title="Drag to move · double-click to maximize"><i class="dot"></i><b>2 · C2 - the attacker&#x27;s laptop</b><small>nc listening on :4444</small><span class="wb"><button class="wfm" title="Smaller text">A−</button><button class="wfp" title="Bigger text">A+</button><button class="wrst" title="Restart this terminal from zero (click twice)">↻</button><button class="wmin" title="Minimize">_</button><button class="wmax" title="Maximize / restore">□</button></span></div><div class="tb"></div></div><div class="tp" data-name="rhacs" data-port="7683" data-fs="18" data-label="3 · RHACS - live violations" style="--bgc:#16242e;--dot:#4da3ff"><div class="th" title="Drag to move · double-click to maximize"><i class="dot"></i><b>3 · RHACS - live violations</b><small></small><span class="wb"><button class="wfm" title="Smaller text">A−</button><button class="wfp" title="Bigger text">A+</button><button class="wrst" title="Restart this terminal from zero (click twice)">↻</button><button class="wmin" title="Minimize">_</button><button class="wmax" title="Maximize / restore">□</button></span></div><div class="tb"></div></div><div class="tp" data-name="blog" data-port="7684" data-fs="16" data-label="4 · Blog - app logs" style="--bgc:#142620;--dot:#3fb950"><div class="th" title="Drag to move · double-click to maximize"><i class="dot"></i><b>4 · Blog - app logs</b><small>every attack is just a “link check”</small><span class="wb"><button class="wfm" title="Smaller text">A−</button><button class="wfp" title="Bigger text">A+</button><button class="wrst" title="Restart this terminal from zero (click twice)">↻</button><button class="wmin" title="Minimize">_</button><button class="wmax" title="Maximize / restore">□</button></span></div><div class="tb"></div></div><div class="tp" data-name="pods" data-port="7685" data-fs="16" data-label="5 · Pods - kill + restart" style="--bgc:#201b2e;--dot:#b392f0"><div class="th" title="Drag to move · double-click to maximize"><i class="dot"></i><b>5 · Pods - kill + restart</b><small></small><span class="wb"><button class="wfm" title="Smaller text">A−</button><button class="wfp" title="Bigger text">A+</button><button class="wrst" title="Restart this terminal from zero (click twice)">↻</button><button class="wmin" title="Minimize">_</button><button class="wmax" title="Maximize / restore">□</button></span></div><div class="tb"></div></div><div id="drop" hidden></div></div>
+    <div class="tdock" id="dock"><span class="dl">Minimized - click to restore:</span></div>
+  </div>
+  <div id="black" hidden></div>
+</div>
+
+<div id="spk" hidden>
+  <div class="sbar"><span class="ttl">Presenter view</span><span class="clk" id="sclk">0:00</span><span class="plan" id="splan"></span>
+    <button id="stimer" title="Start / pause (t)">⏱ Start / pause</button><button id="sreset" title="Reset timer (r)">↺</button>
+    <span class="sp"></span><span class="link" id="slink"></span><span class="num" id="snum"></span>
+    <button id="sfm" title="Smaller notes">A−</button><button id="sfp" title="Bigger notes">A+</button><button id="sblack" title="Black screen (b)">Black</button><button id="sprev" title="Previous (←)">← Prev</button><button id="snext" title="Next (→)">Next →</button></div>
+  <div class="snotes" id="snotes"></div>
+  <div class="sside"><div><div class="lbl">On screen now</div><div class="mini" id="mcur"></div></div>
+    <div><div class="lbl">Next — click to advance</div><div class="mini next" id="mnext" title="Click to advance"></div></div>
+    <div><div class="lbl">All slides — click to jump</div><div class="sstrip" id="sstrip"></div></div>
+    <div><div class="lbl">Terminal layout</div><div class="slays"><button data-layout="all" title="Layout: All five (key 1)">All five</button><button data-layout="attack" title="Layout: Attack (key 2)">Attack</button><button data-layout="shell" title="Layout: Remote shell (key 3)">Remote shell</button><button data-layout="respond" title="Layout: Respond (key 4)">Respond</button><button id="sfontm" title="Smaller terminal text">Text A−</button><button id="sfontp" title="Bigger terminal text">Text A+</button><button id="srestart" title="Restart all five terminals from zero">↻ Restart all</button></div></div>
+    <div class="skeys">In the slideshow there are no buttons: keyboard only. It fills the browser tab (tabs stay visible); f toggles true full screen. Esc exits.<br>→ / Space next · ← back · t timer · r reset · b black screen · [ ] other notes · 1–4 terminal layout · + / − terminal text<br>During the live demo, keep this window focused to change slides while the terminals stay on screen.</div></div>
+</div>
+<script>
+(function(){
+  const S={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  const Q=new URLSearchParams(location.search), root=document.documentElement, body=document.body;
+  const $=id=>document.getElementById(id);
+  const th=S.get('talk-theme'); if(th) root.dataset.theme=th;
+
+  // ------------------------------------------------------------ handbook pages
+  const pages=[...document.querySelectorAll('.page')], links=[...document.querySelectorAll('aside a')];
+  const prev=$('prev'), next=$('next');
+  const byId=id=>pages.findIndex(p=>p.id===id);
+  let cur=0;
+  function show(i){
+    i=Math.max(0,Math.min(pages.length-1,i)); cur=i;
+    pages.forEach((p,j)=>p.hidden=j!==i);
+    links.forEach(a=>a.classList.toggle('on',a.dataset.id===pages[i].id));
+    const on=links.find(a=>a.dataset.id===pages[i].id); if(on) on.scrollIntoView({block:'nearest'});
+    const t=p=>p.querySelector('h2').textContent;
+    prev.disabled=i===0; next.disabled=i===pages.length-1;
+    if(i>0) prev.innerHTML='<small>← Previous</small>'+esc(t(pages[i-1]));
+    if(i<pages.length-1) next.innerHTML='<small>Next →</small>'+esc(t(pages[i+1]));
+    document.querySelector('main').scrollTop=0;
+    if($('sv').hidden && location.hash!=='#'+pages[i].id) history.replaceState(null,'','#'+pages[i].id);
+    S.set('talk-page',pages[i].id); body.classList.remove('nav-open');
+  }
+  function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+  links.forEach(a=>a.addEventListener('click',e=>{e.preventDefault();show(byId(a.dataset.id))}));
+  prev.onclick=()=>show(cur-1); next.onclick=()=>show(cur+1);
+  addEventListener('hashchange',()=>{const h=/^#slide-(\d+)$/.exec(location.hash); if(h){ if($('sv').hidden) view('slides'); select(+h[1]-1,true); return }
+    const i=byId(location.hash.slice(1)); if(i>=0){ if(!$('sv').hidden) view('guide'); show(i) }});
+  document.querySelectorAll('main a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const i=byId(a.getAttribute('href').slice(1)); if(i>=0){e.preventDefault();show(i)}}));
+  const q=$('q');
+  q.addEventListener('input',()=>{const v=q.value.toLowerCase().trim();
+    links.forEach(a=>{const p=pages[byId(a.dataset.id)]; a.classList.toggle('hide', !!v && !p.textContent.toLowerCase().includes(v))})});
+  $('menu').onclick=()=>body.classList.toggle('nav-open');
+  $('theme').onclick=()=>{const dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches; root.dataset.theme=dark?'light':'dark'; S.set('talk-theme',root.dataset.theme)};
+  document.querySelectorAll('main li.cb input').forEach((cb,i)=>{cb.checked=S.get('talk-cb-'+i)==='1';cb.onchange=()=>S.set('talk-cb-'+i,cb.checked?'1':'')});
+  const zoom=$('zoom'), zi=zoom.querySelector('img');
+  document.querySelectorAll('main figure img').forEach(im=>im.onclick=()=>{zi.src=im.src;zoom.style.display='flex'});
+  zoom.onclick=()=>zoom.style.display='none';
+
+  // ------------------------------------------------------------ shared: slides + timer
+  const deck=$('deck'), stage=$('stage'), slides=[...stage.querySelectorAll('.slide')];
+  const steps=s=>s.querySelectorAll('.f').length;
+  const fmt=ms=>{const s=Math.max(0,Math.floor(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+  const secs=t=>{const [m,s]=t.split(':').map(Number);return (m*60+(s||0))*1000};
+  const planOf=id=>{const p=pages[byId(id)];const m=p&&p.querySelector('.pill');return m?m.textContent.replace('⏱','').trim():''};
+  const bc=('BroadcastChannel' in window)?new BroadcastChannel('unhackable-talk'):null;
+  const SPEAKER=Q.has('speaker');
+
+  // ------------------------------------------------------------ deck (audience window)
+  let di=0, ds=0, tStart=null, tAcc=0, spk=null;
+  const elapsed=()=>tAcc+(tStart?Date.now()-tStart:0);
+  function fit(){stage.style.setProperty('--k',Math.min(innerWidth/1920,innerHeight/1080))}
+  function render(){
+    slides.forEach((s,j)=>s.classList.toggle('on',j===di));
+    slides[di].querySelectorAll('.f').forEach((f,j)=>f.classList.toggle('on',j<ds));
+    const term=slides[di].classList.contains('term');
+    $('terms').hidden=!term; if(term) mountTerms();
+    S.set('talk-slide',di); send();
+  }
+  function go(d){
+    if(d>0){ if(ds<steps(slides[di])) ds++; else if(di<slides.length-1){di++;ds=0} }
+    else { if(ds>0) ds--; else if(di>0){di--;ds=steps(slides[di])} }
+    render();
+  }
+  function to(i,st){di=Math.max(0,Math.min(slides.length-1,i|0)); ds=Math.max(0,Math.min(st|0,steps(slides[di]))); render()}
+  function openDeck(i){
+    deck.hidden=false; body.classList.add('presenting'); fit();
+    if(i!=null) to(i,0); else render();
+  }
+  function closeDeck(){
+    deck.hidden=true; body.classList.remove('presenting'); $('black').hidden=true;
+    try{if(document.fullscreenElement){ fsByKey=true; document.exitFullscreen().catch(()=>{}) }}catch(e){}
+    send();
+  }
+  let fsByKey=false;
+  function toggleFS(){fsByKey=true;try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}}
+  document.addEventListener('fullscreenchange',()=>{ fsByKey=false; if(!deck.hidden) fit() });
+  function toggleTimer(){ if(tStart){tAcc+=Date.now()-tStart;tStart=null}else tStart=Date.now(); tickDeck(); send() }
+  function resetTimer(){ tAcc=0; if(tStart) tStart=Date.now(); tickDeck(); send() }
+  function toggleBlack(){ $('black').hidden=!$('black').hidden; send() }
+  function tickDeck(){ const t=fmt(elapsed()); document.querySelectorAll('.dclk').forEach(c=>c.textContent=t) }
+  function openSpeaker(){
+    spk=window.open(location.href.split(/[?#]/)[0]+'?speaker','unhackable-speaker','width=1360,height=860');
+    setTimeout(send,400); setTimeout(send,1200);
+  }
+  function send(){
+    const m={t:'state',i:di,step:ds,open:!deck.hidden,el:elapsed(),run:!!tStart,black:!$('black').hidden,layout:curLayout};
+    try{ if(spk && !spk.closed) spk.postMessage(m,'*') }catch(e){}
+    try{ bc && bc.postMessage(m) }catch(e){}
+  }
+  function onCmd(m){
+    if(!m||typeof m.t!=='string') return;
+    if(m.t==='go'){ if(deck.hidden) openDeck(); go(m.d>0?1:-1) }
+    else if(m.t==='to'){ if(deck.hidden) openDeck(); to(m.i,m.step) }
+    else if(m.t==='timer') toggleTimer();
+    else if(m.t==='reset') resetTimer();
+    else if(m.t==='black') toggleBlack();
+    else if(m.t==='hello') send();
+    else if(m.t==='layout' && LAY[m.name]){ if(deck.hidden) openDeck(); layout(m.name) }
+    else if(m.t==='restart-all') restartAll();
+    else if(m.t==='font' && (m.d===2||m.d===-2)) fontAll(m.d);
+  }
+  // live terminals
+  const TH=/^[\w.-]+$/.test(Q.get('termhost')||'')?Q.get('termhost'):'127.0.0.1';
+  let termsMounted=false;
+  function mountTerms(){ if(termsMounted) return; termsMounted=true; document.querySelectorAll('#terms .tp').forEach(mountPanel) }
+  function mountPanel(tp,reset){
+    const url='http://'+TH+':'+tp.dataset.port+'/', box=tp.querySelector('.tb');
+    box.innerHTML='<div class="term-off">Connecting…</div>';
+    fetch(url,{mode:'no-cors',cache:'no-store'}).then(()=>{
+      box.innerHTML=''; const f=document.createElement('iframe'); const q=new URLSearchParams();
+      const fs=+(S.get('talk-fs-'+tp.dataset.name)||tp.dataset.fs); if(fs!==+tp.dataset.fs) q.set('fontSize',fs);
+      if(reset) q.set('arg','reset'); f.src=url+(q.toString()?'?'+q:''); f.title=tp.dataset.label; box.appendChild(f);
+    }).catch(()=>{
+      box.innerHTML='<div class="term-off"><b>Not running</b><div>Start the browser terminals:</div><code>make web-terminal</code><button type="button">Try again</button></div>';
+      box.querySelector('button').onclick=()=>mountPanel(tp);
+    });
+  }
+  // terminal windows: TILING — they always fill the screen and share borders ("magnets").
+  // Model: columns of rows. Drag a border to resize both sides; drag a title onto another window
+  // to swap (centre) or dock beside it (edge); minimize and the others fill the space.
+  const ws=$('ws'), dock=$('dock'), drop=$('drop'), panes=[...ws.querySelectorAll('.tp')];
+  const P=n=>panes.find(p=>p.dataset.name===n);
+  const C=(w,...rows)=>({w,rows:rows.map(([n,h])=>({n,h}))});
+  const LAY={
+    all:    ()=>[C(.53,['attacker',.62],['c2',.38]), C(.47,['rhacs',.5],['blog',.27],['pods',.23])],
+    attack: ()=>[C(.56,['attacker',1]), C(.44,['rhacs',1])],
+    shell:  ()=>[C(.56,['attacker',.56],['c2',.44]), C(.44,['rhacs',1])],
+    respond:()=>[C(.5,['attacker',.58],['c2',.42]), C(.5,['rhacs',.58],['pods',.42])]
+  };
+  let M={cols:LAY.all(), last:{}}, curLayout='all';
+  const pct=v=>(v*100).toFixed(3)+'%';
+  function place(tp,r){ tp._r=r; tp.style.left='calc('+pct(r[0])+' + 4px)'; tp.style.top='calc('+pct(r[1])+' + 4px)';
+    tp.style.width='calc('+pct(r[2])+' - 8px)'; tp.style.height='calc('+pct(r[3])+' - 8px)'; }
+  function norm(){
+    M.cols=M.cols.filter(c=>c.rows.length);
+    const tw=M.cols.reduce((a,c)=>a+c.w,0)||1;
+    M.cols.forEach(c=>{ c.w/=tw; const th=c.rows.reduce((a,r)=>a+r.h,0)||1; c.rows.forEach(r=>r.h/=th) });
+  }
+  function find(n){ for(let ci=0;ci<M.cols.length;ci++){ const ri=M.cols[ci].rows.findIndex(r=>r.n===n); if(ri>=0) return [ci,ri] } return null }
+  function tile(){
+    norm(); ws.querySelectorAll('.split').forEach(x=>x.remove());
+    const shown=new Set(); let x=0;
+    M.cols.forEach((c,ci)=>{
+      let y=0;
+      c.rows.forEach((r,ri)=>{ const tp=P(r.n); if(!tp) return; shown.add(r.n); place(tp,[x,y,c.w,r.h]); tp.classList.remove('min');
+        if(ri>0) splitter('h',ci,ri,{left:'calc('+pct(x)+' + 4px)',width:'calc('+pct(c.w)+' - 8px)',top:pct(y)});
+        y+=r.h });
+      if(ci>0) splitter('v',ci,0,{left:pct(x),top:'4px',bottom:'4px'});
+      x+=c.w;
+    });
+    panes.forEach(p=>{ if(!shown.has(p.dataset.name)){ p.classList.add('min'); p.classList.remove('maxed') } });
+    renderDock(); saveWM(); send();
+  }
+  function splitter(kind,ci,ri,css){
+    const d=document.createElement('div'); d.className='split '+kind; Object.assign(d.style,css); ws.appendChild(d);
+    d.addEventListener('pointerdown',e=>{
+      if(e.button!==0) return; e.preventDefault(); custom(); d.setPointerCapture(e.pointerId); ws.classList.add('dragging'); d.classList.add('on');
+      const W=ws.clientWidth, H=ws.clientHeight, x0=e.clientX, y0=e.clientY;
+      const A=kind==='v'?M.cols[ci-1]:M.cols[ci].rows[ri-1], B=kind==='v'?M.cols[ci]:M.cols[ci].rows[ri], key=kind==='v'?'w':'h';
+      const a0=A[key], b0=B[key], min=kind==='v'?260/W:110/H;
+      const mv=ev=>{ let dlt=kind==='v'?(ev.clientX-x0)/W:(ev.clientY-y0)/H; dlt=Math.max(min-a0,Math.min(b0-min,dlt)); A[key]=a0+dlt; B[key]=b0-dlt; layoutOnly({el:d,kind,ci,ri}) };
+      const up=()=>{ ws.classList.remove('dragging'); d.classList.remove('on'); d.removeEventListener('pointermove',mv); d.removeEventListener('pointerup',up); d.removeEventListener('pointercancel',up); tile() };
+      d.addEventListener('pointermove',mv); d.addEventListener('pointerup',up); d.addEventListener('pointercancel',up);
+    });
+  }
+  function layoutOnly(act){ // live resize: move windows + borders; the dragged border element is kept
+    let x=0;
+    M.cols.forEach(c=>{ let y=0; c.rows.forEach(r=>{ place(P(r.n),[x,y,c.w,r.h]); y+=r.h }); x+=c.w });
+    // draw guide lines where the borders are now (the real splitters come back on release)
+    ws.querySelectorAll('.split').forEach(x=>{ if(x!==act.el) x.remove() }); let xx=0;
+    const put=(kind,ci,ri,css)=>{ if(kind===act.kind&&ci===act.ci&&ri===act.ri) Object.assign(act.el.style,css); else ghostSplit(kind,css) };
+    M.cols.forEach((c,ci)=>{ let y=0; c.rows.forEach((r,ri)=>{ if(ri>0) put('h',ci,ri,{left:'calc('+pct(xx)+' + 4px)',width:'calc('+pct(c.w)+' - 8px)',top:pct(y)}); y+=r.h }); if(ci>0) put('v',ci,0,{left:pct(xx),top:'4px',bottom:'4px'}); xx+=c.w });
+  }
+  function ghostSplit(kind,css){ const d=document.createElement('div'); d.className='split '+kind+' on'; d.style.pointerEvents='none'; Object.assign(d.style,css); ws.appendChild(d) }
+  function removeFromModel(n){ const f=find(n); if(!f) return; M.last[n]=f[0]; M.cols[f[0]].rows.splice(f[1],1); norm() }
+  function setMin(tp,on){
+    const n=tp.dataset.name; custom();
+    if(on){ removeFromModel(n) }
+    else if(!find(n)){ if(!M.cols.length) M.cols.push({w:1,rows:[]}); const c=M.cols[Math.min(M.last[n]??M.cols.length-1, M.cols.length-1)]; c.rows.push({n,h:1/Math.max(1,c.rows.length)}) }
+    tile();
+  }
+  function setMax(tp,on){ panes.forEach(p=>{ p.classList.toggle('maxed',on&&p===tp); p.querySelector('.wmax').textContent=(on&&p===tp)?'❐':'□' }); saveWM() }
+  function renderDock(){
+    dock.querySelectorAll('button').forEach(b=>b.remove());
+    const mins=panes.filter(p=>!find(p.dataset.name)); dock.classList.toggle('has',mins.length>0);
+    mins.forEach(p=>{ const b=document.createElement('button'); b.style.setProperty('--dot',getComputedStyle(p).getPropertyValue('--dot'));
+      b.innerHTML='<i></i>'; b.appendChild(document.createTextNode(p.dataset.label)); b.title='Restore';
+      b.onclick=()=>setMin(p,false); dock.appendChild(b) });
+  }
+  function layout(name){
+    if(!LAY[name]) return; M.cols=LAY[name](); setMax(panes[0],false); curLayout=name;
+    document.querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('on',b.dataset.layout===name)); tile();
+  }
+  function custom(){ curLayout=''; document.querySelectorAll('[data-layout]').forEach(b=>b.classList.remove('on')) }
+  function saveWM(){ S.set('talk-tiles',JSON.stringify({l:curLayout,m:M,max:(panes.find(p=>p.classList.contains('maxed'))||{}).dataset?.name||''})) }
+  function loadWM(){
+    try{ const w=JSON.parse(S.get('talk-tiles')||'null');
+      if(w && w.m && Array.isArray(w.m.cols) && w.m.cols.every(c=>Array.isArray(c.rows) && c.rows.every(r=>P(r.n)))){
+        M={cols:w.m.cols,last:w.m.last||{}}; curLayout=w.l||''; document.querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('on',b.dataset.layout===curLayout)); tile();
+        if(w.max&&P(w.max)) setMax(P(w.max),true); return }
+    }catch(e){}
+    layout('all');
+  }
+  // move: drag a title bar onto another window
+  function zoneAt(cx,cy,src){
+    const wr=ws.getBoundingClientRect();
+    for(const tp of panes){ if(tp===src||!find(tp.dataset.name)) continue; const r=tp.getBoundingClientRect();
+      if(cx<r.left||cx>r.right||cy<r.top||cy>r.bottom) continue;
+      const fx=(cx-r.left)/r.width, fy=(cy-r.top)/r.height, ed=Math.min(fx,1-fx,fy,1-fy);
+      let z='center'; if(ed<.28){ z=ed===fx?'left':ed===1-fx?'right':ed===fy?'top':'bottom' }
+      let L=r.left-wr.left, T=r.top-wr.top, Wd=r.width, Ht=r.height;
+      if(z==='left') Wd/=2; else if(z==='right'){L+=Wd/2;Wd/=2} else if(z==='top') Ht/=2; else if(z==='bottom'){T+=Ht/2;Ht/=2}
+      return {tp,z,box:[L,T,Wd,Ht]};
+    }
+    return null;
+  }
+  function moveTo(src,t){
+    const s=src.dataset.name, d=t.tp.dataset.name;
+    if(t.z==='center'){ const a=find(s), b=find(d); M.cols[a[0]].rows[a[1]].n=d; M.cols[b[0]].rows[b[1]].n=s; return tile() }
+    removeFromModel(s); const [ci,ri]=find(d), col=M.cols[ci], tr=col.rows[ri];
+    if(t.z==='top'||t.z==='bottom'){ const h=tr.h/2; tr.h=h; col.rows.splice(t.z==='top'?ri:ri+1,0,{n:s,h}) }
+    else { const w=col.w/2; col.w=w; M.cols.splice(t.z==='left'?ci:ci+1,0,{w,rows:[{n:s,h:1}]}) }
+    tile();
+  }
+  panes.forEach(tp=>{
+    const th=tp.querySelector('.th');
+    th.addEventListener('pointerdown',e=>{
+      if(e.button!==0||e.target.closest('button')||tp.classList.contains('maxed')) return;
+      e.preventDefault(); th.setPointerCapture(e.pointerId);
+      const x0=e.clientX, y0=e.clientY; let moving=false, tgt=null;
+      const mv=ev=>{
+        if(!moving && Math.hypot(ev.clientX-x0,ev.clientY-y0)<8) return;
+        if(!moving){ moving=true; ws.classList.add('dragging'); tp.classList.add('src') }
+        tgt=zoneAt(ev.clientX,ev.clientY,tp);
+        if(tgt){ drop.hidden=false; Object.assign(drop.style,{left:tgt.box[0]+'px',top:tgt.box[1]+'px',width:tgt.box[2]+'px',height:tgt.box[3]+'px'}) } else drop.hidden=true;
+      };
+      const up=()=>{ th.removeEventListener('pointermove',mv); th.removeEventListener('pointerup',up); th.removeEventListener('pointercancel',up);
+        ws.classList.remove('dragging'); tp.classList.remove('src'); drop.hidden=true;
+        if(moving&&tgt){ custom(); moveTo(tp,tgt) } };
+      th.addEventListener('pointermove',mv); th.addEventListener('pointerup',up); th.addEventListener('pointercancel',up);
+    });
+    th.addEventListener('dblclick',e=>{ if(!e.target.closest('button')) setMax(tp,!tp.classList.contains('maxed')) });
+    tp.querySelector('.wmin').onclick=()=>setMin(tp,true);
+    tp.querySelector('.wmax').onclick=()=>setMax(tp,!tp.classList.contains('maxed'));
+    tp.querySelector('.wfm').onclick=()=>fontStep(tp,-2); tp.querySelector('.wfp').onclick=()=>fontStep(tp,2);
+    // restart from zero: two clicks (the first one arms it for 3 s)
+    const rb=tp.querySelector('.wrst'); let armT=null;
+    rb.onclick=()=>{ if(!rb.classList.contains('arm')){ rb.classList.add('arm'); rb.textContent='Restart?'; armT=setTimeout(()=>{rb.classList.remove('arm');rb.textContent='↻'},3000); return }
+      clearTimeout(armT); rb.classList.remove('arm'); rb.textContent='↻'; mountPanel(tp,true) };
+  });
+  function restartAll(){ panes.forEach(tp=>mountPanel(tp,true)) }
+  // text size per window: reconnects the window with ?fontSize=N — tmux keeps the same process running
+  function fontStep(tp,d){ const cur=+(S.get('talk-fs-'+tp.dataset.name)||tp.dataset.fs); const n=Math.max(10,Math.min(48,cur+d));
+    if(n===cur) return; S.set('talk-fs-'+tp.dataset.name,n); clearTimeout(tp._fsT); tp._fsT=setTimeout(()=>mountPanel(tp),250) }
+  function fontAll(d){ panes.forEach(tp=>fontStep(tp,d)) }
+  document.querySelectorAll('[data-layout]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    if(SPEAKER) cmd({t:'layout',name:b.dataset.layout}); else layout(b.dataset.layout) }));
+  loadWM();
+
+  // deck controls
+  document.querySelectorAll('[data-cmd]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();
+    const c=b.dataset.cmd; if(c==='prev')go(-1); else if(c==='next')go(1); else if(c==='exit')closeDeck(); else if(c==='speaker')openSpeaker(); else if(c==='timer')toggleTimer(); else if(c==='fs')toggleFS();}));
+  stage.addEventListener('click',()=>go(1));
+  let idleT=null;
+  deck.addEventListener('mousemove',()=>{deck.classList.remove('idle');clearTimeout(idleT);idleT=setTimeout(()=>deck.classList.add('idle'),2000)});
+  addEventListener('resize',()=>{fit();fitMinis()});
+  addEventListener('message',e=>{ if(!SPEAKER && spk && e.source===spk) onCmd(e.data); else if(SPEAKER) onSpk(e.data, e.source===window.opener) });
+  if(bc) bc.onmessage=e=>{ if(SPEAKER) onSpk(e.data,true); else onCmd(e.data) };
+  setInterval(()=>{ if(!SPEAKER){ tickDeck(); send() } },1000);
+  $('present').onclick=()=>{ if(!$('sv').hidden) return openDeck(sel); const sl=slides.findIndex(s=>s.dataset.notes===pages[cur].id); openDeck(sl<0?0:sl) };
+  $('speaker').onclick=openSpeaker;
+
+  // ------------------------------------------------------------ speaker view (second window)
+  const notesList=pages.filter(p=>/^(Speaker notes|Q&A)/.test(p.querySelector('.crumb').textContent.trim())&&p.id!=='about-the-notes');
+  let st={i:0,step:0,el:0,run:false,black:false}, lastSeen=0, ni=-1, shownFor=-1;
+  function mini(el,i,step,label){
+    el.innerHTML='';
+    if(i>=slides.length){el.innerHTML='<div class="term-off">End of the deck</div>';return}
+    const sg=document.createElement('div'); sg.className='stage';
+    const c=slides[i].cloneNode(true); c.classList.add('on'); c.querySelectorAll('.f').forEach((f,j)=>f.classList.toggle('on',j<step));
+    sg.appendChild(c); el.appendChild(sg); fitMini(el);
+  }
+  function fitMini(el){const sg=el.querySelector('.stage'); if(sg) sg.style.setProperty('--k',el.clientWidth/1920)}
+  function fitMinis(){document.querySelectorAll('.mini').forEach(fitMini)}
+  function setNotes(k){
+    ni=(k+notesList.length)%notesList.length; const p=notesList[ni];
+    $('snotes').innerHTML='<div class="nh"><button id="nprev">◀</button><span>'+esc(p.querySelector('.crumb').textContent.trim())+'</span><button id="nnext">▶</button></div>'+p.innerHTML;
+    $('nprev').onclick=()=>setNotes(ni-1); $('nnext').onclick=()=>setNotes(ni+1);
+    $('snotes').scrollTop=0;
+    const pl=planOf(p.id); $('splan').textContent=pl?'planned '+pl:'';
+  }
+  function renderSpk(){
+    const s=slides[st.i]; if(!s) return;
+    mini($('mcur'),st.i,st.step);
+    const nx=st.step<steps(s)?[st.i,st.step+1]:[st.i+1,0]; mini($('mnext'),nx[0],nx[1]);
+    $('snum').textContent=(st.i+1)+' / '+slides.length+(steps(s)?'  ·  step '+st.step+'/'+steps(s):'');
+    document.querySelectorAll('#sstrip .st').forEach((d,j)=>{ d.classList.toggle('on',j===st.i); const m=d.querySelector('.mini'); if(!m.firstChild) mini(m,j,steps(slides[j])); else fitMini(m) });
+    if(shownFor!==st.i){ shownFor=st.i; const k=notesList.findIndex(p=>p.id===s.dataset.notes); setNotes(k<0?0:k) }
+  }
+  function tickSpk(){
+    const el=st.el+(st.run&&lastSeen?Date.now()-lastSeen:0); $('sclk').textContent=fmt(el);
+    const nxt=notesList[ni+1], pl=nxt?planOf(nxt.id):''; $('sclk').classList.toggle('late', pl? el>secs(pl) : el>40*60000);
+    const ok=Date.now()-lastSeen<3000; $('slink').textContent=ok?(st.open?'● connected — presenting':'● connected — deck closed'):'○ not connected — open the deck with ▶ Present';
+    $('slink').classList.toggle('ok',ok);
+    $('sblack').textContent=st.black?'Unblank':'Black';
+    document.querySelectorAll('#spk [data-layout]').forEach(b=>b.classList.toggle('on',b.dataset.layout===st.layout));
+  }
+  function onSpk(m,trusted){ if(!trusted||!m||m.t!=='state') return; st=m; lastSeen=Date.now(); renderSpk(); tickSpk() }
+  function cmd(m){
+    const live=Date.now()-lastSeen<3000;
+    if(live){ try{window.opener&&window.opener.postMessage(m,'*')}catch(e){} if(!window.opener&&bc) bc.postMessage(m) }
+    else if(m.t==='to'){ st.i=m.i; st.step=0; renderSpk() }
+    else if(m.t==='go'){ const s=slides[st.i]; if(m.d>0){ if(st.step<steps(s)) st.step++; else if(st.i<slides.length-1){st.i++;st.step=0} } else { if(st.step>0) st.step--; else if(st.i>0){st.i--;st.step=steps(slides[st.i])} } renderSpk() }
+  }
+  function startSpeaker(){
+    document.title='Presenter view - RHACS Threat Detection and Response';
+    $('spk').hidden=false; body.classList.add('presenting');
+    $('sprev').onclick=()=>cmd({t:'go',d:-1}); $('snext').onclick=()=>cmd({t:'go',d:1});
+    $('stimer').onclick=()=>cmd({t:'timer'});
+    $('sfontm').onclick=()=>cmd({t:'font',d:-2}); $('sfontp').onclick=()=>cmd({t:'font',d:2});
+    $('srestart').onclick=()=>{ if(confirm('Restart all five terminals from zero?')) cmd({t:'restart-all'}) }; $('sreset').onclick=()=>cmd({t:'reset'}); $('sblack').onclick=()=>cmd({t:'black'});
+    $('mnext').onclick=()=>cmd({t:'go',d:1}); $('mcur').onclick=()=>cmd({t:'go',d:1});
+    const strip=$('sstrip');
+    slides.forEach((sl,j)=>{ const d=document.createElement('div'); d.className='st'; d.innerHTML='<b>'+(j+1)+'</b><div class="mini"></div>'; d.onclick=()=>cmd({t:'to',i:j,step:0}); strip.appendChild(d) });
+    // a clicked button must not keep the focus: Space/Enter would "click" it again and skip a step
+    document.querySelectorAll('#spk button').forEach(b=>b.addEventListener('click',()=>b.blur()));
+    renderSpk(); tickSpk(); setInterval(tickSpk,500);
+    try{window.opener&&window.opener.postMessage({t:'hello'},'*')}catch(e){} try{bc&&bc.postMessage({t:'hello'})}catch(e){}
+  }
+
+  // ------------------------------------------------------------ keyboard
+  document.addEventListener('keydown',e=>{
+    if(e.target.matches('input,textarea')||e.ctrlKey||e.metaKey||e.altKey) return;
+    const k=e.key, nextK=['ArrowRight','PageDown',' ','Enter','ArrowDown'], prevK=['ArrowLeft','PageUp','Backspace','ArrowUp'];
+    if(SPEAKER){
+      if(e.target.closest && e.target.closest('button')) e.target.blur();
+      if(nextK.includes(k)){e.preventDefault();cmd({t:'go',d:1})}
+      else if(prevK.includes(k)){e.preventDefault();cmd({t:'go',d:-1})}
+      else if(k==='t') cmd({t:'timer'}); else if(k==='r') cmd({t:'reset'}); else if(k==='b'||k==='.') cmd({t:'black'});
+      else if(k===']') setNotes(ni+1); else if(k==='[') setNotes(ni-1);
+      else if(/^[1-4]$/.test(k)) cmd({t:'layout',name:['all','attack','shell','respond'][+k-1]});
+      return;
+    }
+    if(!deck.hidden){
+      if(nextK.includes(k)){e.preventDefault();go(1)}
+      else if(prevK.includes(k)){e.preventDefault();go(-1)}
+      else if(k==='Home'){e.preventDefault();to(0,0)} else if(k==='End'){e.preventDefault();to(slides.length-1,0)}
+      else if(k==='Escape') closeDeck(); else if(k==='s') openSpeaker(); else if(k==='t') toggleTimer();
+      else if(k==='b'||k==='.') toggleBlack(); else if(k==='f') toggleFS();
+      else if(/^[1-4]$/.test(k) && !$('terms').hidden) layout(['all','attack','shell','respond'][+k-1]);
+      else if(k==='r' && !$('terms').hidden){ termsMounted=false; mountTerms() }
+      else if(k==='R' && !$('terms').hidden) restartAll();
+      else if((k==='+'||k==='=') && !$('terms').hidden) fontAll(2);
+      else if(k==='-' && !$('terms').hidden) fontAll(-2);
+      return;
+    }
+    if(k==='Escape'){zoom.style.display='none';body.classList.remove('nav-open');ssm.hidden=true;return}
+    if(!$('sv').hidden){
+      if(['ArrowDown','ArrowRight','PageDown'].includes(k)){e.preventDefault();select(sel+1)}
+      else if(['ArrowUp','ArrowLeft','PageUp'].includes(k)){e.preventDefault();select(sel-1)}
+      else if(k==='Home'){e.preventDefault();select(0)} else if(k==='End'){e.preventDefault();select(slides.length-1)}
+      else if(k==='Enter'||k==='p') openDeck(sel); else if(k==='s') openSpeaker();
+      return;
+    }
+    if(k==='ArrowRight'||k==='PageDown'){e.preventDefault();show(cur+1)}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();show(cur-1)}
+    else if(k==='p') $('present').click(); else if(k==='s') openSpeaker();
+    else if(k==='/'){e.preventDefault();q.focus()}
+  });
+
+  // ------------------------------------------------------------ slides view (like Google Slides)
+  const film=$('film'); let sel=0;
+  slides.forEach((s,j)=>{ const d=document.createElement('div'); d.className='fi'; d.innerHTML='<span class="no">'+(j+1)+'</span><div class="mini"></div>';
+    d.onclick=()=>select(j); d.ondblclick=()=>openDeck(j); film.appendChild(d) });
+  const fis=[...film.querySelectorAll('.fi')];
+  function fitBig(){ const c=$('canvas'), b=$('bigslide'); if(!c.clientWidth) return; const w=Math.min(c.clientWidth-56, (c.clientHeight-44)*16/9); b.style.width=Math.max(200,w)+'px'; fitMini(b) }
+  function select(j,noHash){
+    sel=Math.max(0,Math.min(slides.length-1,j)); fis.forEach((f,k)=>f.classList.toggle('sel',k===sel));
+    fis[sel].scrollIntoView({block:'nearest'});
+    mini($('bigslide'),sel,steps(slides[sel])); fitBig();
+    const np=pages[byId(slides[sel].dataset.notes)];
+    $('svbody').innerHTML=np?np.innerHTML:''; $('svname').textContent=np?np.querySelector('h2').textContent:'';
+    const pl=np?planOf(np.id):''; $('svplan').textContent=pl?'⏱ '+pl:'';
+    S.set('talk-sel',sel); if(!noHash) history.replaceState(null,'','#slide-'+(sel+1));
+  }
+  function view(v){
+    const sv=v==='slides'; body.classList.toggle('sv-on',sv); $('sv').hidden=!sv;
+    $('tab-slides').setAttribute('aria-selected',sv); $('tab-guide').setAttribute('aria-selected',!sv);
+    S.set('talk-view',v);
+    if(sv){ fis.forEach((f,k)=>mini(f.querySelector('.mini'),k,steps(slides[k]))); select(sel) } else show(cur);
+  }
+  $('tab-slides').onclick=()=>view('slides'); $('tab-guide').onclick=()=>view('guide');
+  addEventListener('resize',()=>{ if(!$('sv').hidden){ fitBig(); fis.forEach(f=>fitMini(f.querySelector('.mini'))) } });
+  // Slideshow menu
+  const ssm=$('ssm');
+  $('ssmenu').onclick=e=>{e.stopPropagation(); ssm.hidden=!ssm.hidden};
+  document.addEventListener('click',()=>ssm.hidden=true);
+  ssm.querySelectorAll('[data-ss]').forEach(b=>b.onclick=()=>{ ssm.hidden=true; const a=b.dataset.ss;
+    if(a==='start') openDeck(0); else if(a==='current') $('present').click(); else openSpeaker() });
+  // notes font size in presenter view
+  let nf=parseInt(S.get('talk-nf')||'23',10);
+  const setNf=v=>{nf=Math.max(14,Math.min(44,v)); $('snotes').style.setProperty('--nf',nf+'px'); S.set('talk-nf',nf)};
+  setNf(nf); $('sfm').onclick=()=>setNf(nf-2); $('sfp').onclick=()=>setNf(nf+2);
+
+  // ------------------------------------------------------------ start
+  let i=byId(location.hash.slice(1)); if(i<0) i=byId(S.get('talk-page')||''); cur=i<0?0:i;
+  const hs=/^#slide-(\d+)$/.exec(location.hash); sel=hs?(+hs[1]-1):(parseInt(S.get('talk-sel')||'0',10)||0);
+  view(byId(location.hash.slice(1))>=0 ? 'guide' : (hs ? 'slides' : (S.get('talk-view')||'slides')));
+  if(SPEAKER) startSpeaker();
+  else if(Q.has('present')){ const n=parseInt(Q.get('present'),10); openDeck(isNaN(n)?0:n-1); if(Q.has('step')) to(di,parseInt(Q.get('step'),10)||0); if(Q.has('layout')) layout(Q.get('layout')) }
+})();
+</script>
+</body></html>

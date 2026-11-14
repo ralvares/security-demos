@@ -1,0 +1,35 @@
+#!/bin/bash
+# tdr-attacker-net — the ONLY root action the demo needs after install, installed to
+# /usr/local/sbin and allowed password-less via /etc/sudoers.d/tdr-demo (scripts/install-nopasswd.sh).
+#
+#   tdr-attacker-net open   [IP]   put the attacker address on the CRC bridge, open the firewall for the CRC VM
+#   tdr-attacker-net close  [IP]   undo it
+#   tdr-attacker-net status [IP]   exit 0 if open
+#
+# Fixed scope: address IP/32 on dev "crc" + rich rules in zone "libvirt" accepting the attacker
+# ports, only from the CRC subnet. Keep PORTS in sync with scripts/attacker.sh.
+set -euo pipefail
+PATH=/usr/sbin:/usr/bin
+IP=${2:-1.2.3.4}
+[[ $IP =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || { echo "invalid IPv4: $IP" >&2; exit 2; }
+BR=$(ip -4 -o addr show dev crc 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | grep -vx "$IP" | head -1 || true)
+[[ -n $BR ]] || { echo "CRC bridge 'crc' not found" >&2; exit 1; }
+SUBNET=${BR%.*}.0/24
+rules() {
+  for p in 8080 3333 4444; do echo "rule family=ipv4 source address=$SUBNET port port=$p protocol=tcp accept"; done
+  echo "rule family=ipv4 source address=$SUBNET port port=5300 protocol=udp accept"
+}
+case ${1:-} in
+  open)
+    ip addr replace "$IP/32" dev crc
+    while read -r r; do
+      firewall-cmd -q --zone=libvirt --query-rich-rule="$r" || firewall-cmd -q --zone=libvirt --add-rich-rule="$r"
+    done < <(rules) ;;
+  close)
+    ip addr del "$IP/32" dev crc 2>/dev/null || true
+    while read -r r; do firewall-cmd -q --zone=libvirt --remove-rich-rule="$r" 2>/dev/null || true; done < <(rules) ;;
+  status)
+    ip -4 -o addr show dev crc | grep -q " $IP/" || exit 1
+    while read -r r; do firewall-cmd -q --zone=libvirt --query-rich-rule="$r" || exit 1; done < <(rules) ;;
+  *) echo "usage: tdr-attacker-net open|close|status [IP]" >&2; exit 2 ;;
+esac

@@ -1,0 +1,34 @@
+# Anything that runs in the blog container and is not in its LOCKED process baseline.
+# Baseline (learned in 02-demo-setup.sh): /usr/local/bin/blog, sh, wget (link checker).
+# Act 5 switches enforcement to KILL_POD (scripts/demo.sh respond).
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: tdr-unauthorized-process
+  namespace: stackrox
+  labels: { tdr-demo: policy }
+spec:
+  policyName: "TDR - Unauthorized process in the Unhackable Blog"
+  description: A process ran in the blog container that is not part of its locked process baseline.
+  rationale: The blog runs exactly three binaries. Anything else means someone else is running code in our container.
+  remediation: Kill the pod (immutable infrastructure restores a clean copy), contain its network, find the entry point.
+  categories: [Anomalous Activity]
+  lifecycleStages: [RUNTIME]
+  eventSource: DEPLOYMENT_EVENT
+  severity: CRITICAL_SEVERITY
+  enforcementActions: []
+  disabled: false
+  scope:
+    - cluster: production
+      namespace: unhackable
+  policySections:
+    - sectionName: process outside the locked baseline
+      policyGroups:
+        - fieldName: Unexpected Process Executed
+          values: [{ value: "true" }]
+  mitreAttackVectors:
+    - tactic: TA0002          # Execution
+      techniques: [T1059.004] # Unix shell
+  criteriaLocked: false
+  mitreVectorsLocked: false
+  isDefault: false

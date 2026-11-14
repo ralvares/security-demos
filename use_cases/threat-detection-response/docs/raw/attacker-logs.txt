@@ -1,0 +1,63 @@
+payload server
+  2026/11/13 10:08:12 DOWNLOAD stage.sh by 192.168.130.11:46158
+  2026/11/13 10:08:12 DOWNLOAD xmrig by 192.168.130.11:59160
+  2026/11/13 10:12:04 DOWNLOAD stage.sh by 192.168.130.11:58895
+  2026/11/13 10:12:04 DOWNLOAD xmrig by 192.168.130.11:54291
+  2026/11/13 10:17:36 DOWNLOAD stage.sh by 192.168.130.11:39650
+  2026/11/13 10:17:36 DOWNLOAD xmrig by 192.168.130.11:53623
+  2026/11/13 10:19:38 DOWNLOAD stage.sh by 192.168.130.11:40383
+  2026/11/13 10:19:38 DOWNLOAD xmrig by 192.168.130.11:43362
+  2026/11/13 10:47:33 DOWNLOAD stage.sh by 192.168.130.11:42731
+  2026/11/13 10:47:33 DOWNLOAD xmrig by 192.168.130.11:51740
+  2026/11/13 10:52:54 DOWNLOAD stage.sh by 192.168.130.11:37098
+  2026/11/13 10:52:54 DOWNLOAD xmrig by 192.168.130.11:53718
+  2026/11/13 11:15:00 DOWNLOAD stage.sh by 192.168.130.11:35269
+  2026/11/13 11:15:00 DOWNLOAD xmrig by 192.168.130.11:39781
+  2026/11/13 12:11:35 DOWNLOAD stage.sh by 192.168.130.11:50909
+  2026/11/13 12:11:35 DOWNLOAD xmrig by 192.168.130.11:33327
+  2026/11/13 12:11:57 DOWNLOAD stage.sh by 192.168.130.11:37777
+  2026/11/13 12:11:57 DOWNLOAD xmrig by 192.168.130.11:49465
+  2026/11/13 12:17:00 DOWNLOAD stage.sh by 192.168.130.11:35433
+  2026/11/13 12:17:00 DOWNLOAD xmrig by 192.168.130.11:40750
+mining pool
+  2026/11/13 12:12:36 share #7 from 192.168.130.11:40556
+  2026/11/13 12:12:46 share #8 from 192.168.130.11:40556
+  2026/11/13 12:12:56 share #9 from 192.168.130.11:40556
+  2026/11/13 12:13:06 share #10 from 192.168.130.11:40556
+  2026/11/13 12:13:16 share #11 from 192.168.130.11:40556
+  2026/11/13 12:13:26 share #12 from 192.168.130.11:40556
+  2026/11/13 12:13:36 share #13 from 192.168.130.11:40556
+  2026/11/13 12:13:43 MINER DISCONNECTED 192.168.130.11:50471 after 2 shares
+  2026/11/13 12:13:46 share #14 from 192.168.130.11:40556
+  2026/11/13 12:13:56 share #15 from 192.168.130.11:40556
+  2026/11/13 12:14:06 share #16 from 192.168.130.11:40556
+  2026/11/13 12:14:16 share #17 from 192.168.130.11:40556
+  2026/11/13 12:14:26 share #18 from 192.168.130.11:40556
+  2026/11/13 12:14:36 share #19 from 192.168.130.11:40556
+  2026/11/13 12:14:46 share #20 from 192.168.130.11:40556
+  2026/11/13 12:14:56 share #21 from 192.168.130.11:40556
+  2026/11/13 12:15:06 share #22 from 192.168.130.11:40556
+  2026/11/13 12:15:11 MINER DISCONNECTED 192.168.130.11:40556 after 22 shares
+  2026/11/13 12:17:01 MINER CONNECTED from 192.168.130.11:47681
+  2026/11/13 12:17:01 share #1 from 192.168.130.11:47681
+nameserver
+  2026/11/13 10:22:23 dns: 192.168.130.11:37165 asked for attacker.example.local
+  2026/11/13 10:47:32 dns: 192.168.130.11:43501 asked for attacker.example.local
+  2026/11/13 10:47:32 dns: 192.168.130.11:48659 asked for attacker.example.local
+  2026/11/13 10:48:08 dns: 192.168.130.11:49170 asked for attacker.example.local
+  2026/11/13 10:48:08 dns: 192.168.130.11:38489 asked for attacker.example.local
+  2026/11/13 10:50:47 dns: 192.168.130.11:41189 asked for attacker.example.local
+  2026/11/13 10:50:47 dns: 192.168.130.11:53987 asked for attacker.example.local
+  2026/11/13 10:52:54 dns: 192.168.130.11:36528 asked for attacker.example.local
+  2026/11/13 10:52:54 dns: 192.168.130.11:36379 asked for attacker.example.local
+  2026/11/13 11:15:00 dns: 192.168.130.11:56015 asked for attacker.example.local
+  2026/11/13 11:15:00 dns: 192.168.130.11:48866 asked for attacker.example.local
+  2026/11/13 11:15:38 dns: 192.168.130.11:34056 asked for attacker.example.local
+  2026/11/13 11:15:38 dns: 192.168.130.11:51137 asked for attacker.example.local
+  2026/11/13 12:11:27 dns: 192.168.130.11:33421 asked for attacker.example.local
+  2026/11/13 12:11:27 dns: 192.168.130.11:43109 asked for attacker.example.local
+  2026/11/13 12:11:35 dns: 192.168.130.11:33421 asked for attacker.example.local
+  2026/11/13 12:11:50 dns: 192.168.130.11:57537 asked for attacker.example.local
+  2026/11/13 12:11:57 dns: 192.168.130.11:57537 asked for attacker.example.local
+  2026/11/13 12:17:00 dns: 192.168.130.11:40773 asked for attacker.example.local
+  2026/11/13 12:17:00 dns: 192.168.130.11:47631 asked for attacker.example.local

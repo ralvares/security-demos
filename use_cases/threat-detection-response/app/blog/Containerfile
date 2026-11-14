@@ -1,0 +1,39 @@
+# Unhackable Blog — zero-CVE image.
+#
+#   podman build --build-arg VARIANT=v1 -t blog:v1 .   # vulnerable link checker (shells out to curl)
+#   podman build --build-arg VARIANT=v2 -t blog:v2 .   # fixed link checker (native HTTP, no shell)
+#
+# Why it scans clean:
+#   * static Go binary, standard library only (no third-party modules), latest Go
+#   * latest Alpine with every package upgraded at build time
+#   * apk-tools removed: nobody can install packages at runtime
+ARG GO_IMAGE=docker.io/library/golang:1.27.4-alpine3.24
+ARG BASE_IMAGE=docker.io/library/alpine:3.24.4
+
+FROM ${GO_IMAGE} AS build
+ARG VARIANT=v1
+WORKDIR /src
+COPY go.mod go.sum ./
+COPY *.go ./
+COPY web ./web
+RUN set -eux; \
+    tags=""; [ "$VARIANT" = "v2" ] && tags="fixed"; \
+    CGO_ENABLED=0 go build -trimpath -tags "$tags" \
+      -ldflags "-s -w -X main.version=${VARIANT}" -o /out/blog .
+
+FROM ${BASE_IMAGE}
+ARG VARIANT=v1
+LABEL org.opencontainers.image.title="unhackable-blog" \
+      org.opencontainers.image.version="${VARIANT}" \
+      org.opencontainers.image.description="RHACS Threat Detection & Response demo app"
+RUN set -eux; \
+    apk upgrade --no-cache; \
+    # ca-certificates for the app's native HTTPS link checks; curl is general runtime tooling
+    # present in the image (the app does not use it — an attacker will scavenge it).
+    apk add --no-cache curl ca-certificates-bundle; \
+    apk --purge del apk-tools; \
+    rm -rf /var/cache/apk/* /etc/apk/cache
+COPY --from=build /out/blog /usr/local/bin/blog
+USER 1001
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/blog"]

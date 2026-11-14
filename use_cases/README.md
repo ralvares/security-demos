@@ -13,6 +13,18 @@ This repository uses a purposely vulnerable application to demonstrate real-worl
 
 ---
 
+## Threat Detection & Response — "The Unhackable Blog"
+
+**Focus:** Runtime detection and response with RHACS 5.0 on OpenShift Local (CRC)
+
+A zero-CVE, minimal-risk app is breached through a bug in its own code. RHACS catches recon, a honeytoken, lateral movement, a reverse shell and a crypto miner talking to an external attacker — then kills the pod and a NetworkPolicy contains it. Self-contained: CRC install, RHACS install, demo, reset.
+
+* **Deliver it:** [The Unhackable Blog — setup, story and presenter guide](threat-detection-response/README.md)
+* **See it:** [End-to-end walkthrough with screenshots](threat-detection-response/docs/WALKTHROUGH.md)
+* **Goal:** Show why 0 CVEs is where security starts, not where it ends.
+
+---
+
 ## The CIS Framework - Small Quick Start
 
 **Focus:** Standards and Best Practices

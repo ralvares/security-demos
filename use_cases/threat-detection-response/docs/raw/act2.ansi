@@ -1,0 +1,12 @@
+
+[1m[35m━━━ ACT 2 — Day zero ━━━[0m
+
+[1m[31mattacker@internet[0m:[34m~[0m$ id[0m
+  uid=1000670000(1000670000) gid=0(root) groups=0(root),1000670000
+
+[1m[31mattacker@internet[0m:[34m~[0m$ uname -a[0m
+  Linux blog-5457d7c75b-lqmzs 5.14.0-687.46.1.el9_8.x86_64 #1 SMP PREEMPT_DYNAMIC Fri Sep 4 06:08:14 EDT 2026 x86_64 Linux
+
+[1m[31mattacker@internet[0m:[34m~[0m$ cat /etc/os-release | head -2[0m
+  NAME="Alpine Linux"
+  ID=alpine
