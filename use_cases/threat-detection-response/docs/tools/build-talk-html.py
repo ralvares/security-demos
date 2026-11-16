@@ -621,6 +621,8 @@ JS = r'''
   function toggleBlack(){ $('black').hidden=!$('black').hidden; send() }
   function tickDeck(){ const t=fmt(elapsed()); document.querySelectorAll('.dclk').forEach(c=>c.textContent=t) }
   function openSpeaker(){
+    // like PowerPoint: presenter view also starts the slideshow here (from the current slide)
+    if(!SPEAKER && deck.hidden) $('present').click();
     spk=window.open(location.href.split(/[?#]/)[0]+'?speaker','unhackable-speaker','width=1360,height=860');
     setTimeout(send,400); setTimeout(send,1200);
   }
