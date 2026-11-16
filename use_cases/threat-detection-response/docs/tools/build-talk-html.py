@@ -105,7 +105,7 @@ DEMO = (
     'In the deck, the slide after "Let\'s test it." is the live demo: the five terminals, full screen. '
     'Click a terminal to type in it. While you type, the keyboard goes to the shell — change slides from the '
     '<b>presenter view</b> window, or click a window title bar first (the keyboard comes back to the slides).</span></div>'
-    '<p>That is the theory. Now let\'s test it.</p>'
+    '<p>That is the theory. Now, the test.</p>'
     '<p>On the left: the attacker. On the right: what RHACS sees, live. Watch the right side.</p>'
 )
 
@@ -114,6 +114,8 @@ def add(group, title, html_, time=""):
     pages.append(dict(id=slug(title) or "start", group=group, title=title, time=time, html=html_))
 
 add("Start", "Start here", blocks(t_intro))
+cheat = [l for l in (D / "CHEATSHEET.md").read_text(encoding="utf-8").split("\n") if not l.startswith("# ")]
+add("Start", "Cheat sheet", blocks(cheat))
 for name in ["The arc", "The three threads", "The three slides", "The close"]:
     if name in T: add("Start", name, blocks(T[name]))
 for name in ["How to speak to this room", "Before you walk on stage"]:

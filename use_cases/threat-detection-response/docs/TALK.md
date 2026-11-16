@@ -11,6 +11,7 @@ management*. The goal is not to dismiss that — it's to show it is the **first 
 product they already own does the rest.
 
 - **The full talk, word for word (speaker notes): [SCRIPT.md](SCRIPT.md)**
+- **One page to memorize: [CHEATSHEET.md](CHEATSHEET.md)**
 - This page: how to speak to the room, run of show, Q&A and checklist. Same content as a web page: [TALK.html](TALK.html)
 - Setup and the demo mechanics: [../README.md](../README.md)
 - What every act looks like on screen: [WALKTHROUGH.md](WALKTHROUGH.md)
