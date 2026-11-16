@@ -74,7 +74,7 @@ And one more thing. Remember this slide. Not for what is on it. For what is miss
 Every one of those checks was done *before* the application runs. So every green check is true at one
 moment: the moment I checked.
 
-I scanned at nine o'clock this morning. Is it still clean now?
+I scanned it yesterday. It was clean. Is it still clean today?
 
 *[Pause.]*
 

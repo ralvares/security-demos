@@ -197,7 +197,7 @@ SLIDES = [
   '<img class="shot" src="slides/release.png" alt="A release pipeline where every step is green">'),
  ("slide-2-today-and-tomorrow", "statement",
   '<p class="big">Secure today.<br>Maybe not <em>tomorrow</em>.</p>'
-  '<p class="lead f">Scanned at 9:00 this morning.<br>Is it still clean now?</p>'),
+  '<p class="lead f">Scanned yesterday: clean.<br>Is it still clean today?</p>'),
  ("slide-2-today-and-tomorrow", "",
   '<div class="kicker">The problem</div><h2>Three things no scanner can see</h2><div class="cols">'
   + "".join(f'<div class="card f">{ICON(ic)}<h3>{a}</h3><p>{b}</p></div>' for a, b, ic in [

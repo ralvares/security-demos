@@ -99,7 +99,7 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 | Time | Segment | Screen | Key line |
 |---|---|---|---|
 | 0:00 | **Slide 1 — the pipeline** | slide | *"Every check happens during build and during deployment. Today is about what happens after."* |
-| 1:30 | **Slide 2 — today and tomorrow** | slide | *"I scanned at nine this morning. Is it still clean now?"* |
+| 1:30 | **Slide 2 — today and tomorrow** | slide | *"I scanned it yesterday. It was clean. Is it still clean today?"* |
 | 3:30 | **Slide 3 — what's watching** | slide | *"Today, I test that. Live."* |
 | 5:00 | **Act 1 — All green** | blog, RHACS | *"The pipeline was right. So — is it secure?"* |
 | 8:30 | **Act 2 — Day zero** | terminal, Violations | *"From the code alone, you cannot tell a mistake from a backdoor."* |

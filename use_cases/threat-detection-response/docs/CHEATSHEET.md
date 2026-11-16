@@ -38,7 +38,7 @@ Every check happens during build and during deployment — **before** the applic
 | Time | Beat | Key lines | Do |
 |---|---|---|---|
 | 0:00 | **Slide 1 — the pipeline** | "This is my release pipeline." · "I built a small blog for today's demo." · "Every check happens during build and during deployment — before the application runs." · "Today is about what happens after deploy." · "Remember this slide. For what is missing." | Point along the jobs, then the summary, then **deploy** |
-| 1:30 | **Slide 2 — today and tomorrow** | "Secure today. Maybe not tomorrow." · "I scanned at nine. Is it still clean now?" · "RHACS rescans every running image every four hours." · "A scan only finds what is known. Three things it cannot see." | Click the three cards |
+| 1:30 | **Slide 2 — today and tomorrow** | "Secure today. Maybe not tomorrow." · "Scanned yesterday: clean. Is it still clean today?" · "RHACS rescans every running image every four hours." · "A scan only finds what is known. Three things it cannot see." | Click the three cards |
 | | *three cards* | **One:** nobody knows yet — zero-day. **Two:** nobody noticed — misconfiguration. **Three:** somebody hid — supply chain. | |
 | | *what helps* | "Trusted sources. Signed images. Rescanning. Do all of it." · "It lowers the risk. It does not remove it." · Claude Code: "a trusted tool, from a trusted store — and no scanner knew." · "Watch what your applications *do*." | |
 | 3:30 | **Slide 3 — five words** | Made of · Deployed · Talks to · Behaves · Acts · "Today, I test that. Live." | One word per click |
