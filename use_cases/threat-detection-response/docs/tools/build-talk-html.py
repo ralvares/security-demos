@@ -216,7 +216,7 @@ SLIDES = [
   '<div class="rbar"></div><div class="kicker">Demo</div><h1>Let\'s test it.</h1>'
   '<p class="lead">One application. Zero CVEs. Every check green.</p>'
   '<div class="byline">Left: the attacker &nbsp;·&nbsp; Right: what RHACS sees</div>'),
- ("act-1-unhackable", "term", '<div class="termph"><span>Live demo terminals</span></div>'),
+ ("act-1-all-green", "term", '<div class="termph"><span>Live demo terminals</span></div>'),
  ("the-tour", "",
   '<div class="kicker">What we saw</div><h2>One attack. Five words.</h2><div class="recap">'
   + "".join(f'<div class="row f">{ICON(FICON[a])}<b>{a}</b><span>{b}</span></div>' for a, b in [

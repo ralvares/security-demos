@@ -100,10 +100,10 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 | 0:00 | **Slide 1 — the pipeline** | slide | *"Let's find out what a green pipeline is actually worth."* |
 | 1:30 | **Slide 2 — the timestamp** | slide | *"True at 9 a.m. Is it still true now?"* |
 | 3:30 | **Slide 3 — what's watching** | slide | *"That's what we're going to put to the test today."* |
-| 5:00 | **Act 1 — Unhackable** | blog, RHACS | *"The pipeline was right. So — is it secure?"* |
+| 5:00 | **Act 1 — All green** | blog, RHACS | *"The pipeline was right. So — is it secure?"* |
 | 8:30 | **Act 2 — Day zero** | terminal, Violations | *"One clean dependency. Zero CVEs. One evaluated rule."* |
 | 12:00 | **Act 3 — Loot** | terminal, Violations, Network Graph | *"Not one step in the pipeline about who this app may talk to."* |
-| 17:00 | **Act 4 — Persistence & profit** | 2 terminals, Violations, Network Graph | *"That's an interactive shell, inside your 'unhackable' app, from outside your cluster."* |
+| 17:00 | **Act 4 — Persistence & profit** | 2 terminals, Violations, Network Graph | *"That's an interactive shell, inside your 'secure' app, from outside your cluster."* |
 | 23:00 | **Act 5 — Respond** | Policies, terminal, Violations | *"The kill stopped this attacker. The NetworkPolicy stops the next one."* |
 | 29:00 | **Act 6 — Fix forward** | diff, terminal, image page | *"Runtime didn't replace patching. It kept us safe until the patch was ready."* |
 | 32:00 | **Live recap — the tour** | RHACS only | *"…and this page still says zero."* |
@@ -157,11 +157,11 @@ What each beat should look like, so you can match the room to the screen (and re
 
 ![Slide 1 — the release pipeline, every job green](slides/release.png)
 
-### Act 1 — Unhackable (5:00)
+### Act 1 — All green (5:00)
 
 > *"The pipeline was right. 0 CVEs, hardened, lowest risk in the cluster. So — is it secure?"*
 
-![The Unhackable Blog](img/01-blog-home.png)
+![The company blog](img/01-blog-home.png)
 ![RHACS — images without CVEs](img/03-rhacs-images-without-cves.png)
 ![RHACS — risk: the blog is the lowest](img/05-rhacs-risk.png)
 ![RHACS — Violations: empty](img/06-rhacs-violations-empty.png)
@@ -188,7 +188,7 @@ What each beat should look like, so you can match the room to the screen (and re
 
 ### Act 4 — Persistence and profit (17:00)
 
-> *"That's an interactive shell, inside your 'unhackable' app, from outside your cluster."*
+> *"That's an interactive shell, inside your 'secure' app, from outside your cluster."*
 
 ![Terminal — reverse shell + crypto miner](img/15-term-act4.png)
 ![Terminal — the C2 listener catches the shell](img/16-term-c2.png)
@@ -222,7 +222,7 @@ What each beat should look like, so you can match the room to the screen (and re
 
 | Slide | What's on it | Purpose |
 |---|---|---|
-| **1 — The pipeline** | `slides/release.png` — a release pipeline run (build, image-scan, policy-check, security-approval, deploy-production), every job green; security approval: *"Looks unhackable. Ship it."* | The promise. Note what's **missing**: no step about network policy. You come back to that in Act 3. |
+| **1 — The pipeline** | `slides/release.png` — a release pipeline run (build, image-scan, policy-check, security-approval, deploy-production), every job green; security approval: *"Looks secure. Ship it."* | The promise. Note what's **missing**: no step about network policy. You come back to that in Act 3. |
 | **2 — The timestamp** | one line: **A clean scan is a timestamp.** | RHACS renews it (rescan every 4 hours) — for what is known. Zero-days, misconfiguration nobody checks and hidden backdoors stay invisible to any scan. |
 | **3 — What's watching** | **Made of → Deployed → Talks to → Behaves → Acts** | What RHACS knows, without naming features ("made of" includes *where it comes from*: registry, signature). Each word pays off in an act. |
 

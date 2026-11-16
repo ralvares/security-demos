@@ -23,7 +23,7 @@ Companion docs: [TALK.md](TALK.md) (run of show, speaking guide, Q&A, checklist)
 ## ⏱ 0:00 — Slide 1: the pipeline
 
 *[Slide 1 up: `slides/release.png` — the release pipeline, every job green. Wait a few seconds. Let
-people read. They will smile at "Looks unhackable. Ship it."]*
+people read. They will smile at "Looks secure. Ship it."]*
 
 This is a release pipeline. I think it looks a lot like yours.
 
@@ -47,7 +47,7 @@ The policy check found no problems. It has the lowest risk in the whole cluster.
 
 *[Point at the security approval.]*
 
-And the security team said: "Looks unhackable. Ship it."
+And the security team said: "Looks secure. Ship it."
 
 *[Pause.]*
 
@@ -180,11 +180,11 @@ Today, we will test that.
 
 ---
 
-## ⏱ 5:00 — Act 1: Unhackable
+## ⏱ 5:00 — Act 1: All green
 
 *[Browser: the blog home page.]*
 
-This is our blog. The Unhackable Blog. Our marketing team chose the name. Not me.
+This is our company blog.
 
 *[Point at the third post.]*
 
@@ -435,7 +435,7 @@ hostname
 ps
 ```
 
-This is a live shell. Inside our "unhackable" application. Typed by a person on a computer outside our
+This is a live shell. Inside our "secure" application. Typed by a person on a computer outside our
 data center.
 
 Now the attacker wants money.
