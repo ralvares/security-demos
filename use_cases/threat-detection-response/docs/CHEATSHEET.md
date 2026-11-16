@@ -6,9 +6,9 @@ One page to memorize. Read it the night before. Keep it next to the laptop. The 
 ### The spine — if you forget everything, say this
 
 Every check happens during build and during deployment — **before** the application runs.
-**A clean scan is a timestamp.** RHACS keeps it fresh. But a scan only finds what is known.
-It cannot see **what nobody knows yet**, **what nobody noticed**, or **what somebody hid**.
-So you watch what the application **does** — and you stop it, while it happens.
+**Secure today. Maybe not tomorrow.** RHACS rescans every 4 hours. But no scan can see
+**what nobody knows yet**, **what nobody noticed**, or **what somebody hid**.
+**A scan sees what is known. Runtime sees what happens. RHACS does both.**
 
 ### The five words
 
@@ -38,7 +38,7 @@ So you watch what the application **does** — and you stop it, while it happens
 | Time | Beat | Key lines | Do |
 |---|---|---|---|
 | 0:00 | **Slide 1 — the pipeline** | "This is my release pipeline." · "I built a small blog for today's demo." · "Every check happens during build and during deployment — before the application runs." · "Today is about what happens after deploy." · "Remember this slide. For what is missing." | Point along the jobs, then the summary, then **deploy** |
-| 1:30 | **Slide 2 — the timestamp** | "A clean scan is a timestamp." · "I scanned at nine. Is it still clean now?" · "RHACS rescans every running image every four hours." · "A scan only finds what is known. Three things it cannot see." | Click the three cards |
+| 1:30 | **Slide 2 — today and tomorrow** | "Secure today. Maybe not tomorrow." · "I scanned at nine. Is it still clean now?" · "RHACS rescans every running image every four hours." · "A scan only finds what is known. Three things it cannot see." | Click the three cards |
 | | *three cards* | **One:** nobody knows yet — zero-day. **Two:** nobody noticed — misconfiguration. **Three:** somebody hid — supply chain. | |
 | | *what helps* | "Trusted sources. Signed images. Rescanning. Do all of it." · "It lowers the risk. It does not remove it." · Claude Code: "a trusted tool, from a trusted store — and no scanner knew." · "Watch what your applications *do*." | |
 | 3:30 | **Slide 3 — five words** | Made of · Deployed · Talks to · Behaves · Acts · "Today, I test that. Live." | One word per click |
@@ -50,7 +50,7 @@ So you watch what the application **does** — and you stop it, while it happens
 | 23:00 | **Act 5 — Respond** | "Last word: acts." · "The rules are files in Git." · "Every command costs them the pod." · "Time is what I was missing." · **"The kill stopped this attacker. The network policy stops the next one."** | `scripts/demo.sh act5` · point at Terminal B (dead) · Enforcement tab |
 | 29:00 | **Act 6 — Fix forward** | "Take the rule, run it as code — that is the bug." · "Still zero CVEs." · **"Runtime security did not replace the fix. It kept me safe until the fix was ready."** | Show the diff · `scripts/demo.sh act6` |
 | 32:00 | **The tour** | "The evidence is already there." · "Still zero. It was right the whole time. And it saw nothing." · five words, one line each | Violations · Graph · Risk · Vuln Mgmt |
-| 37:00 | **The close** | Three questions: *Which programs should run? Would you know in one minute? How fast could you stop it?* · **"A clean scan is a timestamp. RHACS keeps it fresh. And it watches what no scan can see."** · click: "See it, and stop it, while it happens." · click: "Fix it, before the vulnerability is public." · "Thank you." | Step away from the keyboard |
+| 37:00 | **The close** | Three questions: *Which programs should run? Would you know in one minute? How fast could you stop it?* · **"A scan sees what is known. Runtime sees what happens. RHACS does both."** · click: "See it, and stop it, while it happens." · click: "Fix it, before the vulnerability is public." · "Thank you." | Step away from the keyboard |
 
 ### Q&A — one line each
 
@@ -70,5 +70,5 @@ So you watch what the application **does** — and you stop it, while it happens
 
 ### Never say
 
-"unhackable" · "we" (it is **I** — I built it) · "like yours" · "every CVE was a zero-day" ·
+"unhackable" · "we" (it is **I** — I built it) · "like yours" · "every CVE was a zero-day" · "a clean scan is a timestamp" ·
 "nothing real to steal" · idioms

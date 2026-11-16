@@ -132,7 +132,7 @@ for title, ls in script:
     if name.startswith("Slide 1"):
         body = '<div class="slidevis"><img src="slides/release.png" alt="Slide 1 — the release pipeline"></div>' + body
     elif name.startswith("Slide 2"):
-        body = '<div class="slidevis big"><div>A clean scan is a timestamp.</div></div>' + body
+        body = '<div class="slidevis big"><div>Secure today. Maybe not tomorrow.</div></div>' + body
     elif name.startswith("Slide 3"):
         body = ('<div class="slidevis words">' + "".join(f"<span>{w}</span>" for w in ["Made of","Deployed","Talks to","Behaves","Acts"]) + "</div>") + body
     key = re.match(r"(Act \d)", name)
@@ -195,17 +195,17 @@ SLIDES = [
  ("slide-1-the-pipeline", "shotslide",
   '<div class="kicker">The promise</div><h2>Every step is green.</h2>'
   '<img class="shot" src="slides/release.png" alt="A release pipeline where every step is green">'),
- ("slide-2-the-timestamp", "statement",
-  '<p class="big">A clean scan is a <em>timestamp</em>.</p>'
-  '<p class="lead f">True at 9:00 this morning.<br>Is it still true now?</p>'),
- ("slide-2-the-timestamp", "",
+ ("slide-2-today-and-tomorrow", "statement",
+  '<p class="big">Secure today.<br>Maybe not <em>tomorrow</em>.</p>'
+  '<p class="lead f">Scanned at 9:00 this morning.<br>Is it still clean now?</p>'),
+ ("slide-2-today-and-tomorrow", "",
   '<div class="kicker">The problem</div><h2>Three things no scanner can see</h2><div class="cols">'
   + "".join(f'<div class="card f">{ICON(ic)}<h3>{a}</h3><p>{b}</p></div>' for a, b, ic in [
       ("What nobody knows yet", "Zero-days. No CVE yet, so there is nothing to find.", "vulnerability"),
       ("What nobody noticed", "Misconfiguration. A setting nobody checked.", "gear"),
       ("What somebody hid", "Supply-chain attacks. Scanned, signed, and still bad.", "container-unsecured")])
   + '</div>'),
- ("slide-2-the-timestamp", "",
+ ("slide-2-today-and-tomorrow", "",
   '<div class="kicker">What helps</div><h2>Trust. Verify. Rescan.</h2><ul class="ticks icons">'
   f'<li>{ICON("certification")}Trusted sources and trusted vendors</li><li>{ICON("container-secured")}Signed images, verified before they run</li>'
   f'<li>{ICON("calendar")}Every running image rescanned every 4 hours</li></ul>'
@@ -234,7 +234,8 @@ SLIDES = [
   '<li class="f">Would you know, in one minute, if one of them ran something else?</li>'
   '<li class="f">How fast could you stop it, without waking anyone up?</li></ol>'),
  ("the-close-2", "statement",
-  '<p class="big">A clean scan is a <em>timestamp</em>.</p>'
+  '<p class="big two">A scan sees what is <em>known</em>.<br>Runtime sees what <em>happens</em>.</p>'
+  '<p class="lead">RHACS does both.</p>'
   f'<p class="lead f withico">{ICON("view")}<span>See it and stop it, <em>while it happens</em>.</span></p>'
   f'<p class="lead f withico">{ICON("wrench")}<span>Fix it, <em>before the vulnerability is public</em>.</span></p>'),
  ("questions-you-ll-get", "title",
@@ -384,6 +385,7 @@ figcaption{font-size:.8rem;color:var(--muted);padding:4px 2px 0;line-height:1.35
 .slide.title{padding-left:190px}
 .slide.title .byline{left:190px}
 .slide.statement .big{font:900 128px/1.08 var(--disp);margin:0 0 60px;max-width:1500px;letter-spacing:-.02em}
+.slide.statement .big.two{font-size:84px;margin-bottom:40px}
 .slide.shotslide{justify-content:flex-start}
 .slide.shotslide h2{margin-bottom:36px}
 .slide .shot{display:block;height:620px;width:auto;max-width:100%;border-radius:18px;border:2px solid #2a2a2a;box-shadow:0 30px 80px rgba(0,0,0,.6);align-self:center}

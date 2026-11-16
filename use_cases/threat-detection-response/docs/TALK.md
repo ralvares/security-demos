@@ -2,9 +2,9 @@
 
 **40 minutes · 3 intro slides · everything else live in RHACS**
 
-> **A clean scan is a timestamp.**
-> RHACS renews it — every running image is rescanned every 4 hours. But a fresh scan still only finds
-> what is known. You can't patch faster than they discover — but you can see, and stop, faster.
+> **Secure today. Maybe not tomorrow.**
+> RHACS rescans every running image every 4 hours, so you know the day it changes. But a scan only sees
+> what is known. **A scan sees what is known. Runtime sees what happens. RHACS does both.**
 
 Audience: teams that think of RHACS (or container security in general) as *vulnerability
 management*. The goal is not to dismiss that — it's to show it is the **first chapter**, and that the
@@ -81,9 +81,9 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 ## The arc
 
 1. **The promise** — a release pipeline where every job is green: zero CVEs, every best practice.
-2. **The timestamp** — everything checked in the pipeline and at deploy is true *only at the moment you checked*.
+2. **Today and tomorrow** — everything checked in the pipeline and at deploy is true *only at the moment you checked*.
    New vulnerabilities are disclosed every day, faster than ever, and the window to fix keeps
-   shrinking. RHACS renews the timestamp — it rescans every running image every 4 hours, so new CVEs
+   shrinking. RHACS keeps up — it rescans every running image every 4 hours, so new CVEs
    show up without a rebuild. But a fresh scan still only finds what is known. Zero-days have no CVE yet, misconfiguration isn't on anyone's scanner, and
    supply-chain attacks plant vulnerabilities that scan clean — and get signed, if your pipeline signs.
 3. **What's watching** — something that knows every application: what it's made of, how it's
@@ -99,7 +99,7 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 | Time | Segment | Screen | Key line |
 |---|---|---|---|
 | 0:00 | **Slide 1 — the pipeline** | slide | *"Every check happens during build and during deployment. Today is about what happens after."* |
-| 1:30 | **Slide 2 — the timestamp** | slide | *"I scanned at nine this morning. Is it still clean now?"* |
+| 1:30 | **Slide 2 — today and tomorrow** | slide | *"I scanned at nine this morning. Is it still clean now?"* |
 | 3:30 | **Slide 3 — what's watching** | slide | *"Today, I test that. Live."* |
 | 5:00 | **Act 1 — All green** | blog, RHACS | *"The pipeline was right. So — is it secure?"* |
 | 8:30 | **Act 2 — Day zero** | terminal, Violations | *"From the code alone, you cannot tell a mistake from a backdoor."* |
@@ -108,7 +108,7 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 | 23:00 | **Act 5 — Respond** | Policies, terminal, Violations | *"The kill stopped this attacker. The NetworkPolicy stops the next one."* |
 | 29:00 | **Act 6 — Fix forward** | diff, terminal, image page | *"Runtime didn't replace patching. It kept me safe until the patch was ready."* |
 | 32:00 | **Live recap — the tour** | RHACS only | *"…and this page still says zero."* |
-| 37:00 | **Close** | network graph or black | *"A clean scan is a timestamp."* |
+| 37:00 | **Close** | network graph or black | *"A scan sees what is known. Runtime sees what happens. RHACS does both."* |
 | 38:00 | Q&A | | |
 
 **If time runs short:** shorten Act 3 (the honeytoken alone is enough). **Never cut Act 4 or Act 5** —
@@ -224,7 +224,7 @@ What each beat should look like, so you can match the room to the screen (and re
 | Slide | What's on it | Purpose |
 |---|---|---|
 | **1 — The pipeline** | `slides/release.png` — a release pipeline run (build, image-scan, policy-check, security-approval, deploy-production), every job green; security approval: *approved — all checks passed* | The promise. Note what's **missing**: no step about network policy. You come back to that in Act 3. |
-| **2 — The timestamp** | one line: **A clean scan is a timestamp.** | RHACS renews it (rescan every 4 hours) — for what is known. Zero-days, misconfiguration nobody checks and hidden backdoors stay invisible to any scan. |
+| **2 — Today and tomorrow** | one line: **Secure today. Maybe not tomorrow.** | RHACS rescans every 4 hours, so you know the day it changes — for what is known. Zero-days, misconfiguration nobody checks and hidden backdoors stay invisible to any scan. |
 | **3 — What's watching** | **Made of → Deployed → Talks to → Behaves → Acts** | What RHACS knows, without naming features ("made of" includes *where it comes from*: registry, signature). Each word pays off in an act. |
 
 ![Slide 1 — the release pipeline](slides/release.png)
@@ -250,8 +250,8 @@ planted, and the **NetworkPolicy** fixes the misconfiguration.
 ## The close
 
 > *"Keep doing every check, in the pipeline and at deploy. But a pipeline only checks what you know. It cannot see what
-> nobody knows yet. What nobody noticed. Or what somebody hid. … A clean scan is a timestamp. RHACS
-> keeps it fresh. And it watches what no scan can see."*
+> nobody knows yet. What nobody noticed. Or what somebody hid. … A scan sees what is known. Runtime
+> sees what happens. RHACS does both."*
 
 ---
 

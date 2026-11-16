@@ -67,9 +67,9 @@ And one more thing. Remember this slide. Not for what is on it. For what is miss
 
 ---
 
-## ⏱ 1:30 — Slide 2: the timestamp
+## ⏱ 1:30 — Slide 2: today and tomorrow
 
-*[Slide 2: "A clean scan is a timestamp."]*
+*[Slide 2: "Secure today. Maybe not tomorrow."]*
 
 Every one of those checks was done *before* the application runs. So every green check is true at one
 moment: the moment I checked.
@@ -79,10 +79,10 @@ I scanned at nine o'clock this morning. Is it still clean now?
 *[Pause.]*
 
 New vulnerabilities are published every day. Your image did not change. What the world knows about it
-did.
+did. Secure today. Maybe not tomorrow.
 
 RHACS handles this. Every four hours, it scans every running image again, with the newest vulnerability
-data. A new CVE this afternoon — you see it this afternoon. No rebuild. The timestamp stays fresh.
+data. A new CVE this afternoon — you see it this afternoon. No rebuild. You know the day it changes.
 
 But a scan, even a fresh one, only finds what is *known*. There are three things it cannot see.
 
@@ -615,7 +615,7 @@ And how fast could you stop it — without waking anyone up?
 
 *[Pause.]*
 
-A clean scan is a timestamp. RHACS keeps it fresh. And it watches what no scan can see.
+A scan sees what is known. Runtime sees what happens. RHACS does both.
 
 *[Click.]* See it, and stop it, while it happens. That is what you just saw.
 
