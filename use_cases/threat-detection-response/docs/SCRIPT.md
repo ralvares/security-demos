@@ -95,19 +95,20 @@ Two: what nobody noticed. A misconfiguration. A setting nobody checked.
 Three: what somebody hid. A supply-chain attack. The attacker does not attack you. They attack
 something you use.
 
+*[Click: what helps.]*
+
+So what helps? Trusted sources and trusted vendors. Signed images, checked before they run. And
+rescanning, all the time. Do all of it.
+
+*[Click: "It lowers the risk. It does not remove it."]*
+
+It lowers the risk a lot. It does not remove it.
+
 A recent example: Claude Code, end of October. Someone put a backdoor into the real extension, in the
 Cursor store. It opened a remote connection into the developer's computer. Up to five thousand
 developers installed it.
 
-Nobody did anything wrong. They installed a tool they trust, from a store they trust. A scanner finds
-nothing. And if you sign it, the backdoor is signed too.
-
-*[Click: what helps.]*
-
-So what helps? Trusted sources and trusted vendors. Signed images, checked before they run. And
-rescanning, all the time.
-
-That lowers the risk a lot. It does not remove it.
+They did everything right: a trusted tool, from a trusted store. And no scanner knew about it.
 
 So you need one more thing: watch what your applications *do*.
 
