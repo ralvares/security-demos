@@ -80,7 +80,7 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 ## The arc
 
 1. **The promise** — a release pipeline where every job is green: zero CVEs, every best practice.
-2. **The timestamp** — everything checked before deployment is true *only at the moment you checked*.
+2. **The timestamp** — everything checked in the pipeline and at deploy is true *only at the moment you checked*.
    New vulnerabilities are disclosed every day, faster than ever, and the window to fix keeps
    shrinking. RHACS renews the timestamp — it rescans every running image every 4 hours, so new CVEs
    show up without a rebuild. But a fresh scan still only finds what is known. Zero-days have no CVE yet, misconfiguration isn't on anyone's scanner, and
@@ -97,7 +97,7 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 
 | Time | Segment | Screen | Key line |
 |---|---|---|---|
-| 0:00 | **Slide 1 — the pipeline** | slide | *"Every check happens before deploy. Today is about what happens after."* |
+| 0:00 | **Slide 1 — the pipeline** | slide | *"All these checks look at the application before it runs. Today is about what happens after."* |
 | 1:30 | **Slide 2 — the timestamp** | slide | *"I scanned at nine this morning. Is it still clean now?"* |
 | 3:30 | **Slide 3 — what's watching** | slide | *"Today, I test that. Live."* |
 | 5:00 | **Act 1 — All green** | blog, RHACS | *"The pipeline was right. So — is it secure?"* |
@@ -153,7 +153,7 @@ What each beat should look like, so you can match the room to the screen (and re
 
 ### Slides (0:00 – 5:00)
 
-> *"Every job green. Zero CVEs. But every check happens before deploy. Today is about what happens after."*
+> *"Every job green. Zero CVEs. RHACS checks it again at deploy. But all these checks look at the application before it runs. Today is about what happens after."*
 
 ![Slide 1 — the release pipeline, every job green](slides/release.png)
 
@@ -248,7 +248,7 @@ planted, and the **NetworkPolicy** fixes the misconfiguration.
 
 ## The close
 
-> *"Keep doing everything before deploy. But a pipeline only checks what you know. It cannot see what
+> *"Keep doing every check, in the pipeline and at deploy. But a pipeline only checks what you know. It cannot see what
 > nobody knows yet. What nobody noticed. Or what somebody hid. … A clean scan is a timestamp. RHACS
 > keeps it fresh. And it watches what no scan can see."*
 

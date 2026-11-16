@@ -55,8 +55,9 @@ Everything on this slide is true. In a few minutes, you will see it all in the c
 
 *[Point at deploy-production.]*
 
-But look where the pipeline ends: deploy. Every check happens *before* the application runs. After
-deploy, the application is live. It takes traffic from the internet. And the pipeline sees nothing.
+The pipeline ends at deploy. And at deploy, RHACS checks the application again, before it starts.
+Good. But all these checks look at the application *before* it runs. After deploy, the application is
+live. It takes traffic from the internet. That is where attacks happen.
 
 Today is about what happens after deploy, while the application runs. That is runtime security.
 
@@ -70,8 +71,8 @@ And one more thing. Remember this slide. Not for what is on it. For what is miss
 
 *[Slide 2: "A clean scan is a timestamp."]*
 
-Every check in that pipeline was done *before* deploy. So every green check is true at one moment: the
-moment I checked.
+Every one of those checks was done *before* the application runs. So every green check is true at one
+moment: the moment I checked.
 
 I scanned at nine o'clock this morning. Is it still clean now?
 
@@ -599,7 +600,7 @@ words.
 
 So, what should you take home?
 
-Keep doing everything before deploy. Trusted sources. Signatures. Scans.
+Keep doing every check, in the pipeline and at deploy. Trusted sources. Signatures. Scans.
 
 But a pipeline only checks what you know. It cannot see what nobody knows yet. What nobody noticed. Or
 what somebody hid.
