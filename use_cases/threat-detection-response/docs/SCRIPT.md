@@ -97,7 +97,7 @@ something you use.
 
 A recent example: Claude Code, end of October. Someone put a backdoor into the real extension, in the
 Cursor store. It opened a remote connection into the developer's computer. Up to five thousand
-developers.
+developers installed it.
 
 Nobody did anything wrong. They installed a tool they trust, from a store they trust. A scanner finds
 nothing. And if you sign it, the backdoor is signed too.
