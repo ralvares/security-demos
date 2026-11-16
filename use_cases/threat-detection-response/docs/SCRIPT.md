@@ -580,7 +580,8 @@ Back to the five words.
 
 **Made of** — zero CVEs, and where it comes from.
 
-**Deployed** — hardened. And that helped. No token. Nothing real to steal.
+**Deployed** — hardened. And that helped: no Kubernetes token, no secrets in the environment. The
+only keys the attacker found were my trap.
 
 **Talks to** — the call to payments. The calls to the attacker. The missing network policy.
 

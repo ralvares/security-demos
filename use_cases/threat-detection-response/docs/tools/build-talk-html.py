@@ -221,7 +221,7 @@ SLIDES = [
   '<div class="kicker">What we saw</div><h2>One attack. Five words.</h2><div class="recap">'
   + "".join(f'<div class="row f">{ICON(FICON[a])}<b>{a}</b><span>{b}</span></div>' for a, b in [
       ("Made of", "Zero CVEs. Still zero."),
-      ("Deployed", "Hardened. Nothing real to steal."),
+      ("Deployed", "Hardened. No token, no secrets. Only the trap."),
       ("Talks to", "Every new connection stands out."),
       ("Behaves", "Every command, every file. In seconds."),
       ("Acts", "Pod killed in under one second. Network closed.")])
