@@ -6,7 +6,7 @@
 Written in simple English: short sentences, common words, no idioms. The key messages repeat on
 purpose — it helps people who are listening in a second language.
 
-**The three threads** — three ways a security hole gets into an application with a green pipeline:
+**The three threads** — three ways a vulnerability gets into an application with a green pipeline:
 
 - **What nobody knows yet** — a zero-day. There is no CVE yet, so a scanner cannot find it.
 - **What nobody noticed** — a misconfiguration. Here: no network policy.
@@ -82,9 +82,13 @@ own code. They are found faster than ever. And the time to fix them is getting s
 
 Your image did not change. What the world knows about it did.
 
-Here is a simple fact: every CVE was a zero-day once. On the day of the attack, there is no CVE. So
-there is nothing for a scanner to find. The scanner is not wrong. It just cannot see what nobody knows
-yet.
+The good news: RHACS knows this. It does not scan once and stop. Every four hours, it scans every
+running image again, with the newest vulnerability data. So when a new CVE is published this afternoon,
+you know this afternoon. Nobody has to rebuild anything. RHACS keeps renewing the timestamp.
+
+But even a fresh scan can only find what is *known*. And some vulnerabilities are not known yet. We call them
+zero-days. No CVE number. No patch. Nothing for a scanner to find. The scanner is not wrong. It just
+cannot see what nobody knows yet.
 
 Second problem: misconfiguration. The things nobody checked, because they were not on the list.
 
@@ -95,16 +99,19 @@ And the third problem is the one that worries me most. Supply-chain attacks.
 Today, attackers often don't attack your application directly. They attack what your application is
 built from. A library. A base image. A build tool. A step in your pipeline.
 
-You may know the story of xz. It is a small library, inside almost every Linux system. One person
-worked on it for more than two years. They became a trusted maintainer. And then they hid a backdoor
-inside it.
+Here is a recent example. A few weeks ago, at the end of October, the Claude Code extension in the
+Cursor editor's extension store was changed. Claude Code is a popular AI coding assistant. Developers
+install it every day. This was not a fake copy. It was the real extension, with the real name, in its
+normal place in the store. But somebody had added a few lines of hidden code to it: a backdoor. When
+the extension loaded, the backdoor opened a remote connection to the developer's computer. And it
+stayed there, even after you removed the extension.
 
-It was found by luck. An engineer noticed that his logins were half a second slower. He looked closer,
-and he found the backdoor.
+It was online for about eleven hours. Up to five thousand developers may have installed it. Nobody did
+anything wrong. They installed a tool they trust, from a store they trust.
 
 So what does our pipeline do with a hidden backdoor? The scanner looks for *known* problems. A hidden
-backdoor is not known. So the scan is clean. The pipeline signs the image. So the backdoor is signed
-too.
+backdoor is not known. So the scan is clean. And if the pipeline signs the image, the backdoor is
+signed too.
 
 *[Pause.]*
 
@@ -116,11 +123,12 @@ before you run anything.
 
 That lowers the risk a lot.
 
-But it does not remove it. xz came from a trusted project. It was in trusted distributions.
+But it does not remove it. That Claude Code extension was the real one, in a trusted store.
 
 So you need one more thing. You need to watch what your applications actually *do*.
 
-Because a clean scan is not a guarantee. A clean scan is a timestamp.
+A clean scan is a timestamp. RHACS keeps it fresh, every four hours. But even a fresh scan only finds
+what is known. For everything else, you watch behavior.
 
 ---
 
@@ -136,7 +144,7 @@ Imagine a tool that knows your applications better than the people who wrote the
 
 It knows what each application is made of. Every library. Every package. And where it comes from —
 which registry, and if the image is signed. And it knows which parts have vulnerabilities. Not only on
-the day you built it. Every day.
+the day you built it. It scans every running image again, every four hours. The timestamp stays fresh.
 
 *[Show: Deployed.]*
 
@@ -161,8 +169,8 @@ exist. A connection to a new place.
 It also knows the context. How exposed the application is. What it can reach. So it can tell you how
 serious the change is.
 
-And it can act. It can stop the workload. It can close the network. Fast — before a person even reads
-the alert.
+And it can act. It can kill the workload, automatically — before a person even reads the alert. And
+it shows you which connections to close.
 
 *[Pause.]*
 
@@ -249,7 +257,7 @@ One clean library. Zero CVEs.
 
 *[Pause.]*
 
-And one big security hole.
+And one big vulnerability.
 
 So what happens if the "link" I send is not a link — but a rule?
 
@@ -299,9 +307,9 @@ time.
 
 This is the fourth word: **behaves**.
 
-RHACS has watched this application since it started. And this application runs exactly one
-program: itself. It checks links by itself. It runs rules inside itself. It never starts another
-program. So the normal list has one line. And we locked that list.
+This application runs exactly one program: itself. It checks links by itself. It runs rules inside
+itself. It never starts another program. So the normal list has one line. We set that list, and we
+locked it.
 
 So anything else is someone else, running code inside our container.
 
@@ -313,7 +321,9 @@ And it does not care who wrote the code, or why. A mistake or a backdoor — to 
 it must *do* something. Run a program. Write a file. Open a connection. And that is exactly what RHACS
 watches.
 
-Remember how xz was found? Somebody noticed strange behavior. That was luck. This is not luck.
+Remember the Claude Code extension? Its backdoor had to *do* something too: start a program,
+open a connection. That is exactly what this watches. A hidden backdoor can look clean. It cannot
+behave clean.
 
 ---
 
@@ -338,19 +348,19 @@ But wait —
 
 *[The `.aws/credentials` file appears, then the keys.]*
 
-Cloud keys! In a hidden folder. An access key, a secret key, and a note about where the backups are.
-For an attacker, this is perfect.
+Cloud keys! In a hidden folder. An access key and a secret key. And a second file, the `.env`: a
+database password and a payment key. For an attacker, this is perfect.
 
 *[Pause.]*
 
 We put them there.
 
-These keys are fake. The application never reads this file. Never. So the only one who will ever read
+These keys are fake. The application never reads these files. Never. So the only one who will ever read
 it is someone who should not be there.
 
 *[RHACS → Violations → TDR – Honeytoken touched.]*
 
-This is a honeytoken. A trap. It has no false alarms, because nobody normal touches it. The attacker
+This is a honeytoken. A trap. It has almost no false alarms, because nobody normal touches it. The attacker
 took the bait. And here is the exact command.
 
 *[Back to the terminal output.]*
@@ -432,8 +442,8 @@ Now the attacker wants money.
 
 *[Terminal A continues: the miner is downloaded and started.]*
 
-The files of the application are read-only. So they cannot install anything there. But there is one
-folder they can write to: `/tmp`. So they download a crypto miner into `/tmp`, make it executable, and
+The files of the application are read-only. So they cannot install anything there. But there are two
+small folders they can write to. One is `/tmp`. So they download a crypto miner into `/tmp`, make it executable, and
 start it.
 
 *[In Terminal B, type `ps` again. The miner is there.]*
@@ -464,11 +474,11 @@ container changed".
 *[Network Graph. Click attacker.example.local.]*
 
 And here is the attacker on the map. Outside the cluster. Three connections from our blog: one
-download, one mining pool, one shell. All new. All flagged.
+download, one mining pool, one shell. All new. All outside the normal list.
 
 *[Turn to the audience.]*
 
-So, in about fifteen minutes: one unknown hole — a mistake or a backdoor, it does not matter — and one
+So, in about fifteen minutes: one unknown vulnerability — a mistake or a backdoor, it does not matter — and one
 missing network setting. And with that, the attacker ran commands, looked for keys, read card data,
 opened a shell from the internet, and started mining.
 
@@ -527,7 +537,7 @@ So the damage is now limited to one command. And we have time.
 
 *[Pause.]*
 
-And time is what we were missing. Between "someone found the hole" and "the fix is in production",
+And time is what we were missing. Between "someone found the vulnerability" and "the fix is in production",
 there is a gap. Hours. Sometimes days. With a zero-day, you don't even know the gap has started. This
 is how you stay safe during that gap.
 
@@ -535,8 +545,8 @@ Step two: now that we have time, close the way in. And fix the misconfiguration.
 
 *[Act 5 continues: the NetworkPolicy is applied.]*
 
-RHACS watched this application the whole time. So we know what it really needs: DNS, and the internet
-on the web ports. Nothing else. So that is all it gets.
+This application needs only two things: DNS, and the internet on the web ports, to check links.
+Nothing else. So that is all it gets.
 
 *[The last call is made from inside the application itself — no new program. It times out.]*
 
@@ -565,7 +575,7 @@ And this is the fix. No more rules. Check that the link is a real web address. U
 client. Nothing is run as code. No extra programs. Nothing for an attacker to use.
 
 We did not have to guess where the problem was. RHACS showed us which feature was attacked, how, and
-from where. The fix is about ten lines.
+from where. The fix is small.
 
 *[Terminal A:]*
 
@@ -624,7 +634,7 @@ Let's go back to the five words.
 
 **Acts** — the kill, and the network policy.
 
-One product. One console. The same agents you already use for vulnerability scanning. Most teams only
+One product. One console. The same RHACS you already use for vulnerability scanning. Most teams only
 use the first word. The other four stay dark.
 
 ---
@@ -653,14 +663,13 @@ And how fast could you stop it — without waking anyone up?
 
 *[Pause.]*
 
-A clean scan is a timestamp.
+A clean scan is a timestamp. RHACS keeps it fresh. And it watches what no scan can see.
 
 *[Click.]* See it, and stop it, while it happens. That is what you just saw — and you already have
 the tool to do it.
 
-*[Click.]* And fix it, before the hole is public. Many holes are found by researchers long before
-anyone attacks with them. Imagine having the patched library in your hands before the rest of the
-world even knows the hole exists.
+*[Click.]* And fix it, before the vulnerability is public. Imagine having the fixed library before
+the rest of the world even knows about the vulnerability.
 
 Thank you.
 
@@ -677,7 +686,8 @@ advance."
 
 **"We only use trusted vendors and trusted libraries."**
 "Good — please keep doing that. It is one of the best things you can do. But trusted sources lower the
-risk; they don't remove it. xz came from a trusted project. That is why you also watch behavior."
+risk; they don't remove it. The backdoored Claude Code extension was the real one, in a trusted store.
+That is why you also watch behavior."
 
 **"We sign our images and create SBOMs."**
 "Keep doing it. A signature proves who built the image. An SBOM shows what is inside. But neither proves
@@ -692,25 +702,24 @@ home, that is outside the normal list. It does not matter who wrote the code."
 care how the attacker got in. It watches what they do inside."
 
 **"Our images are distroless."**
-"Good, keep doing that. But the attacker in the demo downloaded their own tools. Fewer tools in the
-image helps. It does not fix the code, and it does not fix the network."
+"Good, keep doing that. Fewer tools in the image makes the attacker's work harder. But they can bring
+their own tools — like the miner in the demo. And it does not fix the code, or the network."
 
 **"Why not have a network policy from day one?"**
 "You should. That is the misconfiguration part of the story. The hard part is knowing what the policy
-should say. RHACS learned what the application really needs — and we used that."
+should say. The RHACS network graph shows what each application really talks to. Start there."
 
 **"Kill Pod will break production."**
 "It kills one pod. Kubernetes starts a new one in a few seconds. And you only turn it on when you know
 what normal looks like. First alert, later enforce. Like in the demo."
 
 **"Does the attacker get a connection before the kill?"**
-"Yes, for less than one second. We measured it: about seven tenths of a second. That is why step two is
-the network policy. It removes even that."
+"Yes, for less than one second. That is why step two is the network policy. It removes even that."
 
 **"What can trigger the kill?"**
-"Programs and files. Network alerts don't kill — you answer them with a network policy. That is why
-there are two steps."
+"In the demo: a program outside the normal list. The network alert is on the payment service — you do
+not kill your payment service. You answer it with a network policy. That is why there are two steps."
 
 **"We already have EDR on the nodes."**
-"EDR sees programs on a machine. RHACS sees them with context: which application, which image, what is
+"Many EDR tools see programs on a machine. RHACS sees them with context: which application, which image, what is
 normal for it, who it talks to. And it responds in Kubernetes terms."

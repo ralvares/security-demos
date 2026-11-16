@@ -3,7 +3,8 @@
 **40 minutes · 3 intro slides · everything else live in RHACS**
 
 > **A clean scan is a timestamp.**
-> You can't patch faster than they discover — but you can see, and stop, faster.
+> RHACS renews it — every running image is rescanned every 4 hours. But a fresh scan still only finds
+> what is known. You can't patch faster than they discover — but you can see, and stop, faster.
 
 Audience: teams that think of RHACS (or container security in general) as *vulnerability
 management*. The goal is not to dismiss that — it's to show it is the **first chapter**, and that the
@@ -53,7 +54,7 @@ a second or third language. So:
 | Term | Say it like this |
 |---|---|
 | **CVE** | A known, published vulnerability. It has a number. Scanners look for these numbers. |
-| **Zero-day** | A security hole that nobody knows about yet. No number. No patch. A scanner cannot find it. |
+| **Zero-day** | A vulnerability that nobody knows about yet. No number. No patch. A scanner cannot find it. |
 | **Container / pod** | The box the application runs in. Kubernetes can throw it away and start a new, clean one in seconds. |
 | **Supply-chain attack** | The attacker does not attack you. They attack something you use: a library, a build tool, a base image. |
 | **Honeytoken** | A trap. Fake keys that the application never uses. Only an intruder touches them. |
@@ -81,8 +82,9 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 1. **The promise** — a release pipeline where every job is green: zero CVEs, every best practice.
 2. **The timestamp** — everything checked before deployment is true *only at the moment you checked*.
    New vulnerabilities are disclosed every day, faster than ever, and the window to fix keeps
-   shrinking. Every CVE was a zero-day once, misconfiguration isn't on anyone's scanner, and
-   supply-chain attacks plant holes that scan clean and get signed by your own pipeline.
+   shrinking. RHACS renews the timestamp — it rescans every running image every 4 hours, so new CVEs
+   show up without a rebuild. But a fresh scan still only finds what is known. Zero-days have no CVE yet, misconfiguration isn't on anyone's scanner, and
+   supply-chain attacks plant vulnerabilities that scan clean — and get signed, if your pipeline signs.
 3. **What's watching** — something that knows every application: what it's made of, how it's
    deployed, who it talks to, how it behaves — and acts when that changes.
 4. **The proof** — break in live, without a single CVE. Watch RHACS see everything.
@@ -127,8 +129,8 @@ flags all line up.
 | Act | Stage — say this | ATT&CK tactic | What the attacker does | RHACS flags (pane 3) |
 |---|---|---|---|---|
 | **2** | **Initial access + execution** — "they turn a feature into a shell" | Execution (T1059) | The "Check links" rule engine evaluates their input as Go (yaegi, handed exec.Command) — remote code execution. No CVE, our own bug. | `TDR - Unauthorized process` |
-| **3a** | **Discovery** — "first thing in, they look around" | Discovery | List the service-account dir, grep the environment for secrets. Hardening pays off: nothing there. | *(baseline recon — quiet)* |
-| **3b** | **Credential access** — "they go hunting for keys" | Credential Access (T1552.001) | They check the obvious spots — `~/.aws/credentials`, the app's `.env` — and find both: **honeytokens** we planted. The app never reads them, so any touch = intruder. | `TDR - Honeytoken touched` |
+| **3a** | **Discovery** — "first thing in, they look around" | Discovery | List the service-account dir, grep the environment for secrets. Hardening pays off: nothing there. | `TDR - Unauthorized process` (every command is a new program) |
+| **3b** | **Credential access** — "they go hunting for keys" | Credential Access (T1552.001) | They check the obvious spots — `~/.aws/credentials`, the app's `.env` — and find both: **honeytokens** we planted. The app never reads them, so any command that reads them = intruder. | `TDR - Honeytoken touched` |
 | **3c** | **Control-plane recon** — "can they reach Kubernetes itself?" | Discovery (T1613) | They probe the in-cluster Kubernetes API (`kubernetes.default`). No service-account token, so it goes nowhere — but the attempt is the tell. | `TDR - Kubernetes API reconnaissance` |
 | **3d** | **Lateral movement** — "pivot from the blog to the money" | Lateral Movement | From the public blog they reach `payments-api` and pull card data. The blog has **never** talked to payments before. | `TDR - Unexpected network flow to payments-api` |
 | **4a** | **Persistence + C2** — "they stop knocking and move in" | Persistence / Command & Control | A reverse shell calls home to the attacker's laptop — a live, interactive shell from outside the cluster. | `TDR - Reverse shell tool executed` |
@@ -221,7 +223,7 @@ What each beat should look like, so you can match the room to the screen (and re
 | Slide | What's on it | Purpose |
 |---|---|---|
 | **1 — The pipeline** | `slides/release.png` — a release pipeline run (build, image-scan, policy-check, security-approval, deploy-production), every job green; security approval: *"Looks unhackable. Ship it."* | The promise. Note what's **missing**: no step about network policy. You come back to that in Act 3. |
-| **2 — The timestamp** | one line: **A clean scan is a timestamp.** | Zero-days, unknown vulnerabilities, a shrinking window to fix — and misconfiguration nobody checks. |
+| **2 — The timestamp** | one line: **A clean scan is a timestamp.** | RHACS renews it (rescan every 4 hours) — for what is known. Zero-days, misconfiguration nobody checks and hidden backdoors stay invisible to any scan. |
 | **3 — What's watching** | **Made of → Deployed → Talks to → Behaves → Acts** | What RHACS knows, without naming features ("made of" includes *where it comes from*: registry, signature). Each word pays off in an act. |
 
 ![Slide 1 — the release pipeline](slides/release.png)
@@ -234,11 +236,11 @@ The full spoken text for every slide, act, the tour and the close is in **[SCRIP
 |---|---|---|
 | **What nobody knows yet** — zero-days, unknown vulnerabilities | Act 2: evaluating untrusted input as code has no CVE, no advisory, no signature | *"This is a zero-day. Ours. And it stands in for every zero-day you'll ever have."* |
 | **What nobody noticed** — misconfiguration | Act 3: no NetworkPolicy — and no pipeline step that checks for one — so the public blog can reach payments, the Kubernetes API and the internet | *"Nobody decided that. Nobody noticed it."* |
-| **What somebody hid** — supply-chain attacks | Slide 2 (xz, signed backdoors) and Act 2: the injectable line could just as well be a malicious PR or a poisoned dependency | *"You cannot tell, from the code, whether this is a mistake or a backdoor. And neither can any scanner."* |
+| **What somebody hid** — supply-chain attacks | Slide 2 (the backdoored Claude Code extension, Oct 2026) and Act 2: the injectable line could just as well be a malicious PR or a poisoned dependency | *"You cannot tell, from the code, whether this is a mistake or a backdoor. And neither can any scanner."* |
 
 Alongside the threads: **know where your components come from** — trusted sources and trusted vendors,
-signed and verified images. That lowers the risk a lot; it doesn't remove it (xz came from a trusted
-project). That is why you also watch behavior.
+signed and verified images. That lowers the risk a lot; it doesn't remove it (the backdoored Claude
+Code extension was the real one, in a trusted store). That is why you also watch behavior.
 
 All three are answered the same way: RHACS watches **behavior**, so intent doesn't matter — a mistake and
 a backdoor both have to *do* something. In Act 5 the **kill** buys time against the unknown and the
@@ -248,7 +250,7 @@ planted, and the **NetworkPolicy** fixes the misconfiguration.
 
 > *"Your pipeline can check everything you know. It can't check for what nobody knows yet. It can't
 > check for what nobody noticed. And it can't check for what somebody hid. … A clean scan is a
-> timestamp."*
+> timestamp. RHACS keeps it fresh. And it watches what no scan can see."*
 
 ---
 
@@ -259,21 +261,21 @@ Short answers. Say the first sentence, then stop. If they want more, they will a
 | Question | Answer |
 |---|---|
 | *"Isn't this just a bad developer?"* | No. It was a normal shortcut, made under time pressure, and it passed every check. If it was a library with an unknown bug, we would be in the same place. You cannot find unknown problems in advance. |
-| *"We only use trusted vendors and trusted libraries."* | Good — please keep doing that. It is one of the best things you can do. But trusted sources lower the risk. They do not remove it. xz came from a trusted project. That is why you also watch behavior. |
+| *"We only use trusted vendors and trusted libraries."* | Good — please keep doing that. It is one of the best things you can do. But trusted sources lower the risk. They do not remove it. The backdoored Claude Code extension was the real one, in a trusted store. That is why you also watch behavior. |
 | *"We sign our images and create SBOMs."* | Keep doing it. A signature proves who built the image. An SBOM shows what is inside. Neither proves that the code is honest. The SolarWinds backdoor was in a correctly signed update. |
 | *"How does RHACS catch a supply-chain backdoor?"* | By behavior. A backdoor that does nothing is harmless. When it runs a program, writes a file or calls home, that is outside the normal list. It does not matter who wrote the code. |
 | *"We have a WAF."* | Keep it. A WAF may block this request. Maybe not the next one. And it has no rule for a zero-day. RHACS does not care how the attacker got in. It watches what happens inside. |
-| *"Our images are distroless."* | Good, keep doing that. Fewer tools in the image helps. But it does not fix the code, and it does not fix the network. |
-| *"We already have EDR on the servers."* | EDR sees programs on a machine. RHACS sees them with context: which application, which image, what is normal for it, who it talks to. And it acts in Kubernetes terms: kill the pod, apply a network policy. |
-| *"Why not have a network policy from day one?"* | You should. That is the misconfiguration part of the story. The hard part is knowing what the policy should say. RHACS learned what the application really needs — and we used that. |
+| *"Our images are distroless."* | Good, keep doing that. Fewer tools makes the attacker's work harder. But they can bring their own tools — like the miner in the demo. And it does not fix the code, or the network. |
+| *"We already have EDR on the servers."* | Many EDR tools see programs on a machine. RHACS sees them with context: which application, which image, what is normal for it, who it talks to. And it acts in Kubernetes terms: kill the pod, apply a network policy. |
+| *"Why not have a network policy from day one?"* | You should. That is the misconfiguration part of the story. The hard part is knowing what the policy should say. The RHACS network graph shows what each application really talks to. Start there. |
 | *"Kill Pod will break production."* | It kills one pod. Kubernetes starts a new, clean one in a few seconds. And you only turn it on when you know what normal looks like. First alert. Later, act. Like in the demo. |
-| *"Does the attacker get anything before the kill?"* | For less than one second. We measured it: about seven tenths of a second. That is why step two is the network policy. It removes even that. |
-| *"What can trigger the kill?"* | Programs and files. Network alerts do not kill — you answer them with a network policy. That is why there are two steps. |
-| *"What if the attacker uses port 443, like normal web traffic?"* | Then this network policy lets it through, because the link checker needs the internet. You still get the alert for the new destination. In production, add an allow-list of destinations — an egress firewall or a proxy. |
+| *"Does the attacker get anything before the kill?"* | For less than one second. That is why step two is the network policy. It removes even that. |
+| *"What can trigger the kill?"* | In the demo: a program outside the normal list. The network alert is on the payment service — you do not kill your payment service. You answer it with a network policy. That is why there are two steps. |
+| *"What if the attacker uses port 443, like normal web traffic?"* | Then this network policy lets it through, because the link checker needs the internet. You still see the new destination on the network graph. In production, add an allow-list of destinations — an egress firewall or a proxy. |
 | *"How long does it take to learn what is normal?"* | RHACS learns by watching. You can also declare the normal list yourself, like we did, and lock it on day one. Start with the applications that matter most. |
 | *"How much work is this for my team?"* | The rules are files in Git, reviewed like code. Start with alerts only. Turn on automatic actions where the normal list is stable. |
 | *"Is this a separate product?"* | No. It is part of RHACS. The same console and the same cluster components you already use for vulnerability scanning. |
-| *"What about false alarms?"* | The normal list is per application, so it is very precise. A trap file, like the honeytoken, has no false alarms at all: nobody normal ever touches it. |
+| *"What about false alarms?"* | The normal list is per application, so it is very precise. A trap file, like the honeytoken, has almost no false alarms: nobody normal ever touches it. |
 
 ---
 

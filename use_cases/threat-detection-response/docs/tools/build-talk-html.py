@@ -183,7 +183,7 @@ FIVE = [("Made of", "Libraries<br>Packages<br>Where it comes from", "container-i
         ("Deployed", "User<br>Privileges<br>Secrets<br>Exposure", "kubernetes-pod"),
         ("Talks to", "Services<br>Namespaces<br>The internet", "data-connections"),
         ("Behaves", "Programs<br>Files<br>What is normal", "view"),
-        ("Acts", "Stops the workload<br>Closes the network", "shield")]
+        ("Acts", "Kills the pod<br>Shows what to block", "shield")]
 FICON = {a: i for a, _, i in FIVE}
 SLIDES = [
  ("slide-1-the-pipeline", "title",
@@ -202,11 +202,11 @@ SLIDES = [
       ("What nobody knows yet", "Zero-days. No CVE yet, so there is nothing to find.", "vulnerability"),
       ("What nobody noticed", "Misconfiguration. It is not on any checklist.", "gear"),
       ("What somebody hid", "Supply-chain attacks. Scanned, signed, and still bad.", "container-unsecured")])
-  + '</div><p class="note f">Every CVE was a zero-day once.</p>'),
+  + '</div>'),
  ("slide-2-the-timestamp", "",
   '<div class="kicker">What helps</div><h2>Know where your components come from.</h2><ul class="ticks icons">'
   f'<li>{ICON("certification")}Trusted sources and trusted vendors</li><li>{ICON("container-secured")}Signed images, verified before they run</li>'
-  f'<li>{ICON("calendar")}Scan every day, not only at build time</li></ul>'
+  f'<li>{ICON("calendar")}Rescan every running image every 4 hours, not only at build time</li></ul>'
   '<p class="punch f">It lowers the risk. <em>It does not remove it.</em></p>'),
  ("slide-3-what-s-watching", "",
   '<div class="kicker">What is watching</div><h2>One tool that knows every application</h2><div class="words">'
@@ -233,8 +233,9 @@ SLIDES = [
   '<li class="f">How fast could you stop it, without waking anyone up?</li></ol>'),
  ("the-close-2", "statement",
   '<p class="big">A clean scan is a <em>timestamp</em>.</p>'
+  '<p class="lead f">Keep it fresh. Watch what no scan can see.</p>'
   f'<p class="lead f withico">{ICON("view")}<span>See it and stop it, <em>while it happens</em>.</span></p>'
-  f'<p class="lead f withico">{ICON("wrench")}<span>Fix it, <em>before the hole is public</em>.</span></p>'),
+  f'<p class="lead f withico">{ICON("wrench")}<span>Fix it, <em>before the vulnerability is public</em>.</span></p>'),
  ("questions-you-ll-get", "title",
   '<div class="rbar"></div>' + LOGO + '<h1>Thank you.</h1><p class="lead">Questions?</p>'
   '<div class="byline">Red Hat Advanced Cluster Security</div>'),
