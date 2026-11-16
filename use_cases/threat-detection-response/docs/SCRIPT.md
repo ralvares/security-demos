@@ -55,9 +55,9 @@ Everything on this slide is true. In a few minutes, you will see it all in the c
 
 *[Point at deploy-production.]*
 
-The pipeline ends at deploy. And at deploy, RHACS checks the application again, before it starts.
-Good. But all these checks look at the application *before* it runs. After deploy, the application is
-live. It takes traffic from the internet. That is where attacks happen.
+But look where the pipeline ends: deploy. Every check happens during build and during deployment —
+*before* the application runs. After deploy, the application is live. It takes traffic from the
+internet. And those checks see nothing.
 
 Today is about what happens after deploy, while the application runs. That is runtime security.
 

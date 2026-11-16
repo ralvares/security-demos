@@ -97,7 +97,7 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 
 | Time | Segment | Screen | Key line |
 |---|---|---|---|
-| 0:00 | **Slide 1 — the pipeline** | slide | *"All these checks look at the application before it runs. Today is about what happens after."* |
+| 0:00 | **Slide 1 — the pipeline** | slide | *"Every check happens during build and during deployment. Today is about what happens after."* |
 | 1:30 | **Slide 2 — the timestamp** | slide | *"I scanned at nine this morning. Is it still clean now?"* |
 | 3:30 | **Slide 3 — what's watching** | slide | *"Today, I test that. Live."* |
 | 5:00 | **Act 1 — All green** | blog, RHACS | *"The pipeline was right. So — is it secure?"* |
@@ -153,7 +153,7 @@ What each beat should look like, so you can match the room to the screen (and re
 
 ### Slides (0:00 – 5:00)
 
-> *"Every job green. Zero CVEs. RHACS checks it again at deploy. But all these checks look at the application before it runs. Today is about what happens after."*
+> *"Every job green. Zero CVEs. Every check happens during build and during deployment. Today is about what happens after."*
 
 ![Slide 1 — the release pipeline, every job green](slides/release.png)
 
