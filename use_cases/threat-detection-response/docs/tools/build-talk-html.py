@@ -200,16 +200,16 @@ SLIDES = [
   '<div class="kicker">The problem</div><h2>Three things no scanner can see</h2><div class="cols">'
   + "".join(f'<div class="card f">{ICON(ic)}<h3>{a}</h3><p>{b}</p></div>' for a, b, ic in [
       ("What nobody knows yet", "Zero-days. No CVE yet, so there is nothing to find.", "vulnerability"),
-      ("What nobody noticed", "Misconfiguration. It is not on any checklist.", "gear"),
+      ("What nobody noticed", "Misconfiguration. A setting nobody checked.", "gear"),
       ("What somebody hid", "Supply-chain attacks. Scanned, signed, and still bad.", "container-unsecured")])
   + '</div>'),
  ("slide-2-the-timestamp", "",
-  '<div class="kicker">What helps</div><h2>Know where your components come from.</h2><ul class="ticks icons">'
+  '<div class="kicker">What helps</div><h2>Trust. Verify. Rescan.</h2><ul class="ticks icons">'
   f'<li>{ICON("certification")}Trusted sources and trusted vendors</li><li>{ICON("container-secured")}Signed images, verified before they run</li>'
-  f'<li>{ICON("calendar")}Rescan every running image every 4 hours, not only at build time</li></ul>'
+  f'<li>{ICON("calendar")}Every running image rescanned every 4 hours</li></ul>'
   '<p class="punch f">It lowers the risk. <em>It does not remove it.</em></p>'),
  ("slide-3-what-s-watching", "",
-  '<div class="kicker">What is watching</div><h2>One tool that knows every application</h2><div class="words">'
+  '<div class="kicker">What is watching</div><h2>RHACS knows every application</h2><div class="words">'
   + "".join(f'<div class="word f{" act" if a == "Acts" else ""}">{ICON(i)}<h3>{a}</h3><p>{b}</p></div>' for a, b, i in FIVE)
   + '</div>'),
  ("demo-time", "title",
@@ -222,7 +222,7 @@ SLIDES = [
   + "".join(f'<div class="row f">{ICON(FICON[a])}<b>{a}</b><span>{b}</span></div>' for a, b in [
       ("Made of", "Zero CVEs. Still zero."),
       ("Deployed", "Hardened. Nothing real to steal."),
-      ("Talks to", "Every new connection is flagged."),
+      ("Talks to", "Every new connection stands out."),
       ("Behaves", "Every command, every file. In seconds."),
       ("Acts", "Pod killed in under one second. Network closed.")])
   + '</div>'),
@@ -233,7 +233,6 @@ SLIDES = [
   '<li class="f">How fast could you stop it, without waking anyone up?</li></ol>'),
  ("the-close-2", "statement",
   '<p class="big">A clean scan is a <em>timestamp</em>.</p>'
-  '<p class="lead f">Keep it fresh. Watch what no scan can see.</p>'
   f'<p class="lead f withico">{ICON("view")}<span>See it and stop it, <em>while it happens</em>.</span></p>'
   f'<p class="lead f withico">{ICON("wrench")}<span>Fix it, <em>before the vulnerability is public</em>.</span></p>'),
  ("questions-you-ll-get", "title",

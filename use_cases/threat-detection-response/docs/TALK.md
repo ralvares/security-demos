@@ -71,7 +71,7 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 | How fast do we **see** an attack? | In seconds. Every step was an alert, with the exact command, user and time. |
 | How fast do we **stop** it? | Automatically. The pod was killed in less than one second, without a person. |
 | Do we need to know the attack in advance? | No. RHACS only needs to know what is **normal** for each application. |
-| Are we safe while the fix is not ready? | Yes. The kill and the network policy protect us until the fix ships. |
+| Are we safe while the fix is not ready? | Yes. The kill and the network policy protect the application until the fix ships. |
 | Do we have evidence for the investigation? | Yes. Every alert, every kill, every connection is recorded. |
 | Is this a new tool? | No. It is the same RHACS you use for vulnerability scanning — the other four words. |
 
@@ -97,15 +97,15 @@ Say these in the tour and the close. This is what a CISO takes back to the board
 
 | Time | Segment | Screen | Key line |
 |---|---|---|---|
-| 0:00 | **Slide 1 — the pipeline** | slide | *"Let's find out what a green pipeline is actually worth."* |
-| 1:30 | **Slide 2 — the timestamp** | slide | *"True at 9 a.m. Is it still true now?"* |
-| 3:30 | **Slide 3 — what's watching** | slide | *"That's what we're going to put to the test today."* |
+| 0:00 | **Slide 1 — the pipeline** | slide | *"Every check happens before deploy. Today is about what happens after."* |
+| 1:30 | **Slide 2 — the timestamp** | slide | *"I scanned at nine this morning. Is it still clean now?"* |
+| 3:30 | **Slide 3 — what's watching** | slide | *"Today, I test that. Live."* |
 | 5:00 | **Act 1 — All green** | blog, RHACS | *"The pipeline was right. So — is it secure?"* |
-| 8:30 | **Act 2 — Day zero** | terminal, Violations | *"One clean dependency. Zero CVEs. One evaluated rule."* |
+| 8:30 | **Act 2 — Day zero** | terminal, Violations | *"From the code alone, you cannot tell a mistake from a backdoor."* |
 | 12:00 | **Act 3 — Loot** | terminal, Violations, Network Graph | *"Not one step in the pipeline about who this app may talk to."* |
 | 17:00 | **Act 4 — Persistence & profit** | 2 terminals, Violations, Network Graph | *"That's an interactive shell, inside your 'secure' app, from outside your cluster."* |
 | 23:00 | **Act 5 — Respond** | Policies, terminal, Violations | *"The kill stopped this attacker. The NetworkPolicy stops the next one."* |
-| 29:00 | **Act 6 — Fix forward** | diff, terminal, image page | *"Runtime didn't replace patching. It kept us safe until the patch was ready."* |
+| 29:00 | **Act 6 — Fix forward** | diff, terminal, image page | *"Runtime didn't replace patching. It kept me safe until the patch was ready."* |
 | 32:00 | **Live recap — the tour** | RHACS only | *"…and this page still says zero."* |
 | 37:00 | **Close** | network graph or black | *"A clean scan is a timestamp."* |
 | 38:00 | Q&A | | |
@@ -128,9 +128,9 @@ flags all line up.
 
 | Act | Stage — say this | ATT&CK tactic | What the attacker does | RHACS flags (pane 3) |
 |---|---|---|---|---|
-| **2** | **Initial access + execution** — "they turn a feature into a shell" | Execution (T1059) | The "Check links" rule engine evaluates their input as Go (yaegi, handed exec.Command) — remote code execution. No CVE, our own bug. | `TDR - Unauthorized process` |
+| **2** | **Initial access + execution** — "they turn a feature into a shell" | Execution (T1059) | The "Check links" rule engine evaluates their input as Go (yaegi, handed exec.Command) — remote code execution. No CVE, my own bug. | `TDR - Unauthorized process` |
 | **3a** | **Discovery** — "first thing in, they look around" | Discovery | List the service-account dir, grep the environment for secrets. Hardening pays off: nothing there. | `TDR - Unauthorized process` (every command is a new program) |
-| **3b** | **Credential access** — "they go hunting for keys" | Credential Access (T1552.001) | They check the obvious spots — `~/.aws/credentials`, the app's `.env` — and find both: **honeytokens** we planted. The app never reads them, so any command that reads them = intruder. | `TDR - Honeytoken touched` |
+| **3b** | **Credential access** — "they go hunting for keys" | Credential Access (T1552.001) | They check the obvious spots — `~/.aws/credentials`, the app's `.env` — and find both: **honeytokens** I planted. The app never reads them, so any command that reads them = intruder. | `TDR - Honeytoken touched` |
 | **3c** | **Control-plane recon** — "can they reach Kubernetes itself?" | Discovery (T1613) | They probe the in-cluster Kubernetes API (`kubernetes.default`). No service-account token, so it goes nowhere — but the attempt is the tell. | `TDR - Kubernetes API reconnaissance` |
 | **3d** | **Lateral movement** — "pivot from the blog to the money" | Lateral Movement | From the public blog they reach `payments-api` and pull card data. The blog has **never** talked to payments before. | `TDR - Unexpected network flow to payments-api` |
 | **4a** | **Persistence + C2** — "they stop knocking and move in" | Persistence / Command & Control | A reverse shell calls home to the attacker's laptop — a live, interactive shell from outside the cluster. | `TDR - Reverse shell tool executed` |
@@ -141,7 +141,7 @@ flags all line up.
 
 **The one-sentence spine:** *they got in with no CVE (Act 2), looted and pivoted (Act 3), moved in and
 cashed out (Act 4) — and RHACS saw every move within seconds (the feed), then stopped it two ways
-(Act 5), before we even shipped the fix (Act 6).*
+(Act 5), before I even shipped the fix (Act 6).*
 
 ---
 
@@ -153,7 +153,7 @@ What each beat should look like, so you can match the room to the screen (and re
 
 ### Slides (0:00 – 5:00)
 
-> *"Every job green. Zero CVEs. Let's find out what a green pipeline is actually worth."*
+> *"Every job green. Zero CVEs. But every check happens before deploy. Today is about what happens after."*
 
 ![Slide 1 — the release pipeline, every job green](slides/release.png)
 
@@ -209,7 +209,7 @@ What each beat should look like, so you can match the room to the screen (and re
 
 ### Act 6 — Fix forward (29:00)
 
-> *"Runtime didn't replace patching. It kept us safe until the patch was ready."*
+> *"Runtime didn't replace patching. It kept me safe until the patch was ready."*
 
 ![Terminal — v1 → v2 diff: no shell, native HTTP client](img/31-term-diff.png)
 ![Terminal — v2 live, the exploit is dead](img/32-term-act6.png)
@@ -222,7 +222,7 @@ What each beat should look like, so you can match the room to the screen (and re
 
 | Slide | What's on it | Purpose |
 |---|---|---|
-| **1 — The pipeline** | `slides/release.png` — a release pipeline run (build, image-scan, policy-check, security-approval, deploy-production), every job green; security approval: *"Looks secure. Ship it."* | The promise. Note what's **missing**: no step about network policy. You come back to that in Act 3. |
+| **1 — The pipeline** | `slides/release.png` — a release pipeline run (build, image-scan, policy-check, security-approval, deploy-production), every job green; security approval: *approved — all checks passed* | The promise. Note what's **missing**: no step about network policy. You come back to that in Act 3. |
 | **2 — The timestamp** | one line: **A clean scan is a timestamp.** | RHACS renews it (rescan every 4 hours) — for what is known. Zero-days, misconfiguration nobody checks and hidden backdoors stay invisible to any scan. |
 | **3 — What's watching** | **Made of → Deployed → Talks to → Behaves → Acts** | What RHACS knows, without naming features ("made of" includes *where it comes from*: registry, signature). Each word pays off in an act. |
 
@@ -234,9 +234,9 @@ The full spoken text for every slide, act, the tour and the close is in **[SCRIP
 
 | Thread | Where it shows | Line |
 |---|---|---|
-| **What nobody knows yet** — zero-days, unknown vulnerabilities | Act 2: evaluating untrusted input as code has no CVE, no advisory, no signature | *"This is a zero-day. Ours. And it stands in for every zero-day you'll ever have."* |
+| **What nobody knows yet** — zero-days, unknown vulnerabilities | Act 2: evaluating untrusted input as code has no CVE, no advisory, no signature | *"This is a zero-day. My own. The scanner says zero. The scanner is right. And it does not help."* |
 | **What nobody noticed** — misconfiguration | Act 3: no NetworkPolicy — and no pipeline step that checks for one — so the public blog can reach payments, the Kubernetes API and the internet | *"Nobody decided that. Nobody noticed it."* |
-| **What somebody hid** — supply-chain attacks | Slide 2 (the backdoored Claude Code extension, Oct 2026) and Act 2: the injectable line could just as well be a malicious PR or a poisoned dependency | *"You cannot tell, from the code, whether this is a mistake or a backdoor. And neither can any scanner."* |
+| **What somebody hid** — supply-chain attacks | Slide 2 (the backdoored Claude Code extension, Oct 2026) and Act 2: the injectable line could just as well be a malicious PR or a poisoned dependency | *"From the code alone, you cannot tell a mistake from a backdoor. And no scanner can."* |
 
 Alongside the threads: **know where your components come from** — trusted sources and trusted vendors,
 signed and verified images. That lowers the risk a lot; it doesn't remove it (the backdoored Claude
@@ -248,9 +248,9 @@ planted, and the **NetworkPolicy** fixes the misconfiguration.
 
 ## The close
 
-> *"Your pipeline can check everything you know. It can't check for what nobody knows yet. It can't
-> check for what nobody noticed. And it can't check for what somebody hid. … A clean scan is a
-> timestamp. RHACS keeps it fresh. And it watches what no scan can see."*
+> *"Keep doing everything before deploy. But a pipeline only checks what you know. It cannot see what
+> nobody knows yet. What nobody noticed. Or what somebody hid. … A clean scan is a timestamp. RHACS
+> keeps it fresh. And it watches what no scan can see."*
 
 ---
 
@@ -260,7 +260,7 @@ Short answers. Say the first sentence, then stop. If they want more, they will a
 
 | Question | Answer |
 |---|---|
-| *"Isn't this just a bad developer?"* | No. It was a normal shortcut, made under time pressure, and it passed every check. If it was a library with an unknown bug, we would be in the same place. You cannot find unknown problems in advance. |
+| *"Isn't this just a bad developer?"* | No. It was a normal shortcut, made under time pressure, and it passed every check. If it was a library with an unknown bug, the result would be the same. You cannot find unknown problems in advance. |
 | *"We only use trusted vendors and trusted libraries."* | Good — please keep doing that. It is one of the best things you can do. But trusted sources lower the risk. They do not remove it. The backdoored Claude Code extension was the real one, in a trusted store. That is why you also watch behavior. |
 | *"We sign our images and create SBOMs."* | Keep doing it. A signature proves who built the image. An SBOM shows what is inside. Neither proves that the code is honest. The SolarWinds backdoor was in a correctly signed update. |
 | *"How does RHACS catch a supply-chain backdoor?"* | By behavior. A backdoor that does nothing is harmless. When it runs a program, writes a file or calls home, that is outside the normal list. It does not matter who wrote the code. |
@@ -272,7 +272,7 @@ Short answers. Say the first sentence, then stop. If they want more, they will a
 | *"Does the attacker get anything before the kill?"* | For less than one second. That is why step two is the network policy. It removes even that. |
 | *"What can trigger the kill?"* | In the demo: a program outside the normal list. The network alert is on the payment service — you do not kill your payment service. You answer it with a network policy. That is why there are two steps. |
 | *"What if the attacker uses port 443, like normal web traffic?"* | Then this network policy lets it through, because the link checker needs the internet. You still see the new destination on the network graph. In production, add an allow-list of destinations — an egress firewall or a proxy. |
-| *"How long does it take to learn what is normal?"* | RHACS learns by watching. You can also declare the normal list yourself, like we did, and lock it on day one. Start with the applications that matter most. |
+| *"How long does it take to learn what is normal?"* | RHACS learns by watching. You can also declare the normal list yourself, like I did, and lock it on day one. Start with the applications that matter most. |
 | *"How much work is this for my team?"* | The rules are files in Git, reviewed like code. Start with alerts only. Turn on automatic actions where the normal list is stable. |
 | *"Is this a separate product?"* | No. It is part of RHACS. The same console and the same cluster components you already use for vulnerability scanning. |
 | *"What about false alarms?"* | The normal list is per application, so it is very precise. A trap file, like the honeytoken, has almost no false alarms: nobody normal ever touches it. |

@@ -23,11 +23,12 @@ Companion docs: [TALK.md](TALK.md) (run of show, speaking guide, Q&A, checklist)
 ## ⏱ 0:00 — Slide 1: the pipeline
 
 *[Slide 1 up: `slides/release.png` — the release pipeline, every job green. Wait a few seconds. Let
-people read. They will smile at "Looks secure. Ship it."]*
+people read.]*
 
-This is a release pipeline. I think it looks a lot like yours.
+This is my release pipeline.
 
-We built a small blog. Before it went to production, it passed every step.
+I built a small blog for today's demo. Before I deployed it, I made sure it went through the same checks
+as any application before production.
 
 *[Point along the jobs.]*
 
@@ -38,8 +39,7 @@ Build. Image scan. Policy check. Security approval. Deploy.
 The image scan found zero vulnerabilities. Zero. Not low. Zero.
 
 The application uses one small open-source library — and it has zero CVEs. The base image is up to
-date. There is no package manager
-inside.
+date. There is no package manager inside.
 
 It runs without root. Its files are read-only. It has no extra privileges. It has no Kubernetes token.
 
@@ -47,13 +47,18 @@ The policy check found no problems. It has the lowest risk in the whole cluster.
 
 *[Point at the security approval.]*
 
-And the security team said: "Looks secure. Ship it."
+Every check passed. Approved for production.
 
 *[Pause.]*
 
 Everything on this slide is true. In a few minutes, you will see it all in the console.
 
-So today, we will find out what a green pipeline is really worth.
+*[Point at deploy-production.]*
+
+But look where the pipeline ends: deploy. Every check happens *before* the application runs. After
+deploy, the application is live. It takes traffic from the internet. And the pipeline sees nothing.
+
+Today is about what happens after deploy, while the application runs. That is runtime security.
 
 *[Pause.]*
 
@@ -63,72 +68,49 @@ And one more thing. Remember this slide. Not for what is on it. For what is miss
 
 ## ⏱ 1:30 — Slide 2: the timestamp
 
-*[Slide 2: one line — "A clean scan is a timestamp."]*
+*[Slide 2: "A clean scan is a timestamp."]*
 
-Here is the problem with everything in that pipeline.
+Every check in that pipeline was done *before* deploy. So every green check is true at one moment: the
+moment I checked.
 
-We checked it all *before* we deployed. The libraries. The base image. The settings.
-
-So every green check is true at one moment. The moment we checked.
-
-If we scanned at nine o'clock this morning, the application was clean at nine o'clock this morning.
-
-Is it still clean now?
+I scanned at nine o'clock this morning. Is it still clean now?
 
 *[Pause.]*
 
-We don't know. Because new vulnerabilities are found every day. In libraries. In base images. In our
-own code. They are found faster than ever. And the time to fix them is getting shorter.
+New vulnerabilities are published every day. Your image did not change. What the world knows about it
+did.
 
-Your image did not change. What the world knows about it did.
+RHACS handles this. Every four hours, it scans every running image again, with the newest vulnerability
+data. A new CVE this afternoon — you see it this afternoon. No rebuild. The timestamp stays fresh.
 
-The good news: RHACS knows this. It does not scan once and stop. Every four hours, it scans every
-running image again, with the newest vulnerability data. So when a new CVE is published this afternoon,
-you know this afternoon. Nobody has to rebuild anything. RHACS keeps renewing the timestamp.
+But a scan, even a fresh one, only finds what is *known*. There are three things it cannot see.
 
-But even a fresh scan can only find what is *known*. And some vulnerabilities are not known yet. We call them
-zero-days. No CVE number. No patch. Nothing for a scanner to find. The scanner is not wrong. It just
-cannot see what nobody knows yet.
+*[Click: the three cards.]*
 
-Second problem: misconfiguration. The things nobody checked, because they were not on the list.
+One: what nobody knows yet. A zero-day. No CVE. No patch. Nothing for a scanner to find.
 
-*[Pause.]*
+Two: what nobody noticed. A misconfiguration. A setting nobody checked.
 
-And the third problem is the one that worries me most. Supply-chain attacks.
+Three: what somebody hid. A supply-chain attack. The attacker does not attack you. They attack
+something you use.
 
-Today, attackers often don't attack your application directly. They attack what your application is
-built from. A library. A base image. A build tool. A step in your pipeline.
+A recent example. At the end of October, someone added a backdoor to the Claude Code extension in the
+Cursor editor's store. Claude Code is a popular AI coding assistant. Not a fake copy — the real
+extension, in its normal place in the store. When it loaded, it opened a remote connection to the
+developer's computer. And it stayed, even after you removed the extension. Eleven hours online. Up to
+five thousand developers.
 
-Here is a recent example. A few weeks ago, at the end of October, the Claude Code extension in the
-Cursor editor's extension store was changed. Claude Code is a popular AI coding assistant. Developers
-install it every day. This was not a fake copy. It was the real extension, with the real name, in its
-normal place in the store. But somebody had added a few lines of hidden code to it: a backdoor. When
-the extension loaded, the backdoor opened a remote connection to the developer's computer. And it
-stayed there, even after you removed the extension.
+Nobody did anything wrong. They installed a tool they trust, from a store they trust. A scanner finds
+nothing. And if you sign it, the backdoor is signed too.
 
-It was online for about eleven hours. Up to five thousand developers may have installed it. Nobody did
-anything wrong. They installed a tool they trust, from a store they trust.
+*[Click: what helps.]*
 
-So what does our pipeline do with a hidden backdoor? The scanner looks for *known* problems. A hidden
-backdoor is not known. So the scan is clean. And if the pipeline signs the image, the backdoor is
-signed too.
+So what helps? Trusted sources and trusted vendors. Signed images, checked before they run. And
+rescanning, all the time.
 
-*[Pause.]*
+That lowers the risk a lot. It does not remove it.
 
-So, what can we do?
-
-First: know where your components come from. Use trusted sources. Use trusted vendors — people who
-build, check, sign and maintain their software for years. Sign your own images, and check signatures
-before you run anything.
-
-That lowers the risk a lot.
-
-But it does not remove it. That Claude Code extension was the real one, in a trusted store.
-
-So you need one more thing. You need to watch what your applications actually *do*.
-
-A clean scan is a timestamp. RHACS keeps it fresh, every four hours. But even a fresh scan only finds
-what is known. For everything else, you watch behavior.
+So you need one more thing: watch what your applications *do*.
 
 ---
 
@@ -136,45 +118,35 @@ what is known. For everything else, you watch behavior.
 
 *[Slide 3: "Made of → Deployed → Talks to → Behaves → Acts". Show one word at a time.]*
 
-So before I break anything, let me tell you what is watching this cluster.
-
-Imagine a tool that knows your applications better than the people who wrote them.
+So what is watching this cluster? RHACS. It knows five things about every application.
 
 *[Show: Made of.]*
 
-It knows what each application is made of. Every library. Every package. And where it comes from —
-which registry, and if the image is signed. And it knows which parts have vulnerabilities. Not only on
-the day you built it. It scans every running image again, every four hours. The timestamp stays fresh.
+What it is made of. Every library, every package. And where it comes from: which registry, and if the
+image is signed.
 
 *[Show: Deployed.]*
 
-It knows how each application was deployed. Which user. Which privileges. Which secrets it can read.
-If it can write files. If it is open to the internet.
+How it is deployed. Which user. Which privileges. Which secrets. If it is open to the internet.
 
 *[Show: Talks to.]*
 
-It knows who each application talks to. Which services. Which namespaces. Which addresses on the
-internet. And also — who it has never talked to.
+Who it talks to. Which services, which namespaces, which addresses on the internet. And who it has
+never talked to.
 
 *[Show: Behaves.]*
 
-And it knows how each application behaves. Which programs it runs. Which files it changes. It learns
-what is normal for that one application.
+How it behaves. Which programs it runs. Which files it changes. What is normal for this one
+application.
 
 *[Show: Acts.]*
 
-So when something changes, it knows. A program that never ran before. A new file that should not
-exist. A connection to a new place.
-
-It also knows the context. How exposed the application is. What it can reach. So it can tell you how
-serious the change is.
-
-And it can act. It can kill the workload, automatically — before a person even reads the alert. And
-it shows you which connections to close.
+And it acts. A new program, a new file, a new connection — it sees the change. It can kill the pod,
+automatically, before a person reads the alert. And it shows you which connections to close.
 
 *[Pause.]*
 
-Today, we will test that.
+Today, I test that. Live.
 
 *[Switch to the browser. No more slides — only one quick look back at slide 1 in Act 3.]*
 
@@ -184,11 +156,11 @@ Today, we will test that.
 
 *[Browser: the blog home page.]*
 
-This is our company blog.
+This is my blog.
 
 *[Point at the third post.]*
 
-This post is about our newest feature.
+This post is about the newest feature.
 
 *[Click Write.]*
 
@@ -196,16 +168,16 @@ This is the editor. A writer pastes a text and clicks Check links —
 
 *[Click Check links. Results appear, all green.]*
 
-— and the blog checks every link before it is published. It is useful. The writers love it. The team
+— and the blog checks every link before it is published. It is useful. The writers love it. I
 built it in one afternoon.
 
-Now let's check what the pipeline told us.
+Now, what did the pipeline say?
 
 *[RHACS → Vulnerability Management → Images without CVEs.]*
 
 First word: **made of**.
 
-This page shows images with no vulnerabilities. Here is our blog.
+This page shows images with no vulnerabilities. Here is my blog.
 
 *[Click unhackable/blog:v1.]*
 
@@ -214,7 +186,7 @@ Zero critical. Zero important. Zero moderate. Zero low. Nothing to fix.
 *[Point at the labels at the top: registry, OS, "No signature found", scan time.]*
 
 It also shows where the image comes from. Which registry. Which operating system. And if it is signed.
-Ours is not signed. In a real production system, you should sign it — and check the signature before
+Mine is not signed. In a real production system, you should sign it — and check the signature before
 it runs.
 
 *[RHACS → Risk → blog.]*
@@ -233,7 +205,7 @@ And violations: none.
 
 *[Turn to the audience.]*
 
-So the pipeline was right. If this was your application, you would ship it. Every check is green.
+So the pipeline was right. Every check is green.
 
 So — is it secure?
 
@@ -243,23 +215,19 @@ So — is it secure?
 
 ## ⏱ 8:00 — The pivot
 
-Let's look at that link checker again. It was built in one afternoon. Power users wanted more than a
-yes/no, so it lets them attach a little *rule* to validate a link.
+Look at that link checker again. Writers wanted more than a yes or no, so it lets them attach a
+small *rule* to check a link.
 
-How do you run a rule? With an embedded Go interpreter — a library called yaegi. It scans perfectly
-clean: zero CVEs. One line of go.mod — and the scanner stayed green.
+To run the rules, I used a small Go interpreter — a library called yaegi. Zero CVEs. And to make the
+rules more useful, I gave it one more thing: the power to run commands.
 
-So the developer used it, and to make rules useful, handed it one more thing: the ability to run a
-command. When you submit a "rule", the blog evaluates it as code.
-
-That is a normal shortcut. Every team here has done something like it, under time pressure. It is fast.
-One clean library. Zero CVEs.
+A normal shortcut, made under time pressure. One clean library. Zero CVEs.
 
 *[Pause.]*
 
 And one big vulnerability.
 
-So what happens if the "link" I send is not a link — but a rule?
+So what happens if I send a rule instead of a link?
 
 ---
 
@@ -278,19 +246,17 @@ I just ran my own commands inside the application. From outside. Through the web
 And this is not a CVE. There is no package to update. No security notice. Nobody in the world knows
 about it — except me.
 
-This is a zero-day. Our own zero-day. Tomorrow, it could be a library in your image. It could be a
-problem nobody will discover until next month. On the day of the attack, the scanner says zero. The
-scanner is right. And it does not help.
+This is a zero-day. My own. Tomorrow, it could be in a library in your image. The scanner says zero.
+The scanner is right. And it does not help.
 
 *[Pause.]*
 
 Now a harder question. What if this was not a mistake?
 
-What if someone added it on purpose? A bad pull request. A changed library. A hacked build step.
+What if someone added it on purpose? A bad pull request. A changed library. A hacked build step. The
+code would look the same. The scan would say zero.
 
-The code would look exactly the same. The scan would say zero. The review would see a small shortcut.
-
-From the code alone, you cannot see if this is a mistake or a backdoor. And no scanner can.
+From the code alone, you cannot tell a mistake from a backdoor. And no scanner can.
 
 *[RHACS → Violations.]*
 
@@ -307,23 +273,15 @@ time.
 
 This is the fourth word: **behaves**.
 
-This application runs exactly one program: itself. It checks links by itself. It runs rules inside
-itself. It never starts another program. So the normal list has one line. We set that list, and we
-locked it.
+This application runs exactly one program: itself. It never starts another one. So its normal list
+has one line. I set that list, and I locked it. Anything else is someone else.
 
-So anything else is someone else, running code inside our container.
+Look at what the attacker used: `id`, `cat`. Normal Linux tools. Nothing an antivirus calls bad. RHACS
+does not need to know what an attack looks like. It only needs to know what normal looks like.
 
-And look at what the attacker used. `id`. `cat`. Normal Linux tools. Nothing an antivirus would call
-"bad". RHACS does not care. It does not need to know what an attack looks like. For a zero-day, nobody knows that. It
-only needs to know what normal looks like.
-
-And it does not care who wrote the code, or why. A mistake or a backdoor — to be useful to an attacker,
-it must *do* something. Run a program. Write a file. Open a connection. And that is exactly what RHACS
-watches.
-
-Remember the Claude Code extension? Its backdoor had to *do* something too: start a program,
-open a connection. That is exactly what this watches. A hidden backdoor can look clean. It cannot
-behave clean.
+And it does not care who wrote the code. A mistake or a backdoor — like the one in the Claude Code
+extension — must *do* something to be useful. Run a program. Write a file. Open a connection. That is
+what RHACS watches. A backdoor can look clean. It cannot behave clean.
 
 ---
 
@@ -353,15 +311,15 @@ database password and a payment key. For an attacker, this is perfect.
 
 *[Pause.]*
 
-We put them there.
+I put them there.
 
-These keys are fake. The application never reads these files. Never. So the only one who will ever read
-it is someone who should not be there.
+These keys are fake. The application never reads these files. So the only one who reads them is
+someone who should not be there.
 
 *[RHACS → Violations → TDR – Honeytoken touched.]*
 
-This is a honeytoken. A trap. It has almost no false alarms, because nobody normal touches it. The attacker
-took the bait. And here is the exact command.
+This is a honeytoken. A trap. Nobody normal touches it, so it almost never gives a false alarm. The
+attacker took the bait. Here is the exact command.
 
 *[Back to the terminal output.]*
 
@@ -370,7 +328,7 @@ service?
 
 *[Point at the card data.]*
 
-Credit card numbers. From the payment service. Read by our blog.
+Credit card numbers. From the payment service. Read by my blog.
 
 *[Pause.]*
 
@@ -382,7 +340,7 @@ Build. Scan. Policy check. Approval. Deploy. Nothing about the network. Nothing 
 application may talk to.
 
 There is no network policy. And in Kubernetes, the default is simple: everything can talk to
-everything. So our public blog can reach the payment service. It can reach the Kubernetes API. It can
+everything. So my public blog can reach the payment service. It can reach the Kubernetes API. It can
 reach the whole internet.
 
 Nobody decided that. Nobody noticed it. That is a misconfiguration.
@@ -435,16 +393,15 @@ hostname
 ps
 ```
 
-This is a live shell. Inside our "secure" application. Typed by a person on a computer outside our
+This is a live shell. Inside my "secure" application. Typed by a person on a computer outside the
 data center.
 
 Now the attacker wants money.
 
 *[Terminal A continues: the miner is downloaded and started.]*
 
-The files of the application are read-only. So they cannot install anything there. But there are two
-small folders they can write to. One is `/tmp`. So they download a crypto miner into `/tmp`, make it executable, and
-start it.
+The files of the application are read-only. But there are two small folders they can write to. One is
+`/tmp`. So they download a crypto miner into `/tmp`, make it executable, and start it.
 
 *[In Terminal B, type `ps` again. The miner is there.]*
 
@@ -454,7 +411,7 @@ That is your cloud bill, mining money for someone else.
 
 *[RHACS → Violations.]*
 
-So what did RHACS see? Everything.
+So what did RHACS see? Every step.
 
 *[Point down the list.]*
 
@@ -462,24 +419,22 @@ A reverse shell tool. A crypto miner. A program outside the normal list.
 
 *[Click TDR – Container drift.]*
 
-And look at this one. This is about **files**. The image never changes. The application writes to only
-one folder — its own cache. So when a new file appears in `/tmp` —
+This one is about **files**. The application writes only to its own cache. So a new file in `/tmp` —
 
 *[Point at "created", then "permission changed".]*
 
-— dropped into /tmp, and then made executable — someone is preparing tools inside the container.
-Download, make executable, run. We did not write a rule for "miner". We wrote a rule for "this
-container changed".
+— made executable, is someone preparing tools inside the container. I did not write a rule for
+"miner". I wrote a rule for "this container changed".
 
 *[Network Graph. Click attacker.example.local.]*
 
-And here is the attacker on the map. Outside the cluster. Three connections from our blog: one
+And here is the attacker on the map. Outside the cluster. Three connections from my blog: one
 download, one mining pool, one shell. All new. All outside the normal list.
 
 *[Turn to the audience.]*
 
-So, in about fifteen minutes: one unknown vulnerability — a mistake or a backdoor, it does not matter — and one
-missing network setting. And with that, the attacker ran commands, looked for keys, read card data,
+So, in about fifteen minutes: one unknown vulnerability — a mistake or a backdoor, it does not
+matter — and one missing network setting. And with that, the attacker ran commands, looked for keys, read card data,
 opened a shell from the internet, and started mining.
 
 RHACS saw every step. In seconds.
@@ -501,8 +456,8 @@ the way in.
 
 *[RHACS → Policy Management, filter TDR.]*
 
-These are the rules that found the attack. We did not click them together in a screen. They are
-Kubernetes files, in Git. They go through the same review and pipeline as our code.
+These are the rules that found the attack. I did not click them together in a screen. They are
+Kubernetes files, in Git. They go through the same review and pipeline as my code.
 
 Step one: limit the damage.
 
@@ -527,21 +482,20 @@ The attacker comes back. They run a command —
 
 And look at the attacker's shell. Silent. Dead. Nobody is on the other side anymore.
 
-Let's think about what happened. We did not patch anything. We have not fixed the bug yet. RHACS
-removed the hacked pod. Kubernetes started a new, clean pod from the original image, in a few seconds.
-The miner is gone. The files in `/tmp` are gone. Everything the attacker built is gone.
+I did not patch anything. The bug is still there. But RHACS killed the hacked pod, and Kubernetes
+started a clean one from the original image, in a few seconds. The miner, the shell, the files in
+`/tmp` — all gone.
 
-And every time they try again, the same thing happens. Every command costs them the pod.
-
-So the damage is now limited to one command. And we have time.
+Every time they try again, the same thing happens. Every command costs them the pod. And I have
+time.
 
 *[Pause.]*
 
-And time is what we were missing. Between "someone found the vulnerability" and "the fix is in production",
-there is a gap. Hours. Sometimes days. With a zero-day, you don't even know the gap has started. This
-is how you stay safe during that gap.
+Time is what I was missing. Between "someone found the vulnerability" and "the fix is in
+production", there is a gap. Days. Sometimes weeks. With a zero-day, you don't even know the gap has
+started. This is how you stay safe during that gap.
 
-Step two: now that we have time, close the way in. And fix the misconfiguration.
+Step two: now that I have time, close the way in. And fix the misconfiguration.
 
 *[Act 5 continues: the NetworkPolicy is applied.]*
 
@@ -550,9 +504,9 @@ Nothing else. So that is all it gets.
 
 *[The last call is made from inside the application itself — no new program. It times out.]*
 
-This last call is important. It does not start a new program. It runs inside the application itself.
-So the kill rule has nothing to see. But the network policy does not care how. The connection is not
-allowed. It times out. And the payment service now accepts no connections at all.
+This last call is important. It runs inside the application itself — no new program. So the kill rule
+has nothing to see. But the network policy does not care how. The connection is not allowed. It times
+out. And the payment service now accepts no connections at all.
 
 The kill stopped this attacker. The network policy stops the next one, before the first packet leaves.
 
@@ -564,17 +518,17 @@ And it is all recorded. "Kill Pod" — once for every attempt.
 
 ## ⏱ 29:00 — Act 6: Fix forward
 
-Now, finally, let's fix the real bug.
+Now, finally, I fix the real bug.
 
 *[Show the diff of `linkcheck_v1.go` → `linkcheck_v2.go`.]*
 
 This is the old code. "Built in one afternoon." And here is the problem, in two lines: take the
 writer's "rule", and run it as code — with the power to start programs.
 
-And this is the fix. No more rules. Check that the link is a real web address. Use a proper web
-client. Nothing is run as code. No extra programs. Nothing for an attacker to use.
+And this is the fix. No more rules. Check that the link is a real web address, and fetch it with a
+normal web client. Nothing is run as code.
 
-We did not have to guess where the problem was. RHACS showed us which feature was attacked, how, and
+I did not have to guess where the problem was. RHACS showed me which feature was attacked, how, and
 from where. The fix is small.
 
 *[Terminal A:]*
@@ -587,19 +541,19 @@ scripts/demo.sh act6
 
 Version two. Still zero CVEs. And the attack is now rejected: it is not a valid web address.
 
-And remember: runtime security did not replace the fix. It kept us safe until the fix was ready. That
+And remember: runtime security did not replace the fix. It kept me safe until the fix was ready. That
 is its job.
 
 ---
 
 ## ⏱ 32:00 — The tour
 
-Let's look back at what we saw. It is all still here.
+Look back at what you saw. It is all still here.
 
 *[RHACS → Violations, filtered to `unhackable`.]*
 
-One attack. Many alerts. Programs, files, keys, network. Each one shows the command, the
-user and the time. This is not just an alert. The investigation is already done for you.
+One attack. Many alerts. Programs, files, keys, network. Each one shows the command, the user and the
+time. The evidence is already there.
 
 *[Network Graph → blog → attacker.example.local.]*
 
@@ -622,9 +576,9 @@ Still zero. It was right the whole time. And it saw nothing.
 
 *[Turn to the audience.]*
 
-Let's go back to the five words.
+Back to the five words.
 
-**Made of** — zero CVEs, and where it comes from. This is where most teams stop.
+**Made of** — zero CVEs, and where it comes from.
 
 **Deployed** — hardened. And that helped. No token. Nothing real to steal.
 
@@ -634,8 +588,8 @@ Let's go back to the five words.
 
 **Acts** — the kill, and the network policy.
 
-One product. One console. The same RHACS you already use for vulnerability scanning. Most teams only
-use the first word. The other four stay dark.
+One product. One console. The same RHACS that does the vulnerability scanning. Today you saw all five
+words.
 
 ---
 
@@ -645,13 +599,10 @@ use the first word. The other four stay dark.
 
 So, what should you take home?
 
-First: know where your components come from. Use trusted sources and trusted vendors. Sign and check
-what you run. Scan everything. Keep doing all of it.
+Keep doing everything before deploy. Trusted sources. Signatures. Scans.
 
-But remember: your pipeline can only check what you know.
-
-It cannot check what nobody knows yet. It cannot check what nobody noticed. And it cannot check what
-somebody hid.
+But a pipeline only checks what you know. It cannot see what nobody knows yet. What nobody noticed. Or
+what somebody hid.
 
 So here are three questions for your team, on Monday morning.
 
@@ -665,8 +616,7 @@ And how fast could you stop it — without waking anyone up?
 
 A clean scan is a timestamp. RHACS keeps it fresh. And it watches what no scan can see.
 
-*[Click.]* See it, and stop it, while it happens. That is what you just saw — and you already have
-the tool to do it.
+*[Click.]* See it, and stop it, while it happens. That is what you just saw.
 
 *[Click.]* And fix it, before the vulnerability is public. Imagine having the fixed library before
 the rest of the world even knows about the vulnerability.
@@ -681,7 +631,7 @@ Thank you.
 
 **"Isn't this just a bad developer?"**
 "No. It is a normal shortcut, made under time pressure, and it passed every check. And if it was a
-library with an unknown bug, we would be in the same place. You cannot find unknown problems in
+library with an unknown bug, the result would be the same. You cannot find unknown problems in
 advance."
 
 **"We only use trusted vendors and trusted libraries."**
