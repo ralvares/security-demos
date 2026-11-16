@@ -95,11 +95,9 @@ Two: what nobody noticed. A misconfiguration. A setting nobody checked.
 Three: what somebody hid. A supply-chain attack. The attacker does not attack you. They attack
 something you use.
 
-A recent example. At the end of October, someone added a backdoor to the Claude Code extension in the
-Cursor editor's store. Claude Code is a popular AI coding assistant. Not a fake copy — the real
-extension, in its normal place in the store. When it loaded, it opened a remote connection to the
-developer's computer. And it stayed, even after you removed the extension. Eleven hours online. Up to
-five thousand developers.
+A recent example: Claude Code, end of October. Someone put a backdoor into the real extension, in the
+Cursor store. It opened a remote connection into the developer's computer. Up to five thousand
+developers.
 
 Nobody did anything wrong. They installed a tool they trust, from a store they trust. A scanner finds
 nothing. And if you sign it, the backdoor is signed too.
