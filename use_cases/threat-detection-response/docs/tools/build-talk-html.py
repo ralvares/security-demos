@@ -229,7 +229,7 @@ SLIDES = [
       ("Acts", "Pod killed in under one second. Network closed.")])
   + '</div>'),
  ("the-close-2", "",
-  '<div class="kicker">For Monday morning</div><h2>Three questions for your team</h2><ol class="qs">'
+  '<div class="kicker">When you are back at work</div><h2>Three questions for your team</h2><ol class="qs">'
   '<li class="f">Do you know which programs your containers should run?</li>'
   '<li class="f">Would you know, in one minute, if one of them ran something else?</li>'
   '<li class="f">How fast could you stop it, without waking anyone up?</li></ol>'),

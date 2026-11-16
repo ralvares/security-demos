@@ -605,7 +605,7 @@ Keep doing every check, in the pipeline and at deploy. Trusted sources. Signatur
 But a pipeline only checks what you know. It cannot see what nobody knows yet. What nobody noticed. Or
 what somebody hid.
 
-So here are three questions for your team, on Monday morning.
+So here are three questions for your team, when you are back at work.
 
 Do you know which programs your containers should run?
 
