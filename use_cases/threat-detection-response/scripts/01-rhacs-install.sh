@@ -61,7 +61,7 @@ ok "$(oc get csv -n rhacs-operator -o json | jq -r '.items[] | select(.metadata.
 # ---------------------------------------------------------------- central
 step "Central"
 oc apply -f "$INSTALL_DIR/central.yaml" >/dev/null
-wait_for "Central available" 1200 oc wait -n stackrox --for=condition=Available --timeout=10s central/stackrox-central-services
+wait_for "Central available" 2400 oc wait -n stackrox --for=condition=Available --timeout=10s central/stackrox-central-services
 wait_for "Central route" 300 central_host
 ENDPOINT="$(central_host):443"
 api_up() { curl -sfk "https://$ENDPOINT/v1/ping"; }
