@@ -9,14 +9,13 @@
 #
 #   scripts/02-demo-setup.sh            full setup (idempotent)
 #   SKIP_BUILD=1 scripts/02-demo-setup.sh   reuse already-pushed images
+#   scripts/02-demo-setup.sh --apps     only steps 1+3 (no RHACS needed: run while RHACS installs)
 set -euo pipefail
 source "$(dirname "$0")/lib/common.sh"
 source "$TDR_DIR/scripts/lib/rhacs-baselines.sh"
 need oc podman jq curl roxctl
 use_crc
-load_rhacs
-central_up() { curl -sfk "https://$ROX_ENDPOINT/v1/ping" && rox GET /v1/auth/status | jq -e .userId; }
-wait_for "Central API" 600 central_up
+APPS_ONLY=""; [[ ${1:-} == --apps ]] && APPS_ONLY=1
 
 REG_ROUTE=$(oc get route default-route -n openshift-image-registry -o jsonpath='{.spec.host}')
 
@@ -41,6 +40,28 @@ fi
 # payments-api runs the blog image from the unhackable namespace
 oc policy add-role-to-group system:image-puller "system:serviceaccounts:$PAY_NS" -n "$APP_NS" >/dev/null 2>&1
 ok "payments may pull from $APP_NS"
+
+deploy_workloads() {
+  step "Deploy the Unhackable Blog and payments-api"
+  # recreate: every setup starts with fresh RHACS process + network baselines
+  oc delete -f "$TDR_DIR/deploy/app/blog.yaml" --ignore-not-found --wait=true >/dev/null 2>&1 || true
+  oc apply -f "$TDR_DIR/deploy/app/blog.yaml" >/dev/null
+  oc delete networkpolicy -A -l tdr-demo=response --ignore-not-found >/dev/null
+  for d in "$APP_NS/blog"; do
+    oc rollout status "deploy/${d#*/}" -n "${d%/*}" --timeout=300s >/dev/null && ok "$d"
+  done
+  BLOG=https://$(oc get route blog -n "$APP_NS" -o jsonpath='{.spec.host}')
+  ok "blog: $BLOG"
+}
+if [[ -n $APPS_ONLY ]]; then
+  deploy_workloads
+  printf '\n%sApps deployed.%s RHACS parts (policies, baselines) run with: make setup / make up\n' "$GRN" "$N"
+  exit 0
+fi
+
+load_rhacs
+central_up() { curl -sfk "https://$ROX_ENDPOINT/v1/ping" && rox GET /v1/auth/status | jq -e .userId; }
+wait_for "Central API" 600 central_up
 
 # ---------------------------------------------------------------- registry integration
 step "RHACS ↔ internal registry"
@@ -70,16 +91,7 @@ else rox POST /v1/imageintegrations "$body" >/dev/null; fi
 ok "$INTEG_NAME → $REGISTRY_SVC"
 
 # ---------------------------------------------------------------- workloads
-step "Deploy the Unhackable Blog and payments-api"
-# recreate: every setup starts with fresh RHACS process + network baselines
-oc delete -f "$TDR_DIR/deploy/app/blog.yaml" --ignore-not-found --wait=true >/dev/null 2>&1 || true
-oc apply -f "$TDR_DIR/deploy/app/blog.yaml" >/dev/null
-oc delete networkpolicy -A -l tdr-demo=response --ignore-not-found >/dev/null
-for d in "$APP_NS/blog"; do
-  oc rollout status "deploy/${d#*/}" -n "${d%/*}" --timeout=300s >/dev/null && ok "$d"
-done
-BLOG=https://$(oc get route blog -n "$APP_NS" -o jsonpath='{.spec.host}')
-ok "blog: $BLOG"
+deploy_workloads
 
 # ---------------------------------------------------------------- policies
 step "Runtime policies (policy as code)"

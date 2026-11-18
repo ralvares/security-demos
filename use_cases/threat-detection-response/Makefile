@@ -16,7 +16,7 @@ S     := scripts
 crc    = $(if $(filter libvirt,$(shell id -nG)),crc $(1),sg libvirt -c 'crc $(1)')
 
 .DEFAULT_GOAL := help
-.PHONY: help install crc rhacs setup up verify recreate down reset status \
+.PHONY: help install crc rhacs setup apps up verify recreate down reset status \
         live reset-live web-terminal enforce contain fix images \
         act1 act2 act3 act4 act5 act6 c2 pwn \
         attacker-up attacker-down attacker-logs attacker-status \
@@ -34,6 +34,9 @@ rhacs: ## Install RHACS 5.0 on CRC (operator, Central, SecuredCluster, API token
 
 setup: ## Build images, deploy the blog, load policies, lock baselines, start the attacker
 	$(S)/02-demo-setup.sh
+
+apps: ## Build + deploy the blog only (no RHACS needed; run while RHACS installs)
+	$(S)/02-demo-setup.sh --apps
 
 ##@ Every session
 
