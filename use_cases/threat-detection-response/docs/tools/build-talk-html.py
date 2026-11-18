@@ -27,7 +27,7 @@ def blocks(lines):
         if l.startswith("```"):
             j = i + 1; buf = []
             while not lines[j].startswith("```"): buf.append(lines[j]); j += 1
-            out.append('<pre><code>' + html.escape("\n".join(buf)) + "</code></pre>"); i = j + 1; continue
+            out.append('<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>' + html.escape("\n".join(buf)) + "</code></pre></div>"); i = j + 1; continue
         m = re.match(r"^(#{3,4}) (.*)", l)
         if m:
             out.append(f'<h{len(m.group(1))} id="{slug(m.group(2))}">{inline(m.group(2))}</h{len(m.group(1))}>'); i += 1; continue
@@ -336,6 +336,11 @@ blockquote.key{border-left-color:var(--keyline);background:var(--key);font-size:
 .do .tag{font:700 11px/1.9 var(--mono);color:var(--doline);letter-spacing:.06em}
 code{background:var(--code);padding:.1rem .35rem;border-radius:4px;font-size:.87em;font-family:var(--mono)}
 pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow:auto}
+.codewrap{position:relative}
+.codewrap pre{padding-right:72px}
+.copy{position:absolute;top:8px;right:8px;z-index:2;font:600 12px/1 "Red Hat Text",sans-serif;color:#fff;background:#ee0000;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;opacity:.85}
+.copy:hover{opacity:1}
+.copy.done{background:#3e8635}
 pre code{background:none;padding:0}
 kbd{font:600 .85em var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 .35em;background:var(--panel)}
 .tw{overflow-x:auto;margin:1rem 0;border:1px solid var(--line);border-radius:8px}
@@ -1011,6 +1016,16 @@ page = f'''<!doctype html>
     <div class="skeys">In the slideshow there are no buttons: keyboard only. It fills the browser tab (tabs stay visible); f toggles true full screen. Esc exits.<br>→ / Space next · ← back · t timer · r reset · b black screen · [ ] other notes · 1–4 terminal layout · + / − terminal text<br>During the live demo, keep this window focused to change slides while the terminals stay on screen.</div></div>
 </div>
 <script>{JS}</script>
+<script>
+document.addEventListener('click',function(e){{
+  var b=e.target.closest('.copy'); if(!b) return;
+  var code=b.parentElement.querySelector('code'); if(!code) return;
+  var text=code.innerText;
+  var done=function(){{ b.textContent='Copied'; b.classList.add('done'); setTimeout(function(){{ b.textContent='Copy'; b.classList.remove('done'); }},1200); }};
+  if(navigator.clipboard&&navigator.clipboard.writeText){{ navigator.clipboard.writeText(text).then(done,function(){{}}); }}
+  else {{ var ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); try{{document.execCommand('copy');done();}}catch(_){{}} ta.remove(); }}
+}});
+</script>
 </body></html>'''
 (D / "TALK.html").write_text(page, encoding="utf-8")
 print("pages:", len(pages), "· slides:", len(SLIDES))

