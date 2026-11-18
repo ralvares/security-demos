@@ -39,6 +39,9 @@ esac
 step "RHACS operator"
 # On a fresh CRC the catalog pods start before the pull secret lands, hit ImagePullBackOff
 # and never retry on their own (the CSV then never appears). Kick them until the catalog is READY.
+# Only redhat-operators is needed: disable the other ~1 GB catalog images so they don't share the bandwidth.
+oc patch operatorhub cluster --type merge \
+  -p '{"spec":{"sources":[{"name":"certified-operators","disabled":true},{"name":"community-operators","disabled":true}]}}' >/dev/null
 catalog_ready() {
   [[ $(oc get catalogsource redhat-operators -n openshift-marketplace \
        -o jsonpath='{.status.connectionState.lastObservedState}') == READY ]] && return 0
