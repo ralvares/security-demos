@@ -13,7 +13,7 @@ PAY_NS=${PAY_NS:-payments}
 # is the laptop, so packets to it never leave the machine. 1.2.3.4 is the classic stand-in
 # for "some host on the internet". Override with ATTACKER_IP=... if you prefer another.
 ATTACKER_IP=${ATTACKER_IP:-1.2.3.4}
-CRC_BRIDGE_IP=$(ip -4 -o addr show dev crc 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | grep -v "^${ATTACKER_IP}$" | head -1)
+CRC_BRIDGE_IP=$(ip -4 -o addr show dev crc 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | grep -v "^${ATTACKER_IP}$" | head -1 || true)
 ATTACKER_ZONE=${ATTACKER_ZONE:-example.local}     # the attacker's domain, served by the attacker's own DNS
 ATTACKER=${ATTACKER:-attacker.$ATTACKER_ZONE}     # the one name used in every attack step
 CLUSTER_NAME=${CLUSTER_NAME:-production}
