@@ -37,6 +37,18 @@ esac
 
 # ---------------------------------------------------------------- operator
 step "RHACS operator"
+# On a fresh CRC the catalog pods start before the pull secret lands, hit ImagePullBackOff
+# and never retry on their own (the CSV then never appears). Kick them until the catalog is READY.
+catalog_ready() {
+  [[ $(oc get catalogsource redhat-operators -n openshift-marketplace \
+       -o jsonpath='{.status.connectionState.lastObservedState}') == READY ]] && return 0
+  oc get pods -n openshift-marketplace -l olm.catalogSource -o json |
+    jq -r '.items[] | select([.status.initContainerStatuses[]?, .status.containerStatuses[]? |
+             .state.waiting.reason] | any(. == "ImagePullBackOff" or . == "ErrImagePull")) | .metadata.name' |
+    xargs -r oc delete pod -n openshift-marketplace --force --grace-period=0 >/dev/null 2>&1
+  return 1
+}
+wait_for "redhat-operators catalog READY" 900 catalog_ready
 oc apply -f "$INSTALL_DIR/operator.yaml" >/dev/null
 csv_ok() { oc get csv -n rhacs-operator -o json | jq -e '[.items[] | select(.metadata.name|startswith("rhacs-operator")) | select(.status.phase=="Succeeded")] | length > 0'; }
 wait_for "operator CSV Succeeded" 900 csv_ok
