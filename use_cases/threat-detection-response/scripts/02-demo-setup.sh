@@ -144,10 +144,15 @@ rhacs-nb-lock "$APP_NS/blog"            >/dev/null && ok "network baseline = rou
 fresh_payments
 rhacs-pb-list "$APP_NS/blog" 2>/dev/null | sed 's/^/    /' || true
 
-# ---------------------------------------------------------------- Scanner V4 ready?
-scan_ok() { roxctl -e "$ROX_ENDPOINT" image scan --image "$REGISTRY_SVC/$APP_NS/blog:v1" --force --output json >/dev/null 2>&1; }
-wait_for "Scanner V4 vulnerability database loaded (first install: up to 30 min)" 2400 scan_ok
-roxctl -e "$ROX_ENDPOINT" image scan --image "$REGISTRY_SVC/$APP_NS/blog:v2" --force --output json >/dev/null 2>&1 || true
+# ---------------------------------------------------------------- Scanner V4 (no wait)
+# The vulnerability DB takes a while on first install and finishes by itself; RHACS rescans the
+# images once it's ready. Try once so a ready scanner has fresh results, but never block on it.
+if roxctl -e "$ROX_ENDPOINT" image scan --image "$REGISTRY_SVC/$APP_NS/blog:v1" --force --output json >/dev/null 2>&1; then
+  ok "Scanner V4 ready: blog:v1 scanned"
+  roxctl -e "$ROX_ENDPOINT" image scan --image "$REGISTRY_SVC/$APP_NS/blog:v2" --force --output json >/dev/null 2>&1 || true
+else
+  info "Scanner V4 still loading its vulnerability database — not waiting; it finishes by itself"
+fi
 
 # ---------------------------------------------------------------- clean slate
 "$TDR_DIR/scripts/demo.sh" resolve >/dev/null 2>&1 || true

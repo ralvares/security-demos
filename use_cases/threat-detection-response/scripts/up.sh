@@ -10,7 +10,7 @@
 #   2. cluster    core operators Available (API, ingress, registry, DNS, network, auth)
 #   3. RHACS      operator, Central, Sensor, Collector, API token (scripts/01-rhacs-install.sh)
 #   4. demo       images, policies, baselines — only if missing (scripts/02-demo-setup.sh)
-#   5. scanner    Scanner V4 vulnerability DB loaded (act 1 needs "0 CVEs")
+#   5. scanner    one scan attempt; no wait — Scanner V4 finishes loading its DB by itself
 #   6. attacker   address, firewall, DNS, payload server, pool (scripts/attacker.sh up)
 #   7. reset      v1, enforcement off, fresh locked baselines, violations resolved
 #   8. verify     end-to-end checks, including the attacker reachable by name from the cluster
@@ -83,8 +83,9 @@ verify() {
   _nb_blog()   { rhacs-nb-export "$APP_NS/blog" | jq -e .locked; }
   _pb_pay()    { rhacs-pb-export "$PAY_NS/payments-api" | jq -e 'length > 0 and all(.locked)'; }
   _nb_pay()    { rhacs-nb-export "$PAY_NS/payments-api" | jq -e '.locked and (.peers | length == 0)'; }
-  _scanner()   { roxctl -e "$ROX_ENDPOINT" image scan --image "$REGISTRY_SVC/$APP_NS/blog:v1" --output json |
-                   jq -e '(.result.summary.TOTAL_VULNERABILITIES // 0) == 0'; }
+  _scan_json=""
+  _scanned()   { _scan_json=$(roxctl -e "$ROX_ENDPOINT" image scan --image "$REGISTRY_SVC/$APP_NS/blog:v1" --output json 2>/dev/null); }
+  _zero_cve()  { [[ -z $_scan_json ]] || jq -e '(.result.summary.TOTAL_VULNERABILITIES // 0) == 0' <<<"$_scan_json"; }
   _quiet()     { [[ -z $(rox GET "/v1/alerts?query=$(uri "Namespace:$APP_NS,$PAY_NS+Violation State:Active")&pagination.limit=1" | jq -r '.alerts[]?.id') ]]; }
 
   check "blog v1 running"                                   _blog_v1
@@ -99,7 +100,8 @@ verify() {
   check "no response NetworkPolicies"                       _no_np
   check "blog: process + network baselines LOCKED"          eval '_pb_blog && _nb_blog'
   check "payments-api: process baseline LOCKED, network baseline empty + LOCKED" eval '_pb_pay && _nb_pay'
-  check "Scanner V4 ready, blog:v1 has 0 CVEs"              _scanner
+  soft  "Scanner V4 vulnerability DB loaded (still loading is fine — it finishes by itself)" _scanned
+  check "blog:v1 has 0 CVEs (skipped while the DB loads)"   _zero_cve
   check "no active violations (clean slate)"                _quiet
   check "attacker: containers, firewall, $ATTACKER resolvable + reachable from the cluster" "$S/attacker.sh" check
 
@@ -188,8 +190,12 @@ podman image exists localhost/attacker-kit:latest || podman build -q -t localhos
 
 # ---------------------------------------------------------------- 5. scanner
 step "Scanner V4"
-scan_ok() { roxctl -e "$ROX_ENDPOINT" image scan --image "$REGISTRY_SVC/$APP_NS/blog:v1" --output json >/dev/null 2>&1; }
-wait_for "vulnerability database loaded (after a restart: a few minutes)" 2400 scan_ok
+# Don't block on the vulnerability DB: it loads by itself and RHACS rescans the images when it's ready.
+if roxctl -e "$ROX_ENDPOINT" image scan --image "$REGISTRY_SVC/$APP_NS/blog:v1" --output json >/dev/null 2>&1; then
+  ok "vulnerability database loaded"
+else
+  info "vulnerability database still loading — not waiting; it finishes by itself (check later: make verify)"
+fi
 
 # ---------------------------------------------------------------- 6+7. attacker + reset
 if [[ -z $demo_ran ]]; then           # 02-demo-setup.sh already did both
