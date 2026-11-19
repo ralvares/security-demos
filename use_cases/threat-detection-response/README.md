@@ -56,7 +56,7 @@ make install     # first time only: CRC + RHACS + demo (~45-60 min)
 make up          # every session: starts EVERYTHING (CRC, RHACS, demo, attacker), installs what's
                  # missing, resets, then verifies end to end — when it says "armed", you can show
 make verify      # re-run just the end-to-end checks
-make status      # where are we?
+make status      # where are we? CRC, RHACS, Scanner V4 DB, blog, enforcement, violations, attacker
 make password    # RHACS console URL, user and password
 
 make live        # the show: tmux with attacker curl | C2 nc | RHACS alerts | pods
@@ -419,6 +419,7 @@ threat-detection-response/
     ├── 00-crc-up.sh  01-rhacs-install.sh  02-demo-setup.sh
     ├── attacker.sh                the attacker's laptop side: up, c2, logs, status, down
     ├── demo.sh                    acts, pwn, status, reset
+    ├── status.sh                  make status: read-only snapshot of every layer
     └── lib/                       common.sh, rhacs-aliases.sh (rox-*), rhacs-baselines.sh (from the rhacs repo)
 ```
 
@@ -507,7 +508,7 @@ for at most 10 minutes and talks only to the fake pool on the presenter's laptop
 | `*.apps-crc.testing` doesn't resolve | `crc setup` installs a NetworkManager dispatcher for systemd-resolved; restart NetworkManager or re-run `crc setup` |
 | Policy shows `accepted: false` | `oc get securitypolicy -n stackrox <name> -o yaml` → `status.message` |
 | No *Unauthorized process* alert | baseline not locked: `source scripts/lib/rhacs-baselines.sh; load…; rhacs-pb-lock unhackable/blog` (or re-run `02-demo-setup.sh`) |
-| Act 5 pod not killed | enforcement is pushed by Central to Sensor; wait ~15 s after `act5` starts, check `scripts/demo.sh status` |
+| Act 5 pod not killed | enforcement is pushed by Central to Sensor; wait ~15 s after `act5` starts, check `make status` |
 | *Unexpected network flow to payments-api* doesn't fire on a re-run | run `scripts/demo.sh reset` first — it recreates payments-api so the flow is new again |
 | Legit link checks raise *Unauthorized process* | the baseline should be exactly `/usr/local/bin/blog`; run `scripts/demo.sh reset` (or re-run `02-demo-setup.sh`) |
 | Image shows CVEs | rebuild: `scripts/02-demo-setup.sh` pulls the latest Alpine/Go and upgrades every package |

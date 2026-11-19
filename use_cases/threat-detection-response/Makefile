@@ -3,6 +3,7 @@
 #   make            show this help
 #   make install    first time only: CRC + RHACS + demo   (~45-60 min)
 #   make up         start EVERYTHING, install what's missing, reset, verify — ready to show
+#   make status     quick read-only snapshot: what is up, what is still loading
 #   make verify     re-run the end-to-end checks only
 #   make reset      clean starting state before (and between) runs
 #   make down       stop everything (deletes nothing)
@@ -55,9 +56,8 @@ recreate: ## Broken cluster? Delete CRC and rebuild everything from scratch (ask
 reset: ## Back to the start: v1, enforcement off, no NetworkPolicies, violations resolved
 	$(S)/demo.sh reset
 
-status: ## Where are we? Image, pod, enforcement, NetworkPolicies, violations, attacker
-	@$(S)/demo.sh status
-	@$(S)/attacker.sh status
+status: ## Where are we? CRC, RHACS + Scanner V4, blog, enforcement, violations, attacker (read-only)
+	@$(S)/status.sh
 
 password: ## RHACS console URL, user and password (password also copied to the clipboard)
 	@source $$HOME/.bashrc.d/rhacs.sh && rox-ui
