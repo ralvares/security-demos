@@ -23,7 +23,6 @@ stringData:
     # Unhackable Blog — runtime configuration
     DATABASE_URL=postgres://blog:S3cr3t-Pg-Pw@payments-db.payments.svc:5432/blog
     SESSION_SECRET=9f2a1c7e4b6d8a0f3e5c2b1d7a9e4f60
-    STRIPE_API_KEY=sk_demo_NOT_A_REAL_KEY
 ---
 apiVersion: apps/v1
 kind: Deployment
