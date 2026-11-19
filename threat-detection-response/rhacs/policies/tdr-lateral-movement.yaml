@@ -1,0 +1,41 @@
+# Lateral movement — network baseline anomaly on the crown jewels.
+#
+# payments-api's network baseline is locked: it has never received a connection
+# from the blog. When the compromised blog reads card data, this fires.
+# (Same criterion as the built-in "Unauthorized Network Flow", scoped to payments,
+# where there is no DNS chatter — payments-api never resolves names.)
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: tdr-lateral-movement
+  namespace: stackrox
+  labels: { tdr-demo: policy }
+spec:
+  policyName: "TDR - Unexpected network flow to payments-api"
+  description: payments-api received a connection that is not part of its locked network baseline.
+  rationale: >-
+    payments-api is in PCI scope and talks to a fixed set of peers. A new peer — especially a
+    public-facing web app — is lateral movement toward the most valuable data in the cluster.
+  remediation: Restrict ingress to payments-api with a NetworkPolicy, then investigate the source workload.
+  categories: [Anomalous Activity, Zero Trust]
+  lifecycleStages: [RUNTIME]
+  eventSource: DEPLOYMENT_EVENT
+  severity: CRITICAL_SEVERITY
+  enforcementActions: []
+  disabled: false
+  scope:
+    - cluster: production
+      namespace: payments
+  policySections:
+    - sectionName: flow outside the locked network baseline
+      policyGroups:
+        - fieldName: Unexpected Network Flow Detected
+          values: [{ value: "true" }]
+  mitreAttackVectors:
+    - tactic: TA0008          # Lateral Movement
+      techniques: [T1021]     # Remote services
+    - tactic: TA0009          # Collection
+      techniques: [T1530]     # Data from cloud storage / internal stores
+  criteriaLocked: false
+  mitreVectorsLocked: false
+  isDefault: false

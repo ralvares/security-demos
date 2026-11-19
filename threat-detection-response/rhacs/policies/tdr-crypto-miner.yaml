@@ -1,0 +1,31 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: tdr-crypto-miner
+  namespace: stackrox
+  labels: { tdr-demo: policy }
+spec:
+  policyName: "TDR - Crypto miner in the Unhackable Blog"
+  description: A known cryptocurrency mining binary was executed.
+  rationale: Cryptojacking is the most common way attackers monetise a compromised container — your cloud bill pays for their coins.
+  remediation: Kill the pod, block egress to the mining pool, rotate anything the container could reach.
+  categories: [Cryptocurrency Mining]
+  lifecycleStages: [RUNTIME]
+  eventSource: DEPLOYMENT_EVENT
+  severity: CRITICAL_SEVERITY
+  enforcementActions: []
+  disabled: false
+  scope:
+    - cluster: production
+      namespace: unhackable
+  policySections:
+    - sectionName: miner binary
+      policyGroups:
+        - fieldName: Process Name
+          values: [{ value: "xmrig|minerd|cpuminer|ccminer|xmr-stak" }]
+  mitreAttackVectors:
+    - tactic: TA0040          # Impact
+      techniques: [T1496]     # Resource hijacking
+  criteriaLocked: false
+  mitreVectorsLocked: false
+  isDefault: false

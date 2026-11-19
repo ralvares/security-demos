@@ -1,0 +1,43 @@
+apiVersion: policy.networking.k8s.io/v1alpha1
+kind: AdminNetworkPolicy
+metadata:
+  name: deny-all-allow-dns
+spec:
+  priority: 99
+  subject:
+    namespaces:
+      matchLabels:
+        custom.security/enforce: "true"
+  egress:
+    - name: allow-dns
+      action: Allow
+      to:
+        - namespaces:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+      ports:
+        - portNumber:
+            port: 53
+            protocol: UDP
+        - portNumber:
+            port: 53
+            protocol: TCP
+        - portNumber:
+            port: 5353
+            protocol: UDP
+        - portNumber:
+            port: 5353
+            protocol: TCP
+
+    - name: pass-to-owned-namespaces
+      action: Pass
+      to:
+        - namespaces:
+            matchLabels:
+              custom.security/enforce: "true"
+
+    - name: deny-egress
+      action: Deny
+      to:
+        - networks:
+            - 0.0.0.0/0

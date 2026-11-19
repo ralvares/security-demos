@@ -1,0 +1,83 @@
+# CIS-OCP 5.1.1 — Ensure cluster-admin role is only used where required
+# CIS-OCP 5.1.2 — Minimize access to secrets
+# CIS-OCP 5.1.4 — Minimize access to create pods
+# CIS-OCP 5.2.10 — Ensure no RBAC policies allow wildcard use
+# PCI DSS 7.2   — Access to system components assigned based on least privilege
+# PCI DSS 7.3   — Access to system components controlled via an access control system
+#
+# inform-only: flags dangerous RBAC bindings and wildcard roles without auto-remediating
+# RBAC objects — those require deliberate human review.
+
+# --- Check 1: no ClusterRoleBinding grants rights to unauthenticated/anonymous users ---
+# Uses object-templates-raw to skip known-safe OpenShift default CRBs:
+#   - system:openshift:public-info-viewer  (grants public cluster info to unauthenticated)
+#   - system:public-info-viewer            (same, upstream name)
+# Any other CRB with system:unauthenticated or system:anonymous subjects is flagged.
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: rbac-no-unauth-access
+spec:
+  remediationAction: inform
+  severity: critical
+  object-templates-raw: |
+    {{- $allowedCRBs := list "system:openshift:public-info-viewer" "system:public-info-viewer" }}
+    {{- range $crb := (lookup "rbac.authorization.k8s.io/v1" "ClusterRoleBinding" "" "").items }}
+    {{- if not (has $crb.metadata.name $allowedCRBs) }}
+    {{- range $subj := $crb.subjects }}
+    {{- if or (and (eq $subj.kind "Group") (eq $subj.name "system:unauthenticated")) (and (eq $subj.kind "User") (eq $subj.name "system:anonymous")) }}
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: '{{ $crb.metadata.name }}'
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+---
+# --- Check 2: no user-namespace Role allows wildcard verbs on all resources ---
+# This catches over-privileged roles that would allow secrets/pod access and more.
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: rbac-no-wildcard-roles
+spec:
+  remediationAction: inform
+  severity: high
+  namespaceSelector:
+    exclude:
+      - kube-*
+      - openshift*
+      - open-cluster-management*
+      - multicluster*
+      - cert-*
+      - catalogd-*
+      - costmanagement-*
+      - external-dns-*
+      - node-observability-*
+      - redhat-*
+      - rhdh-*
+      - submariner-*
+      - hive
+      - stackrox
+      - aap
+      - ack-system
+      - metallb-system
+      - mtr
+      - service-telemetry
+    include:
+      - "*"
+  object-templates:
+    - complianceType: mustnothave
+      objectDefinition:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: Role
+        rules:
+          - apiGroups:
+              - "*"
+            resources:
+              - "*"
+            verbs:
+              - "*"

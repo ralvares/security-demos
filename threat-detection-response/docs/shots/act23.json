@@ -1,0 +1,9 @@
+[
+ {"name":"08-term-act2","terminal":"/work/raw/act2.ansi","title":"scripts/demo.sh act2 — the attacker"},
+ {"name":"09-rhacs-violations-act2","url":"https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable","rhacs":true,"delay":5000},
+ {"name":"10-rhacs-violation-process","url":"https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable","rhacs":true,"wait":"TDR - Unauthorized process","click":["a:has-text('TDR - Unauthorized process')"],"delay":5000},
+ {"name":"11-term-act3","terminal":"/work/raw/act3.ansi","title":"scripts/demo.sh act3 — the attacker"},
+ {"name":"12-rhacs-violation-honeytoken","url":"https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable","rhacs":true,"wait":"TDR - Honeytoken","click":["a:has-text('TDR - Honeytoken')"],"delay":5000},
+ {"name":"13-rhacs-violation-lateral","url":"https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=payments","rhacs":true,"wait":"TDR - Unexpected network flow","click":["a:has-text('TDR - Unexpected network flow')"],"delay":5000},
+ {"name":"14-rhacs-network-graph-act3","url":"https://central-stackrox.apps-crc.testing/main/network-graph?s[Cluster]=production&s[Namespace]=unhackable&s[Namespace]=payments","rhacs":true,"delay":9000}
+]

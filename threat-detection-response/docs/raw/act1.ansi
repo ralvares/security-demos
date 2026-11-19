@@ -1,0 +1,12 @@
+
+[1m[35m━━━ ACT 1 — Unhackable ━━━[0m
+  image   CVEs: 0  (critical 0, important 0, moderate 0, low 0)
+  deploy  SA token: false  readOnlyRootFS: true  caps dropped: ALL
+  policy  deploy-time violations: 0
+  runtime active violations:
+    none
+[33m  👉 Blog:        https://blog-unhackable.apps-crc.testing[0m
+[33m  👉 Violations:  https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable[0m
+[33m  👉 Risk:        https://central-stackrox.apps-crc.testing/main/risk?s[Namespace]=unhackable[0m
+[33m  👉 Network:     https://central-stackrox.apps-crc.testing/main/network-graph?s[Cluster]=production&s[Namespace]=unhackable&s[Namespace]=payments[0m
+[33m  👉 Attacker:    attacker.example.local — this laptop, outside the cluster (scripts/attacker.sh status)[0m

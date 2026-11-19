@@ -1,0 +1,6 @@
+generators:
+  - policy-generator-config.yaml
+resources:
+  - manifests/namespace.yaml
+  - manifests/cluster-binding.yaml
+  - manifests/policy-sets.yaml

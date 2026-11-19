@@ -1,0 +1,74 @@
+# SecuredCluster "production" — registered with a Cluster Registration Secret (CRS)
+# that 01-rhacs-install.sh generates with roxctl and applies first.
+# Based on rhacs/scripts/rhacs/service/secured-cluster.yaml.
+apiVersion: platform.stackrox.io/v1alpha1
+kind: SecuredCluster
+metadata:
+  name: stackrox-secured-cluster-services
+  namespace: stackrox
+spec:
+  clusterName: production
+  centralEndpoint: central.stackrox.svc:443
+  clusterLabels:                       # RHACS 5.0: labels usable in policy scopes and filters
+    env: production
+    platform: openshift-local
+  processBaselines:
+    autoLock: Enabled                  # RHACS 5.0: baselines lock themselves after the observation period
+  processIndicators:
+    excludeOpenshiftNs: Enabled        # RHACS 5.0: don't record processes of OpenShift's own namespaces
+  customize:
+    envVars:
+      - name: ROX_SENSITIVE_FILE_ACTIVITY
+        value: "true"
+  sensor:
+    resources:
+      requests: { cpu: 10m, memory: 50Mi }
+  admissionControl:
+    bypass: BreakGlassAnnotation
+    contactImageScanners: ScanIfMissing
+    enforcement: Enabled
+    failurePolicy: Ignore
+    listenOnCreates: true
+    listenOnEvents: true
+    listenOnUpdates: true
+    replicas: 1
+    timeoutSeconds: 10
+    resources:
+      requests: { cpu: 100m, memory: 50Mi }
+  auditLogs:
+    collection: Auto
+  monitoring:
+    openshift: { enabled: false }
+  network:
+    policies: Enabled
+  perNode:
+    fileActivityMonitoring:
+      mode: Enabled
+    collector:
+      collection: CORE_BPF
+      forceCollection: false
+      imageFlavor: Regular
+      resources:
+        requests: { cpu: 100m, memory: 50Mi }
+    compliance:
+      resources:
+        requests: { cpu: 100m, memory: 50Mi }
+    taintToleration: TolerateTaints
+  scannerV4:
+    scannerComponent: Disabled
+---
+# Collector runtime config. Per-IP external reporting stays OFF: ordinary internet
+# traffic (CDNs rotate IPs) collapses into one "External Entities" node, so the
+# network baseline is stable. The attacker gets its own named network entity
+# (scripts/attacker.sh registers 192.168.130.1/32 as "attacker.example.local").
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: collector-config
+  namespace: stackrox
+data:
+  runtime_config.yaml: |
+    networking:
+      externalIps:
+        enabled: DISABLED
+      maxConnectionsPerMinute: 2048

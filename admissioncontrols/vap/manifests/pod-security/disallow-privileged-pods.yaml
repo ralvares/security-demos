@@ -1,0 +1,43 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: disallow-privileged-pods
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+  validations:
+  # Check hostPID is not enabled
+  - expression: |
+      !has(object.spec.hostPID) || object.spec.hostPID != true
+    message: "Pod cannot use hostPID"
+    reason: Forbidden
+  
+  # Check no privileged containers
+  - expression: |
+      !object.spec.containers.exists(c,
+        has(c.securityContext) &&
+        has(c.securityContext.privileged) &&
+        c.securityContext.privileged == true
+      )
+    message: "Pod cannot have privileged containers"
+    reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: disallow-privileged-pods-binding
+spec:
+  policyName: disallow-privileged-pods
+  validationActions: ["Deny"]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+      - key: custom.security/enforce
+        operator: In
+        values: ["true"]

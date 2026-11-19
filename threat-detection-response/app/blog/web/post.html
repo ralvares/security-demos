@@ -1,0 +1,16 @@
+{{define "post.html"}}{{template "head" (dict "Title" .Post.Title)}}
+    <section class="hero" style="padding-bottom:28px">
+      <div class="meta" style="color:#99f6e4">{{.Post.Date}} · {{.Post.Author}}</div>
+    </section>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <article class="post">
+      <h1>{{.Post.Title}}</h1>
+      {{range .Post.Body}}<p>{{.}}</p>{{end}}
+      <p><a href="/">← All posts</a></p>
+    </article>
+  </div>
+</main>
+{{template "foot" .}}{{end}}

@@ -1,0 +1,9 @@
+[
+ {"name":"01-blog-home","url":"https://blog-unhackable.apps-crc.testing/","delay":1500},
+ {"name":"02-blog-write","url":"https://blog-unhackable.apps-crc.testing/write","click":["#check"],"delay":4000},
+ {"name":"03-rhacs-images-without-cves","url":"https://central-stackrox.apps-crc.testing/main/vulnerabilities/images-without-cves","rhacs":true,"delay":5000,"highlight":"unhackable/blog"},
+ {"name":"04-rhacs-image-blog-v1","url":"https://central-stackrox.apps-crc.testing/main/vulnerabilities/user-workloads/images/sha256:de6c401652728376dd82cbcbadb2438b4785250020685b7a6af80083235777ae","rhacs":true,"delay":5000},
+ {"name":"05-rhacs-risk","url":"https://central-stackrox.apps-crc.testing/main/risk/workloads?s[Namespace]=unhackable","rhacs":true,"delay":5000},
+ {"name":"06-rhacs-violations-empty","url":"https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable","rhacs":true,"delay":4000},
+ {"name":"07-term-act1","terminal":"/work/raw/act1.ansi","title":"scripts/demo.sh act1"}
+]

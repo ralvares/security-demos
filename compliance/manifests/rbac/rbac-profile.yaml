@@ -1,0 +1,12 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: TailoredProfile
+metadata:
+  name: rbac-checks
+  namespace: openshift-compliance
+spec:
+  title: RBAC Checks
+  description: Custom checks for cluster-admin allow-list.
+  enableRules:
+    - name: cluster-admin-allow-list
+      kind: CustomRule
+      rationale: Audit cluster-admin bindings

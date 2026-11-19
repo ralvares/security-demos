@@ -1,0 +1,6 @@
+[
+ {"name":"03-rhacs-images-without-cves","url":"https://central-stackrox.apps-crc.testing/main/vulnerabilities/images-without-cves","rhacs":true,"delay":5000,"highlight":"unhackable/blog:v1"},
+ {"name":"08-term-act2","terminal":"/work/raw/act2.ansi","title":"scripts/demo.sh act2 — attacker"},
+ {"name":"09-rhacs-violations-act2","url":"https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable","rhacs":true,"delay":5000,"highlight":"TDR - Unauthorized process in the Unhackable Blog"},
+ {"name":"10-rhacs-violation-process","url":"https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable","rhacs":true,"wait":"TDR - Unauthorized process","click":["a:has-text('TDR - Unauthorized process')"],"delay":5000,"full":true}
+]

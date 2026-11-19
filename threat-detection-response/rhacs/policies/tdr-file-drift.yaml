@@ -1,0 +1,57 @@
+# Container drift — RHACS 5.0 File Activity Monitoring.
+#
+# The blog writes exactly one file: /var/cache/blog/linkcheck.json. It never writes
+# to /tmp and never changes permissions. The root filesystem is read-only, so the
+# writable volumes are the ONLY places a file can be dropped or chmod'ed:
+#   * a file CREATEd or RENAMEd under /tmp                      → someone dropped something
+#   * a PERMISSION_CHANGE under /tmp or /var/cache/blog (chmod)  → someone is about to run it
+# Keep paths narrow: File Activity Monitoring watches exactly the paths policies name
+# (a "/**" would make it inventory the whole node).
+# Either one is drift from the image — the classic "download, chmod, execute" chain.
+# Act 5 switches enforcement to KILL_POD (scripts/demo.sh respond).
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: tdr-file-drift
+  namespace: stackrox
+  labels: { tdr-demo: policy }
+spec:
+  policyName: "TDR - Container drift: file dropped or made executable"
+  description: A file was written to /tmp or had its permissions changed inside the blog container. The application never does either.
+  rationale: >-
+    The image is immutable and the app writes only to its own cache volume. New files in scratch space,
+    or a chmod, mean someone is staging tools inside the container — downloading a binary,
+    making it executable and running it.
+  remediation: Kill the pod — the replacement starts from the image, so dropped files disappear. Then find how the attacker got code execution.
+  categories: [Anomalous Activity, File Activity Monitoring]
+  lifecycleStages: [RUNTIME]
+  eventSource: DEPLOYMENT_EVENT
+  severity: HIGH_SEVERITY
+  enforcementActions: []
+  disabled: false
+  scope:
+    - cluster: production
+      namespace: unhackable
+  policySections:
+    - sectionName: file dropped in /tmp
+      policyGroups:
+        - fieldName: File Path
+          values: [{ value: "/tmp/**" }]
+        - fieldName: File Operation
+          booleanOperator: OR
+          values: [{ value: CREATE }, { value: RENAME }]
+    - sectionName: file made executable in a writable volume
+      policyGroups:
+        - fieldName: File Path
+          booleanOperator: OR
+          values: [{ value: "/tmp/**" }, { value: "/var/cache/blog/**" }]
+        - fieldName: File Operation
+          values: [{ value: PERMISSION_CHANGE }]
+  mitreAttackVectors:
+    - tactic: TA0005          # Defense Evasion
+      techniques: [T1222.002] # Linux file permission modification
+    - tactic: TA0011          # Command and Control
+      techniques: [T1105]     # Ingress tool transfer
+  criteriaLocked: false
+  mitreVectorsLocked: false
+  isDefault: false

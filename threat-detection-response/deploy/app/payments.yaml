@@ -1,0 +1,48 @@
+# payments-api — the crown jewels. Internal only (no Route). Same zero-CVE image, --mode=payments.
+# scripts recreate it on every setup/reset: RHACS flags a baseline anomaly the first time a
+# flow between two deployments appears, so a fresh payments-api makes blog→payments new again.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+  namespace: payments
+  labels: { app: payments-api, app.kubernetes.io/part-of: unhackable-blog }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: payments-api }
+  template:
+    metadata:
+      labels: { app: payments-api, app.kubernetes.io/part-of: unhackable-blog }
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: payments-api
+          image: image-registry.openshift-image-registry.svc:5000/unhackable/blog:v1
+          imagePullPolicy: Always
+          args: ["--mode=payments"]
+          ports: [{ name: http, containerPort: 8080 }]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 20m, memory: 16Mi }
+            limits: { cpu: 200m, memory: 64Mi }
+          # no probes on purpose: NOTHING should ever connect to payments-api in this demo,
+          # so its RHACS network baseline is empty and locked — any inbound flow is an anomaly.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payments-api
+  namespace: payments
+  labels: { app: payments-api }
+spec:
+  selector: { app: payments-api }
+  ports: [{ name: http, port: 8080, targetPort: http }]

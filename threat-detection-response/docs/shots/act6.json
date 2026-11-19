@@ -1,0 +1,6 @@
+[
+ {"name":"31-term-diff","terminal":"/work/raw/diff.ansi","title":"diff -u linkcheck_v1.go linkcheck_v2.go — the fix"},
+ {"name":"32-term-act6","terminal":"/work/raw/act6.ansi","title":"scripts/demo.sh act6 — fix forward"},
+ {"name":"33-blog-v2-footer","url":"https://blog-unhackable.apps-crc.testing/write","click":["#check"],"delay":4000,"full":true},
+ {"name":"34-rhacs-image-blog-v2","url":"https://central-stackrox.apps-crc.testing/main/vulnerabilities/images-without-cves","rhacs":true,"wait":"unhackable/blog:v2","click":["text=unhackable/blog:v2"],"delay":6000}
+]

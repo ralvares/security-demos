@@ -1,0 +1,56 @@
+# Central, tuned for a single-node CRC (tiny requests, single replicas, small PVCs).
+# Based on rhacs/scripts/rhacs/service/central.yaml.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stackrox
+---
+apiVersion: platform.stackrox.io/v1alpha1
+kind: Central
+metadata:
+  name: stackrox-central-services
+  namespace: stackrox
+spec:
+  customize:
+    envVars:
+      - name: ROX_SENSITIVE_FILE_ACTIVITY     # file activity monitoring (honeytoken act)
+        value: "true"
+  central:
+    db:
+      isEnabled: Default
+      connectionPoolSize: { minConnections: 10, maxConnections: 90 }
+      persistence:
+        persistentVolumeClaim: { claimName: central-db, size: 5Gi }
+      resources:
+        requests: { cpu: 100m, memory: 50Mi }
+    exposure:
+      route: { enabled: true }
+    persistence:
+      persistentVolumeClaim: { claimName: stackrox-db, size: 2Gi }
+    resources:
+      requests: { cpu: 100m, memory: 50Mi }
+    telemetry:
+      enabled: false
+  configAsCode:
+    configAsCodeComponent: Enabled            # policies are managed as SecurityPolicy CRs
+  egress:
+    connectivityPolicy: Online                # vulnerability feed updates
+  monitoring:
+    openshift: { enabled: false }
+  network:
+    policies: Enabled
+  scannerV4:
+    scannerComponent: Enabled
+    db:
+      persistence:
+        persistentVolumeClaim: { claimName: scanner-v4-db, size: 5Gi }
+      resources:
+        requests: { cpu: 100m, memory: 50Mi }
+    indexer:
+      scaling: { autoScaling: Disabled, replicas: 1, minReplicas: 1, maxReplicas: 1 }
+      resources:
+        requests: { cpu: 100m, memory: 50Mi }
+    matcher:
+      scaling: { autoScaling: Disabled, replicas: 1, minReplicas: 1, maxReplicas: 1 }
+      resources:
+        requests: { cpu: 100m, memory: 50Mi }

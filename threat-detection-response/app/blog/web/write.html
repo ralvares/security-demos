@@ -1,0 +1,38 @@
+{{define "write.html"}}{{template "head" (dict "Title" "Write")}}
+    <section class="hero" style="padding-bottom:28px">
+      <h1 style="font-size:32px">Write a post</h1>
+      <p>Paste your draft. We'll check every link before you publish.</p>
+    </section>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <div class="card">
+      <textarea id="draft">Our new release is live! Read the announcement at https://www.redhat.com/en and learn more at https://www.redhat.com/en/technologies/cloud-computing/openshift
+
+Questions? Visit https://access.redhat.com</textarea>
+      <p style="margin:14px 0 0"><button id="check">Check links</button></p>
+      <table id="results" hidden>
+        <thead><tr><th>Link</th><th>Status</th><th>Details</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<script>
+document.getElementById('check').addEventListener('click', async () => {
+  const urls = (document.getElementById('draft').value.match(/https?:\/\/\S+/g) || []);
+  const res = await fetch('/api/links/check', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({urls})});
+  const data = await res.json();
+  const tbody = document.querySelector('#results tbody');
+  tbody.replaceChildren(...(data.results || []).map(r => {
+    const tr = document.createElement('tr');
+    const cells = [r.url, r.status, r.detail || ''];
+    cells.forEach((v, i) => { const td = document.createElement('td'); td.textContent = v;
+      if (i === 1) td.className = r.status === 'alive' ? 'ok' : 'bad'; tr.appendChild(td); });
+    return tr;
+  }));
+  document.getElementById('results').hidden = false;
+});
+</script>
+{{template "foot" .}}{{end}}

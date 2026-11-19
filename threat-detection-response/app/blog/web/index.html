@@ -1,0 +1,26 @@
+{{define "index.html"}}{{template "head" (dict "Title" "Home")}}
+    <section class="hero">
+      <h1>The blog that can't be hacked.</h1>
+      <p>Zero CVEs. Hardened by default. Every scan green. We're so confident, we put it on the internet.</p>
+      <div class="badges">
+        <span class="badge"><b>0</b> CVEs</span>
+        <span class="badge">non-root</span>
+        <span class="badge">read-only rootfs</span>
+        <span class="badge">no SA token</span>
+        <span class="badge">lowest risk score</span>
+      </div>
+    </section>
+  </div>
+</header>
+<main>
+  <div class="wrap grid">
+    {{range .Posts}}
+    <a class="card" href="/post/{{.Slug}}" style="color:inherit;text-decoration:none">
+      <div class="meta">{{.Date}} · {{.Author}}</div>
+      <h2>{{.Title}}</h2>
+      <p style="margin:0;color:#475569">{{.Summary}}</p>
+    </a>
+    {{end}}
+  </div>
+</main>
+{{template "foot" .}}{{end}}

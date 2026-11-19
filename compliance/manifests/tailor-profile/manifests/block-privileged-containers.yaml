@@ -1,0 +1,71 @@
+# VAP: no privileged containers — opt-in per namespace
+#
+# The ValidatingAdmissionPolicy defines the rule cluster-wide.
+# The ValidatingAdmissionPolicyBinding activates it ONLY in namespaces
+# labelled:  enforce-no-privileged: "true"
+#
+# Demo usage:
+#   oc label namespace <ns> enforce-no-privileged=true   # activate
+#   oc label namespace <ns> enforce-no-privileged-       # deactivate
+#
+# ACM (enforce) keeps both objects present on every managed cluster.
+# Requires Kubernetes 1.30+ / OCP 4.17+ (VAP GA).
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: no-privileged-containers
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   [""]
+        apiVersions: ["v1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["pods"]
+      - apiGroups:   ["apps"]
+        apiVersions: ["v1"]
+        operations:  ["CREATE", "UPDATE"]
+        resources:   ["deployments", "daemonsets", "statefulsets", "replicasets"]
+  variables:
+    - name: containers
+      expression: >
+        has(object.spec.containers) ? object.spec.containers : []
+    - name: initContainers
+      expression: >
+        has(object.spec.initContainers) ? object.spec.initContainers : []
+    - name: podSpec
+      expression: >
+        has(object.spec.template) ? object.spec.template.spec : object.spec
+  validations:
+    - expression: >
+        !variables.podSpec.containers.exists(c,
+          has(c.securityContext) &&
+          has(c.securityContext.privileged) &&
+          c.securityContext.privileged == true
+        )
+      message: "Privileged containers are not allowed in this namespace."
+      reason: Forbidden
+    - expression: >
+        !has(variables.podSpec.initContainers) ||
+        !variables.podSpec.initContainers.exists(c,
+          has(c.securityContext) &&
+          has(c.securityContext.privileged) &&
+          c.securityContext.privileged == true
+        )
+      message: "Privileged init containers are not allowed in this namespace."
+      reason: Forbidden
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: no-privileged-containers-binding
+spec:
+  policyName: no-privileged-containers
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        enforce-no-privileged: "true"

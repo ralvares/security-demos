@@ -1,0 +1,60 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box}
+body{margin:0;width:1600px;height:900px;background:#0d1117;color:#e6edf3;font-family:"Inter","DejaVu Sans",system-ui,sans-serif;display:flex;flex-direction:column}
+.top{height:64px;border-bottom:1px solid #30363d;display:flex;align-items:center;padding:0 40px;gap:14px;color:#8b949e;font-size:17px}
+.top b{color:#e6edf3;font-weight:600}
+.wrap{padding:34px 40px;flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.title{display:flex;align-items:center;gap:16px}
+.title h1{margin:0;font-size:30px;font-weight:600}
+.title .run{color:#8b949e;font-size:26px;font-weight:400}
+.meta{display:flex;gap:48px;margin:22px 0 26px;padding:18px 24px;border:1px solid #30363d;border-radius:10px;background:#161b22}
+.meta div{font-size:15px;color:#8b949e}
+.meta b{display:block;color:#e6edf3;font-size:19px;font-weight:600;margin-top:4px}
+.meta .succ b{color:#3fb950}
+.graph{border:1px solid #30363d;border-radius:10px;background:#161b22;padding:34px 28px;display:flex;align-items:center}
+.job{border:1px solid #30363d;background:#0d1117;border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:17px;white-space:nowrap}
+.job .t{color:#8b949e;font-size:15px;margin-left:8px}
+.line{flex:1;height:2px;background:#30363d;min-width:28px}
+.gate{border-color:#3fb950}
+.chk{flex:none;width:22px;height:22px}
+.steps{margin-top:24px;border:1px solid #30363d;border-radius:10px;overflow:hidden}
+.sh{background:#161b22;padding:14px 22px;font-size:17px;border-bottom:1px solid #30363d;display:flex;justify-content:space-between}
+.sh span{color:#8b949e}
+.st{display:flex;align-items:center;gap:14px;padding:15px 22px;border-bottom:1px solid #21262d;font-size:17px}
+.st:last-child{border-bottom:0}
+.st .r{margin-left:auto;color:#8b949e;font-family:"DejaVu Sans Mono",monospace;font-size:15px}
+.st .r em{color:#3fb950;font-style:normal}
+.quote{color:#e6edf3;font-style:italic}
+</style></head><body>
+<div class="top"><b>demo / company-blog</b> · Actions · release.yml</div>
+<div class="wrap">
+  <div class="title">
+    <svg class="chk" style="width:30px;height:30px" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h1>Release company-blog 1.0</h1><span class="run">#142</span>
+  </div>
+  <div class="meta">
+    <div>Triggered<b>tag v1.0 · main</b></div>
+    <div class="succ">Status<b>Success</b></div>
+    <div>Total duration<b>4m 12s</b></div>
+    <div>Environment<b>production</b></div>
+  </div>
+  <div class="graph">
+    <div class="job"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>build<span class="t">1m 02s</span></div>
+    <div class="line"></div>
+    <div class="job"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>image-scan<span class="t">38s</span></div>
+    <div class="line"></div>
+    <div class="job"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>policy-check<span class="t">12s</span></div>
+    <div class="line"></div>
+    <div class="job gate"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>security-approval<span class="t">approved</span></div>
+    <div class="line"></div>
+    <div class="job"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>deploy-production<span class="t">24s</span></div>
+  </div>
+  <div class="steps">
+    <div class="sh">Summary<span>all checks passed</span></div>
+    <div class="st"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Image vulnerability scan<span class="r"><em>0 CVEs</em> · critical 0 · important 0 · moderate 0 · low 0</span></div>
+    <div class="st"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Dependencies and base image<span class="r">1 dependency (yaegi) · 0 CVEs · alpine:3.24 · all packages upgraded · no package manager</span></div>
+    <div class="st"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Workload hardening<span class="r">runAsNonRoot · readOnlyRootFilesystem · drop ALL · no SA token</span></div>
+    <div class="st"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Deployment policy check<span class="r"><em>0 violations</em> · lowest risk score in the cluster</span></div>
+    <div class="st"><svg class="chk" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#238636"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Security approval<span class="r">all checks passed · <span class="quote">approved for production</span></span></div>
+  </div>
+</div></body></html>

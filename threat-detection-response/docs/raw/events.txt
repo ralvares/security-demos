@@ -1,0 +1,10 @@
+67m         Normal    Killing                pod/blog-5457d7c75b-l9fw7    Stopping container blog
+65m         Normal    Killing                pod/blog-7d46dc977-22hxg     Stopping container blog
+65m         Normal    Killing                pod/blog-7b9d8d9d9b-vh4bg    Stopping container blog
+8m10s       Normal    Killing                pod/blog-5457d7c75b-vlzz4    Stopping container blog
+5m53s       Normal    Killing                pod/blog-5457d7c75b-lqmzs    Stopping container blog
+5m53s       Warning   StackRox enforcement   deployment/blog              A pod (blog-5457d7c75b-lqmzs) violated StackRox policy "TDR - Unauthorized process in the Unhackable Blog" and was killed
+5m14s       Normal    Killing                pod/blog-5457d7c75b-ccbtf    Stopping container blog
+4m24s       Normal    Killing                pod/blog-7d46dc977-qh876     Stopping container blog
+16s         Normal    Killing                pod/blog-5457d7c75b-qh74q    Stopping container blog
+16s         Warning   StackRox enforcement   deployment/blog              A pod (blog-5457d7c75b-qh74q) violated StackRox policy "TDR - Unauthorized process in the Unhackable Blog" and was killed

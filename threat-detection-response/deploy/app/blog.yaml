@@ -1,0 +1,97 @@
+# The Unhackable Blog. Everything a hardening checklist asks for:
+#   non-root, read-only rootfs, all capabilities dropped, no privilege escalation,
+#   no SA token, seccomp RuntimeDefault, requests+limits, probes, pinned tag.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: legacy-backup-credentials
+  namespace: unhackable
+  annotations:
+    description: "HONEYTOKEN - never read by the app. Any access is an intruder."
+type: Opaque
+stringData:
+  # AWS's documented example keys: look real, are worthless. Mounted at the AWS CLI's
+  # default location (~/.aws/credentials) — the first place anyone hunting keys will look.
+  credentials: |
+    [default]
+    aws_access_key_id = AKIAIOSFODNN7EXAMPLE
+    aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    region = eu-west-1
+    # s3://unhackable-blog-backups (nightly DB dumps)
+  # A decoy .env next to the app — the other classic place secrets leak. All fake.
+  dotenv: |
+    # Unhackable Blog — runtime configuration
+    DATABASE_URL=postgres://blog:S3cr3t-Pg-Pw@payments-db.payments.svc:5432/blog
+    SESSION_SECRET=9f2a1c7e4b6d8a0f3e5c2b1d7a9e4f60
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog
+  namespace: unhackable
+  labels: { app: blog, app.kubernetes.io/part-of: unhackable-blog }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: blog }
+  template:
+    metadata:
+      labels: { app: blog, app.kubernetes.io/part-of: unhackable-blog }
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: blog
+          image: image-registry.openshift-image-registry.svc:5000/unhackable/blog:v1
+          imagePullPolicy: Always
+          ports: [{ name: http, containerPort: 8080 }]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { cpu: 500m, memory: 128Mi }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          volumeMounts:
+            - { name: cache, mountPath: /var/cache/blog }   # the app's link-check cache
+            - { name: tmp, mountPath: /tmp }                # scratch space the app never uses
+            - { name: honeytoken, mountPath: /.aws/credentials, subPath: credentials, readOnly: true }   # ~/.aws/credentials (HOME=/)
+            - { name: honeytoken, mountPath: /opt/blog/.env,   subPath: dotenv,      readOnly: true }   # the app's .env
+      volumes:
+        - name: cache
+          emptyDir: { sizeLimit: 16Mi }
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+        - name: honeytoken
+          secret: { secretName: legacy-backup-credentials, defaultMode: 0440 }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog
+  namespace: unhackable
+  labels: { app: blog }
+spec:
+  selector: { app: blog }
+  ports: [{ name: http, port: 8080, targetPort: http }]
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: blog
+  namespace: unhackable
+  labels: { app: blog }
+spec:
+  to: { kind: Service, name: blog }
+  port: { targetPort: http }
+  tls: { termination: edge, insecureEdgeTerminationPolicy: Redirect }

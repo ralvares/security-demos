@@ -1,0 +1,6 @@
+resources:
+  - detect-sensitive-hostpath-mounts.yaml
+  - detect-privileged-pods.yaml
+  - detect-token-automount.yaml
+  - sensitive-pod-security-profile.yaml
+  - sensitive-pod-security-scan-binding.yaml

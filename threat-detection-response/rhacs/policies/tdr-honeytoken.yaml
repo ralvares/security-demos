@@ -1,0 +1,43 @@
+# Honeytoken — decoy credentials in the places attackers actually look.
+#
+# Two read-only decoy files are mounted from a Secret (AWS's documented example keys + a fake
+# .env): ~/.aws/credentials (the AWS CLI default) and /opt/blog/.env (the app's env file). The
+# blog never touches either, so ANY process that names one — cat, grep, cp, aws --profile … —
+# is someone hunting for credentials. Zero false positives by design.
+#
+# Why process arguments and not File Activity Monitoring: in RHACS 5.0 FAM reports file
+# modifications (create, rename, chmod, write-intent opens — see tdr-file-drift). Reading a
+# read-only file is not a modification, and a single policy can't mix process and file criteria.
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: tdr-honeytoken
+  namespace: stackrox
+  labels: { tdr-demo: policy }
+spec:
+  policyName: "TDR - Honeytoken touched: decoy AWS credentials"
+  description: A process in the blog container went after the decoy AWS credentials file. The application never touches it.
+  rationale: The file exists only as bait. It produces zero false positives — legitimate code never touches it.
+  remediation: Treat the workload as compromised. The keys are fake — but the attacker does not know that, and will try to use them.
+  categories: [Anomalous Activity]
+  lifecycleStages: [RUNTIME]
+  eventSource: DEPLOYMENT_EVENT
+  severity: HIGH_SEVERITY
+  enforcementActions: []
+  disabled: false
+  scope:
+    - cluster: production
+      namespace: unhackable
+  policySections:
+    - sectionName: decoy credentials named on a command line
+      policyGroups:
+        # Match either decoy by name: the AWS credentials file, or a .env file.
+        # \b after "env" keeps ".env" from matching words like ".environment" or URLs.
+        - fieldName: Process Arguments
+          values: [{ value: ".*(\\.aws/credentials|\\.env\\b).*" }]
+  mitreAttackVectors:
+    - tactic: TA0006          # Credential Access
+      techniques: [T1552.001] # Credentials in files
+  criteriaLocked: false
+  mitreVectorsLocked: false
+  isDefault: false

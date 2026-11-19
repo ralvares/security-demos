@@ -1,0 +1,78 @@
+[
+ {
+  "name": "15-term-act4",
+  "terminal": "/work/raw/act4.ansi",
+  "title": "scripts/demo.sh act4 \u2014 the attacker"
+ },
+ {
+  "name": "16-term-c2",
+  "terminal": "/work/raw/c2.ansi",
+  "title": "scripts/attacker.sh c2 \u2014 attacker's laptop (attacker.example.local:4444)"
+ },
+ {
+  "name": "17-term-attacker-logs",
+  "terminal": "/work/raw/attacker-logs.txt",
+  "title": "scripts/attacker.sh logs \u2014 attacker's servers"
+ },
+ {
+  "name": "18-rhacs-violations-act4",
+  "url": "https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable",
+  "rhacs": true,
+  "delay": 5000
+ },
+ {
+  "name": "19-rhacs-violation-miner",
+  "url": "https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable",
+  "rhacs": true,
+  "wait": "TDR - Crypto miner",
+  "click": [
+   "a:has-text('TDR - Crypto miner')"
+  ],
+  "delay": 5000
+ },
+ {
+  "name": "20-rhacs-violation-drift",
+  "url": "https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable",
+  "rhacs": true,
+  "wait": "TDR - Container drift",
+  "click": [
+   "a:has-text('TDR - Container drift')"
+  ],
+  "delay": 5000
+ },
+ {
+  "name": "21-rhacs-violation-revshell",
+  "url": "https://central-stackrox.apps-crc.testing/main/violations?s[Namespace]=unhackable",
+  "rhacs": true,
+  "wait": "TDR - Reverse shell",
+  "click": [
+   "a:has-text('TDR - Reverse shell')"
+  ],
+  "delay": 5000
+ },
+ {
+  "name": "22-rhacs-network-graph-attacker",
+  "url": "https://central-stackrox.apps-crc.testing/main/network-graph?s[Cluster]=production&s[Namespace]=unhackable&s[Namespace]=payments",
+  "rhacs": true,
+  "delay": 9000
+ },
+ {
+  "name": "23-rhacs-network-graph-blog-flows",
+  "url": "https://central-stackrox.apps-crc.testing/main/network-graph?s[Cluster]=production&s[Namespace]=unhackable&s[Namespace]=payments",
+  "rhacs": true,
+  "delay": 5000,
+  "click": [
+   "force:exact:blog",
+   "force:role=tab[name='Flows']"
+  ]
+ },
+ {
+  "name": "24-rhacs-network-graph-attacker-entity",
+  "url": "https://central-stackrox.apps-crc.testing/main/network-graph?s[Cluster]=production&s[Namespace]=unhackable&s[Namespace]=payments",
+  "rhacs": true,
+  "delay": 5000,
+  "click": [
+   "force:exact:attacker.example.local"
+  ]
+ }
+]
